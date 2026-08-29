@@ -1,0 +1,448 @@
+/* Acordeón horizontal de MainChat — port literal de los paneles colapsables
+   de ProdIA_V02 (features/consulta/components/{AcordeonHorizontal,PanelColapsable}).
+
+   Todas las clases van prefijadas con mc-: `.panel` ya existe como clase global
+   en static/css/style.css (border-radius, box-shadow, border, margin-bottom) y
+   base.html la carga en todas las páginas, así que sin prefijo contaminaría
+   estos paneles. */
+
+/* Sin @property, --pv-panel-grow es una cadena y la transición de `flex` no
+   puede interpolarla: el ancho saltaría en seco al cambiar de pareja abierta
+   en vez de animar. Debe quedar a nivel raíz, nunca anidado. */
+@property --pv-panel-grow {
+    syntax: '<number>';
+    inherits: false;
+    initial-value: 1;
+}
+
+.mc-acordeon {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    gap: 14px;
+}
+
+.mc-panel {
+    min-width: 0;
+    min-height: 0;
+    background: #fff;
+    border-radius: 16px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition:
+        flex 0.32s cubic-bezier(0.7, 0, 0.2, 1),
+        box-shadow 0.2s,
+        border-color 0.2s;
+}
+
+/* El grow lo decide el acordeón según la pareja abierta (Historial vale 1,
+   cualquier otro panel vale 3). El panel colapsado no participa: su ancho es
+   fijo (ver .mc-panel--colapsado). */
+.mc-panel--abierto {
+    flex: var(--pv-panel-grow, 1) 1 0;
+    border: 1px solid #f8f9e6;
+    box-shadow: 0 10px 28px rgb(20 50 35 / 10%);
+}
+
+.mc-panel--colapsado {
+    flex: 0 0 clamp(58px, 7vw, 80px);
+    border: 1px solid #ddddd5;
+    box-shadow: 0 1px 2px rgb(20 40 30 / 4%);
+}
+
+/* ── Panel abierto ──────────────────────────────────────────────────────── */
+
+/* all:unset neutraliza los estilos que Bootstrap aplica a <button>; borra
+   también box-sizing, por eso se repone acto seguido. Los dos van juntos. */
+.mc-cabecera {
+    all: unset;
+    box-sizing: border-box;
+    flex: 0 0 auto;
+    width: 100%;
+    cursor: pointer;
+    text-align: left;
+    background: #004236;
+    padding: 13px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.mc-cabecera:focus-visible {
+    outline: 2px solid #ccd32a;
+    outline-offset: -2px;
+}
+
+.mc-cabecera:disabled {
+    cursor: not-allowed;
+    opacity: 0.72;
+}
+
+.mc-num {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgb(255 255 255 / 14%);
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', menlo, consolas, monospace;
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+}
+
+.mc-titulos {
+    min-width: 0;
+    flex: 1;
+}
+
+.mc-titulo {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-family: 'Inter', -apple-system, 'Segoe UI', system-ui, arial, sans-serif;
+    font-size: 15px;
+    font-weight: 800;
+    color: #fff;
+    white-space: nowrap;
+}
+
+.mc-titulo-icono {
+    color: #ccd32a;
+    flex-shrink: 0;
+    font-size: 14px;
+}
+
+.mc-subtitulo {
+    display: block;
+    font-family: 'Inter', -apple-system, 'Segoe UI', system-ui, arial, sans-serif;
+    font-size: 11.5px;
+    color: rgb(255 255 255 / 72%);
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mc-colapsar {
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    border: 1px solid rgb(255 255 255 / 25%);
+    background: rgb(255 255 255 / 8%);
+    color: #fff;
+    font-size: 14px;
+}
+
+/* [2026-08-26] Badge "Act: <fecha>" del header de Insights — mismo tratamiento de pastilla
+   translúcida que .mc-num, para que se lea como parte del MISMO chrome del header, no como
+   un elemento ajeno pegado encima. acordeon.js la arma vacía ("Act: …") y la rellena al
+   resolver /api/reportes/ultimo (_pintarActEnBadges). */
+.mc-act-badge {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex: 0 0 auto;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: rgb(255 255 255 / 14%);
+    color: #fff;
+    font-family: 'Inter', -apple-system, 'Segoe UI', system-ui, arial, sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.mc-act-badge i {
+    font-size: 12px;
+    color: #ccd32a;   /* mismo verde-lima que .mc-titulo-icono: identidad del acento de MainChat */
+}
+
+.mc-cuerpo {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    padding: 16px;
+}
+
+/* ── Cuerpos que hospedan una zona del shell ────────────────────────────── */
+
+/* El esqueleto del shell vive aquí permanentemente, fuera de #mainchat-root
+   (que render() arrasa). Regla explícita en vez del atributo `hidden`: éste
+   aplica display:none desde la hoja del navegador, con especificidad mínima, y
+   cualquier `display` de autor que alcance el nodo lo anularía en silencio. */
+#mc-shell-host {
+    display: none;
+}
+
+/* La clase .rb-cp se añade a los cuerpos receptores SOLO para heredar las
+   variables --rb-*, que colapsable.css declara ahí y no en :root: sin ellas las
+   burbujas del chat y las tarjetas del análisis pierden todos sus colores. Pero
+   .rb-cp arrastra además layout y decoración propios — borde, radio de 12px,
+   sombra y flex-basis:auto — que quedarían ANIDADOS dentro de .mc-panel, que ya
+   tiene los suyos. Se neutraliza con especificidad 0,2,0: gana sobre .rb-cp
+   (0,1,0) y sobre .mc-cuerpo (0,1,0) sin depender del orden de las hojas.
+   El padding:0 no es opcional — .mc-cuerpo aplica 16px y dejaría aire parásito
+   dentro del chat, con el input despegado del borde. */
+.mc-cuerpo--rb.rb-cp {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    height: auto;
+    padding: 0;
+    overflow: hidden;   /* el chat y el viewer traen su propio scroller */
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+/* El riel de 5 pestañas (Ingesta/Control/Análisis/Consulta/TestClas) no aplica
+   anidado: aquí solo existe Consulta. Se queda oculto dentro del host. */
+#mc-shell-host .rb-cp__rail {
+    display: none !important;
+}
+
+/* .rb-cp__panel trae width:581px y flex:0 0 auto porque en / es una columna de
+   ancho fijo junto al viewer. Dentro del panel Chat debe llenar el hueco. */
+#mc-chat-body .rb-cp__panel {
+    width: auto;
+    flex: 1 1 auto;
+    border-right: none;
+}
+
+/* D1 — la barra "← CONSULTA · PRODIA · −" del shell rotula y controla un panel
+   que aquí ya tiene su propia cabecera ("2 · Chat") y su botón de colapsar:
+   serían dos cabeceras apiladas. */
+#mc-chat-body .rb-cp__panel-head {
+    display: none !important;
+}
+
+/* D2 — chips "MOTOR v1 / v2". OJO: esto oculta el CONTROL, no cambia el motor;
+   el valor efectivo lo sigue decidiendo __cnMotor desde localStorage.cn_motor. */
+#mc-chat-body .cn-motor {
+    display: none !important;
+}
+
+/* style.css:907-917 llega hasta este input globalmente (base.html) y le da
+   position:sticky; bottom:0, que se anclaría al scroller equivocado. Aquí es el
+   último hijo de la columna flex, así que se ancla solo. */
+#mc-chat-body .chat-input-container {
+    position: static;
+    min-height: auto;
+    flex: 0 0 auto;
+}
+
+/* [2026-08-24] PORTADA de bienvenida (petición del usuario, con su maqueta como referencia).
+   Mientras el chat está vacío NO se pinta una burbuja de saludo: se pinta una portada
+   —mascota grande + saludo en tipografía grande— y la caja de entrada sube a su lado.
+   Deja de parecer un chat vacío y pasa a parecer una pantalla de inicio.
+   La marca .cn-inicio la pone y la quita __cnEstadoInicio (multitab_shell.js) según el
+   historial; el contenido de la portada lo pinta __cnPortadaHtml.
+
+   [2026-08-24 · MEDIDO EN LA APP] El intento anterior usaba margin-top:auto y fallaba:
+   #cn-messages lleva style="flex:1;min-height:0;" INLINE (multitab_shell.js:1012) y lo
+   inline gana a la hoja de estilos, así que la caja se estiraba a todo el alto disponible
+   (medido: 634px) y la portada quedaba pegada arriba — 16px de hueco arriba contra 96px
+   abajo. Un margen automático no puede empujar nada cuando el propio elemento ya ocupa
+   todo el espacio.
+   Solución: !important para vencer al inline, y centrar el contenido DENTRO de la caja
+   con flex+justify-content, que es lo que reparte el hueco de verdad.
+   El justify-content:center sobre un scroller recortaría por arriba al desbordar, pero
+   aquí el overflow pasa a visible y la regla entera desaparece con la primera pregunta,
+   así que no queda ninguna ventana para ese fallo. */
+#mc-chat-body .cn-inicio > #cn-messages {
+    /* flex-grow 0: la caja mide SOLO lo que ocupa la portada. Con 1 1 auto se comía
+       todo el alto y centraba la portada DENTRO de sí misma, dejando la caja de
+       entrada —que es su HERMANA, no su hija— pegada al fondo del panel, con un
+       vacío enorme entre ambas. */
+    flex: 0 0 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center;
+    /* margin-top:auto empuja el PAR (portada + caja) hacia abajo, y el margin-bottom:auto
+       de la caja lo empuja hacia arriba: entre los dos reparten el hueco sobrante a partes
+       iguales y el conjunto queda centrado, con la caja pegada al saludo como en la maqueta.
+       Este es el mecanismo que sí funciona sin tocar el DOM: el padre (#rb-cp-panel-body)
+       ya es una columna flex, así que los márgenes automáticos de sus hijos se reparten
+       el espacio libre entre ellos. */
+    margin: auto auto 0;
+    padding: 0;
+    overflow: visible;          /* la portada no scrollea: no hay nada que recortar */
+    /* .rb-chat pinta background:var(--rb-off) (#f6f9fb, un blanco azulado) — colapsable.css:883.
+       Con flex:0 0 auto esta caja ya no cubre el panel entero, así que ese fondo se veía como
+       un RECUADRO recortado detrás del saludo. En la portada no debe notarse ninguna caja. */
+    background: transparent;
+}
+
+/* La caja de entrada va JUSTO DEBAJO del saludo (maqueta del usuario), no anclada al fondo.
+   [2026-08-24 · 2ª corrección medida] El margin-bottom fijo (antes 16vh, luego 96px) no
+   servía: la caja seguía al final de la columna flex y el hueco quedaba ENTRE el saludo y
+   ella. Con margin-bottom:auto el sobrante se va DEBAJO de la caja, y como #cn-messages
+   aporta margin-top:auto, ambos huecos se igualan y el par entero queda centrado.
+   flex-shrink:0 evita que la caja se comprima si el panel es muy bajo. */
+#mc-chat-body .cn-inicio > .chat-input-container {
+    flex: 0 0 auto;
+    margin-top: 0;
+    margin-bottom: auto;
+    /* style.css:908-910 le da border-top:2px y background:#f8f9fa, pensados para cuando va
+       anclada al fondo del chat y necesita separarse de los mensajes. Aquí flota junto al
+       saludo: esa línea divisoria y ese fondo delatan la caja y rompen la portada limpia. */
+    border-top: none;
+    background: transparent;
+}
+
+/* La caja a ancho completo se ve desproporcionada bajo un bloque centrado: se estrecha y se
+   centra, como en la maqueta.
+   [2026-08-24] max-width IDÉNTICO al de .cn-portada. Ese es el arreglo del desalineamiento:
+   portada y caja viven en contenedores distintos (#cn-messages, con el padding 16/14/22 de
+   .rb-chat, vs .chat-input-container con padding:10px inline), así que centrar cada una por
+   su cuenta las dejaba sobre ejes distintos. Con el mismo ancho máximo y ambos centrados,
+   el eje coincide por construcción. */
+#mc-chat-body .cn-inicio > .chat-input-container .input-group {
+    max-width: 520px;
+    margin: 0 auto;
+}
+
+/* ── Portada ──────────────────────────────────────────────────────────────── */
+
+/* Minimalista, exactamente la maqueta: mascota y saludo en una fila, nada más.
+   Sin padding, sin color propio, sin adornos — el texto hereda el negro del panel. */
+.cn-portada {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    /* [2026-08-24] Mismo max-width que el .input-group de abajo: es lo que pone a
+       portada y caja sobre el MISMO eje pese a vivir en contenedores con paddings
+       distintos. Cambiar uno sin el otro vuelve a descolgarlos. */
+    width: 100%;
+    max-width: 520px;
+    /* 12px: la caja de entrada va PEGADA al saludo (maqueta). Su .chat-input-container
+       aporta además su propio padding, así que un margen mayor los separaba de más. */
+    margin: 0 auto 12px;
+}
+
+/* [2026-08-24] Por ALTURA, como login.css:115 con esta MISMA imagen. Pord_IA.png es
+   868x1154 (vertical, proporción 1:1.33): dimensionarla por ancho la estiraba —132px de
+   ancho son ~175px de alto— y ese bloque alargado descuadraba la fila respecto a la
+   maqueta, donde la mascota se ve compacta. 90px de alto ⇒ ~68px de ancho. */
+.cn-portada__img {
+    height: clamp(64px, 8vh, 90px);
+    width: auto;
+    object-fit: contain;
+    flex: 0 0 auto;
+}
+
+.cn-portada__saludo {
+    margin: 0;
+    font-family: 'Inter', -apple-system, 'Segoe UI', system-ui, arial, sans-serif;
+    font-size: clamp(1.15rem, 2.1vw, 1.75rem);
+    font-weight: 400;
+    line-height: 1.25;
+}
+
+/* La barra "Consulta de Producción (v1)" (.rb-cp-vhead, renderViewer del shell)
+   rotula qué pestaña del riel estás viendo — pero el riel está oculto y solo
+   existe Consulta, así que no rotula nada: es una franja verde redundante justo
+   debajo de la cabecera "Insights". Al ocultarla, el título propio del análisis
+   (.cn-rep__bar → "Desempeño del mes · Global") sube a ocupar ese sitio. */
+#mc-insights-cuerpo .rb-cp-vhead {
+    display: none !important;
+}
+
+/* Sin el riel ni el panel de chat, el viewer ocupa todo el panel Insights. */
+#mc-insights-cuerpo .rb-cp__viewer {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+/* ── Panel colapsado (tira vertical) ────────────────────────────────────── */
+
+.mc-tira {
+    all: unset;
+    box-sizing: border-box;
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px 0;
+    gap: 14px;
+}
+
+.mc-tira:focus-visible {
+    outline: 2px solid #004236;
+    outline-offset: -2px;
+}
+
+.mc-tira-icono {
+    width: 40px;
+    height: 40px;
+    border-radius: 11px;
+    background: #f8f9e6;
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    color: #004236;
+    font-size: 18px;
+}
+
+.mc-tira-titulo {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    font-family: 'Inter', -apple-system, 'Segoe UI', system-ui, arial, sans-serif;
+    font-size: 13.5px;
+    font-weight: 800;
+    color: #00214d;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-height: 0;
+}
+
+/* Mismo umbral que maxAbiertos(): el acordeón pasa a columna, así que la tira
+   vertical no cabe — vuelve a ser una barra horizontal de alto fijo. */
+@media (width <= 1023px) {
+    .mc-acordeon {
+        flex-direction: column;
+    }
+
+    .mc-panel--colapsado {
+        flex: 0 0 56px;
+    }
+
+    .mc-tira {
+        flex-direction: row;
+        padding: 0 16px;
+        gap: 12px;
+        justify-content: flex-start;
+    }
+
+    .mc-tira-icono {
+        width: 32px;
+        height: 32px;
+    }
+
+    .mc-tira-titulo {
+        writing-mode: horizontal-tb;
+        transform: none;
+        flex: 1;
+        text-align: left;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .mc-panel {
+        transition: none;
+    }
+}

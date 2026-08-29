@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block head %}
+    {{ super() }}
+    <!-- Inter no viene en base.html; sin ella los títulos caerían a Segoe UI y no
+         coincidirían con el diseño de referencia. El peso 800 lo usan los títulos. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('mainchat.static', filename='css/mainchat.css') }}?v=20260825h">
+    <!-- Estilos del shell de multitab_shell.js (prefijo rb-cp / cn- / colapsable-layout):
+         MainChat no lo cargaba porque hasta ahora no montaba el shell dentro de sí misma. -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/colapsable.css') }}?v=20260825c">
+    <link rel="stylesheet" href="{{ url_for('mainchat.static', filename='css/acordeon.css') }}?v=20260826a">
+    <link rel="stylesheet" href="{{ url_for('mainchat.static', filename='css/historial.css') }}?v=20260826a">
+{% endblock %}
+
+{% block sidebar %}
+    <!-- [2026-08-25] WAFFLE-NAV · sigue vacío A PROPÓSITO: mainchat.css:17-21 oculta
+         .sidebar con !important siempre que existe .mc-shell (siempre, en esta vista).
+         Un include aquí quedaría en el DOM pero invisible. La navegación hacia Clásico
+         y Colapsable vive en el waffle (#mc-menu), que sí es visible en .mc-shell. -->
+{% endblock %}
+
+{% block content %}
+{% set _u = session.get('user', {}) %}
+{% set _nombre = _u.get('full_name') or session.get('user_email', 'Usuario') %}
+
+<div class="mc-shell">
+
+    <!-- La navbar superior se eliminó: el control de usuario vive ahora al pie del
+         panel Historial (historial.js::bloqueUsuario). Se recuperan sus 64px de alto. -->
+
+    <!-- Zona central vacía a propósito: aquí se construirá el contenido real. -->
+    <main class="mc-body" id="mainchat-root"></main>
+
+    <footer class="app-footer">
+        <div class="text-caption">
+            <strong>Copyright → Ecopetrol S.A Copyright todos los derechos reservados. INFORMACION CONFIDENCIAL. Prohibido su uso sin la debida autorización.</strong> | All rights reserved.
+        </div>
+    </footer>
+
+    <!-- Menú de usuario. Vive AQUÍ, en .mc-shell, y no dentro del panel Historial,
+         por dos razones verificadas:
+           1. Seis ancestros con overflow:hidden lo recortarían (historial.css:10,
+              acordeon.css:29 y :146, mainchat.css:36, style.css:190/51/40).
+           2. acordeon.js:329 hace raiz.innerHTML='' en cada colapsar/expandir e
+              historial.js:284 repinta el cuerpo entero: el menú se destruiría.
+         Lo posiciona situar() en mainchat.js con position:fixed. -->
+    <div class="mc-menu" id="mc-menu" role="menu" hidden>
+        <div class="mc-menu__user">
+            <div class="mc-menu__avatar">{{ _nombre[0] | upper }}</div>
+            <div class="mc-menu__datos">
+                <div class="mc-menu__fila">
+                    <span class="mc-menu__nombre">{{ _nombre }}</span>
+                    <span class="mc-menu__insignia">ADMIN</span>
+                </div>
+                <div class="mc-menu__email">{{ _u.get('email', session.get('user_email', '')) }}</div>
+            </div>
+        </div>
+
+        <div class="mc-menu__sep"></div>
+
+        <nav class="mc-menu__accesos">
+            <!-- Test Clas no es una ruta: es la 5ª pestaña del panel de multitab_shell.js.
+                 data-tab la abre in-situ vía window.__rbAbrirTab, sin navegar. -->
+            <button type="button" class="mc-acceso" role="menuitem" data-tab="testclas">
+                <i class="bi bi-flask" style="color:#1f2937"></i>
+                <span>Test<br>Clas</span>
+            </button>
+            <!-- [2026-08-25] WAFFLE-NAV · pestañas del shell, mismo mecanismo que Test Clas.
+                 NO añadir aquí "ingesta" ni "control": esta vista no carga chat.js (ver el
+                 comentario de :91-98), así que se abrirían visibles pero MUERTAS. -->
+            <button type="button" class="mc-acceso" role="menuitem" data-tab="consulta">
+                <i class="bi bi-chat-dots" style="color:#004236"></i>
+                <span>Consulta</span>
+            </button>
+            <button type="button" class="mc-acceso" role="menuitem" data-tab="analisis">
+                <i class="bi bi-graph-up-arrow" style="color:#15794C"></i>
+                <span>Análisis</span>
+            </button>
+            <!-- [2026-08-25] WAFFLE-NAV · retiradas Admin / Configuración / Ayuda: apuntaban a
+                 /admin, /settings y /help, que NO EXISTEN (el JS hacía console.info en vez de
+                 navegar). Reponerlas cuando las vistas existan. Admin necesitará además control de
+                 roles, que hoy la app no tiene: @login_required es autenticación, no autorización,
+                 y la insignia ADMIN de :53 es texto fijo que ve todo usuario. -->
+            <!-- [2026-08-25] WAFFLE-NAV · navegación real a las otras 2 vistas HTML de la app.
+                 Van en el waffle y NO en el sidebar (components/nav_modulos.html, usado en / y en
+                 /layout/colapsable): mainchat.css:17-21 oculta .sidebar con !important siempre
+                 que hay .mc-shell, así que un include ahí quedaría invisible. Al navegar se
+                 pierde el estado del shell (pila de Consulta, análisis cargados) — inherente a
+                 ser páginas distintas, no pestañas de este panel (R-1 no aplica: no pueden serlo). -->
+            <button type="button" class="mc-acceso" role="menuitem" data-ruta="{{ url_for('main.index') }}">
+                <i class="bi bi-columns-gap" style="color:#004236"></i>
+                <span>Clásico</span>
+            </button>
+            <button type="button" class="mc-acceso" role="menuitem" data-ruta="{{ url_for('colapsable.colapsable_view') }}">
+                <i class="bi bi-layout-sidebar-inset" style="color:#15794C"></i>
+                <span>Colapsable</span>
+            </button>
+        </nav>
+
+        <div class="mc-menu__sep"></div>
+
+        <button type="button" class="mc-menu__salir" role="menuitem" id="mc-logout">
+            <i class="bi bi-box-arrow-right"></i>
+            <span>Cerrar sesión</span>
+        </button>
+    </div>
+</div>
+
+<!-- El "Desempeño del mes" NO lo pinta charts.js: es el shell de multitab_shell.js
+     (pestaña Consulta), que pinta en su propio cn-canvas, no en charts-display-area.
+     Por eso se carga aquí en vez de charts.js. multitab_shell.js no depende de
+     AnalyticsManager/ChatManager/app en su flujo de arranque (solo 3 usos guardados
+     de ChatManager, todos opcionales). NO se carga chat.js (4.794 líneas): sin él,
+     las pestañas Ingesta/Control del shell nested se ven pero no interactúan (faltan
+     handleIngestaUpload/igOnFileInput/etc., definidas solo en chat.js) — aceptable
+     porque Consulta (la que muestra el Desempeño del mes) no depende de ellas. -->
+<!-- Mismas tres variables que templates/main.html:96-98, con las mismas claves de
+     sesión. Sin ellas __cnNombre() devuelve "" y el chat pierde el nombre: saluda
+     "Hola, bienvenido" en vez de "Hola Javier, bienvenido" y las burbujas del
+     usuario salen sin etiqueta. Van ANTES del shell, que las lee de window.
+     USER_FULL_NAME alimenta además a __cnSoloConsulta() (gate por usuario): con
+     él en falso se renderizan los chips MOTOR v1/v2 — quedan ocultos por CSS
+     (#mc-chat-body .cn-motor) — y state.activeTab no cambia, porque a mount() se
+     le pasa 'consulta' como pestaña inicial explícita. -->
+<script>
+    window.USER_FIRST_NAME = {{ session.get('user', {}).get('first_name', '')|tojson }};
+    window.USER_LAST_NAME  = {{ session.get('user', {}).get('last_name', '')|tojson }};
+    window.USER_FULL_NAME  = {{ session.get('user', {}).get('full_name', '')|tojson }};
+</script>
+
+<script src="{{ url_for('static', filename='js/multitab_shell.js') }}?v=20260826m"></script>
+<script src="{{ url_for('mainchat.static', filename='js/mainchat.js') }}?v=20260825i"></script>
+<script src="{{ url_for('mainchat.static', filename='js/acordeon.js') }}?v=20260826a"></script>
+<!-- Después de acordeon.js: historial.js se registra en window.MainChatHistorial y
+     pinta por su cuenta al final de su IIFE, porque el primer render() del acordeón
+     ya ocurrió al parsear el script anterior. -->
+<script src="{{ url_for('mainchat.static', filename='js/historial.js') }}?v=20260826b"></script>
+{% endblock %}

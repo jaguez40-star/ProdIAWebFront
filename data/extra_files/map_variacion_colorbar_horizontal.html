@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Heatmap Variación % — Barra horizontal</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+<style>
+  html,body,#map{height:100%;margin:0}
+  .panel{position:absolute;z-index:1000;right:12px;top:12px;background:#fff;border-radius:8px;
+         padding:10px 12px;box-shadow:0 1px 4px rgba(0,0,0,.25);
+         font:12px system-ui,Segoe UI,Roboto,Arial; width:200px}
+  .panel label{display:block;margin:4px 0}
+  .legend{position:absolute;left:12px;bottom:60px;background:#fff;padding:10px 12px;border-radius:8px;
+          box-shadow:0 1px 4px rgba(0,0,0,.25);font:12px system-ui,Segoe UI,Roboto,Arial}
+  .sw{display:inline-block;width:16px;height:10px;margin-right:6px;border-radius:2px}
+
+  .hbar-wrap{position:absolute;left:50%;transform:translateX(-50%);bottom:10px;z-index:1000;
+             background:#fff;padding:10px 12px;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.25);
+             font:12px system-ui,Segoe UI,Roboto,Arial;min-width:480px}
+  .hbar{height:16px;border-radius:8px;border:1px solid rgba(0,0,0,.25);
+        background: linear-gradient(to right,
+           #8b0000 0%,
+           #e24a33 20%,
+           #ff9d74 35%,
+           #ffffff 50%,
+           #6ede8a 65%,
+           #23b04a 80%,
+           #006400 100%);}
+  .ticksX{display:flex;justify-content:space-between;margin-top:6px}
+  .ticklbl{font-size:11px;color:#333}
+</style>
+</head>
+<body>
+<div id="map"></div>
+
+<div class="panel">
+  <label><input type="radio" name="m" value="mes" checked> VAR_PCT_MES</label>
+  <label><input type="radio" name="m" value="prog"> VAR_PCT_PROG</label>
+  <label><input type="radio" name="m" value="pop"> VAR_PCT_POP</label>
+</div>
+
+<div class="legend" id="legend"></div>
+
+<div class="hbar-wrap">
+  <div style="text-align:center;margin-bottom:4px">Variación %</div>
+  <div class="hbar"></div>
+  <div class="ticksX">
+    <span class="ticklbl" id="tmin">-10</span>
+    <span class="ticklbl" id="tq1">-7.5</span>
+    <span class="ticklbl" id="tq2">-5</span>
+    <span class="ticklbl" id="tq3">-2.5</span>
+    <span class="ticklbl" id="tzero">0</span>
+    <span class="ticklbl" id="tq5">+2.5</span>
+    <span class="ticklbl" id="tq6">+5</span>
+    <span class="ticklbl" id="tq7">+7.5</span>
+    <span class="ticklbl" id="tmax">+10</span>
+  </div>
+</div>
+
+<script>
+const PTS = [{"lat": 7.31453930386247, "lon": -73.4590991882192, "ger": "CPV", "mes": 1.95, "prog": -1.9, "pop": 3.02}, {"lat": 5.4624923846160085, "lon": -72.42580336164258, "ger": "DFL", "mes": -0.15, "prog": 1.01, "pop": -4.06}, {"lat": 3.83669612859037, "lon": -73.6658495206677, "ger": "GAA", "mes": -1.17, "prog": 0.29, "pop": -6.23}, {"lat": -1.21570580034388, "lon": -80.4473327061338, "ger": "GAN", "mes": 3.63, "prog": 0.45, "pop": 4.9}, {"lat": 3.9481442498292, "lon": -73.6703546270523, "ger": "GCH", "mes": NaN, "prog": NaN, "pop": NaN}, {"lat": 6.86377151625276, "lon": -70.765134699504, "ger": "GCT", "mes": 0.1, "prog": -0.53, "pop": 3.98}, {"lat": 2.1603109420944, "lon": -78.2984229533851, "ger": "GNS", "mes": -1.69, "prog": 1.01, "pop": -3.39}, {"lat": 3.84543534702597, "lon": -71.3932749400971, "ger": "GOR", "mes": 0.06, "prog": 3.07, "pop": -3.46}, {"lat": 5.06323506640053, "lon": -70.618027202838, "ger": "GPA", "mes": -0.09, "prog": 0.85, "pop": -3.33}, {"lat": 7.34217599988514, "lon": -73.937297020347, "ger": "GRM", "mes": 0.2, "prog": 2.34, "pop": -4.12}, {"lat": 6.11852908240814, "lon": -74.5678617752332, "ger": "GTA", "mes": -0.86, "prog": -1.68, "pop": 3.8}, {"lat": 3.84812916895377, "lon": -73.799138460053, "ger": "GXO", "mes": NaN, "prog": NaN, "pop": NaN}, {"lat": 5.18247267116816, "lon": -72.6495783187015, "ger": "PRP", "mes": -1.9, "prog": -4.32, "pop": 0.14}];
+const boundsPts = [[-3.3551762504011355, -82.90465908195776], [9.481646449942396, -68.16070082701404]];
+
+let metric='mes';
+let heatPos=null, heatNeg=null;
+
+const map=L.map('map').fitBounds(boundsPts);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+            {attribution:'&copy; OpenStreetMap &copy; CARTO'}).addTo(map);
+
+const gradPos = {0.0:'#c8f7d3', 0.35:'#6ede8a', 0.7:'#23b04a', 1.0:'#006400'};
+const gradNeg = {0.0:'#ffe0db', 0.35:'#ff9d74', 0.7:'#e24a33', 1.0:'#8b0000'};
+
+function value(p){
+  if(metric==='mes') return p.mes;
+  if(metric==='prog') return p.prog;
+  return p.pop;
+}
+
+function updateTicks(maxAbs){
+  function fmt(v){
+    const a=Math.abs(v);
+    return (a<10? (Math.round(v*10)/10).toFixed(1): Math.round(v))+'';}
+  document.getElementById('tmin').textContent='-'+fmt(maxAbs);
+  document.getElementById('tq1').textContent='-'+fmt(maxAbs*0.75);
+  document.getElementById('tq2').textContent='-'+fmt(maxAbs*0.5);
+  document.getElementById('tq3').textContent='-'+fmt(maxAbs*0.25);
+  document.getElementById('tzero').textContent='0';
+  document.getElementById('tq5').textContent='+'+fmt(maxAbs*0.25);
+  document.getElementById('tq6').textContent='+'+fmt(maxAbs*0.5);
+  document.getElementById('tq7').textContent='+'+fmt(maxAbs*0.75);
+  document.getElementById('tmax').textContent='+'+fmt(maxAbs);
+}
+
+function renderHeat(){
+  const vals=PTS.map(p=>value(p)).filter(v=>isFinite(v));
+  const maxAbs=Math.max(1,...vals.map(v=>Math.abs(v)));
+  updateTicks(maxAbs);
+
+  function weight(v){ const w=Math.min(1, Math.abs(v)/maxAbs); return Math.pow(w,0.6); }
+
+  const pos=PTS.filter(p=>isFinite(value(p)) && value(p)>0)
+               .map(p=>[p.lat,p.lon,weight(value(p))]);
+  const neg=PTS.filter(p=>isFinite(value(p)) && value(p)<0)
+               .map(p=>[p.lat,p.lon,weight(value(p))]);
+
+  if(heatPos) map.removeLayer(heatPos);
+  if(heatNeg) map.removeLayer(heatNeg);
+
+  heatNeg=L.heatLayer(neg, {radius:46, blur:18, maxZoom:10, gradient:gradNeg, minOpacity:0.62}).addTo(map);
+  heatPos=L.heatLayer(pos, {radius:46, blur:18, maxZoom:10, gradient:gradPos, minOpacity:0.62}).addTo(map);
+}
+
+document.querySelectorAll('input[name="m"]').forEach(r=>r.addEventListener('change',
+  e=>{ metric=e.target.value; renderHeat(); }));
+
+document.getElementById('legend').innerHTML =
+  '<div><span class="sw" style="background:#8b0000"></span>Negativa</div>' +
+  '<div><span class="sw" style="background:#006400"></span>Positiva</div>';
+
+renderHeat();
+</script>
+</body>
+</html>

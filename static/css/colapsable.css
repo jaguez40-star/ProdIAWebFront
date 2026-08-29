@@ -1,0 +1,2464 @@
+.colapsable-layout {
+    position: relative;
+    height: calc(100vh - 2rem);
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: stretch;
+    overflow: hidden;
+}
+
+.colapsable-panel {
+    position: relative;
+    flex: 1 1 auto;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    background: #ffffff;
+    border-radius: 12px;
+    border: 1px solid rgba(0, 66, 54, 0.15);
+    box-shadow: 0 18px 36px -28px rgba(0, 0, 0, 0.4);
+    overflow: auto;
+    transition: box-shadow 0.2s ease-in-out;
+}
+
+.colapsable-panel:focus,
+.colapsable-panel:focus-within {
+    outline: none;
+    box-shadow: 0 18px 36px -20px rgba(0, 0, 0, 0.45), 0 0 0 2px var(--primary-lime, #ccd32a);
+}
+
+.colapsable-panel__header {
+    padding: 1.25rem 1.5rem 0.75rem;
+    border-bottom: 1px solid rgba(0, 66, 54, 0.08);
+}
+
+.colapsable-panel__title {
+    margin: 0;
+    font-size: 1.25rem;
+    color: #004236;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.colapsable-panel__subtitle {
+    margin: 0.5rem 0 0;
+    font-size: 0.9rem;
+    color: #535347;
+}
+
+.colapsable-panel__body {
+    padding: 1.5rem;
+    display: grid;
+    gap: 1.5rem;
+}
+
+.colapsable-panel__section h3 {
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+    color: #004236;
+}
+
+.colapsable-panel__section ul {
+    margin: 0;
+    padding-left: 1.25rem;
+    color: #535347;
+}
+
+/* ==================================================================
+   Shell MultiTab · pestañas verticales (variante A · pastillas rotadas)
+   Prototipo aislado — solo vive en /layout/colapsable.
+   Prefijo rb-cp (verificado sin colisiones en el proyecto).
+   ================================================================== */
+
+/* Override del contenedor exterior: el .app-footer global de style.css es
+   position:fixed; bottom:0 (~30px de alto) y tapaba la base del shell
+   (riel verde + fila .rb-cp-vfoot + scrollbar horizontal del visor).
+   Esta regla va DESPUÉS de la original en el mismo archivo → gana en cascada. */
+.colapsable-layout {
+  height: calc(100vh - 2rem - 32px);
+}
+
+.rb-cp {
+  /* Paleta verde PRODIA (del documento de diseño multitap.md §4) */
+  --rb-green: #0e5c3a;
+  --rb-green-mid: #15794c;
+  --rb-green-ok: #1e9e5a;
+  --rb-green-soft: #e6f4ec;
+  --rb-green-softer: #f1f9f4;
+  --rb-gold: #f2c94c;
+  --rb-amber-text: #c77f00; /* ámbar legible sobre fondo claro (eyebrows) */
+  --rb-ink: #1b2a33;
+  --rb-body: #3d4d58;
+  --rb-muted: #74838e;
+  --rb-faint: #9aa8b0;
+  --rb-line: #e2e8ec;
+  --rb-line-soft: #eef2f5;
+  --rb-off: #f6f9fb;
+  --rb-white: #ffffff;
+  --rb-user-bg: #E9F3EC;
+  --rb-chat-gold: #C9962E; /* distinto de --rb-gold (#f2c94c, ya usado en el shell) para no alterarlo */
+  --rb-amber: #E8912B;        --rb-amber-soft: #FBF1E4;
+  --rb-gold-soft: #FBF3DF;
+  --rb-layer-ecp: #2563EB;    --rb-layer-fil: #1E9E5A;
+  --rb-layer-mod: #E8912B;    --rb-layer-brz: #6B7A72;
+  --rb-font-sans: 'Inter', -apple-system, 'Segoe UI', system-ui, Arial, sans-serif;
+  --rb-font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
+
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  background: var(--rb-white);
+  border-radius: 12px;
+  border: 1px solid rgba(0, 66, 54, 0.15);
+  box-shadow: 0 18px 36px -28px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+  font-family: var(--rb-font-sans);
+}
+
+/* ---------- Zona 1 · Riel vertical ---------- */
+.rb-cp__rail {
+  width: 60px;
+  flex: 0 0 auto;
+  background: var(--rb-green);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding-top: 8px;
+}
+
+.rb-cp__rail-logo {
+  height: 44px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 6px;
+}
+
+.rb-cp__rail-logo span {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.12);
+  display: grid;
+  place-items: center;
+}
+
+.rb-cp__rail-logo i {
+  font-size: 15px;
+  color: var(--rb-gold);
+}
+
+.rb-cp__tab {
+  position: relative;
+  height: 118px;
+  margin-bottom: 4px;
+  border: 0;
+  cursor: pointer;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  transition: background 0.18s ease, color 0.18s ease, margin 0.18s ease;
+}
+
+.rb-cp__tab-icon {
+  font-size: 17px;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.rb-cp__tab-label {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-family: var(--rb-font-sans);
+  font-weight: 800;
+  font-size: 12px;
+  line-height: 1;
+  letter-spacing: 0.4px;
+}
+
+.rb-cp__tab.is-active {
+  background: var(--rb-white);
+  color: var(--rb-green);
+  border-radius: 10px 0 0 10px;
+  margin-left: 8px;
+}
+
+.rb-cp__tab.is-active .rb-cp__tab-icon {
+  color: var(--rb-green-mid);
+}
+
+.rb-cp__tab.is-active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 12px;
+  bottom: 12px;
+  width: 3px;
+  border-radius: 3px;
+  background: var(--rb-gold);
+}
+
+.rb-cp__tab:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px rgba(242, 201, 76, 0.8);
+}
+
+/* ---------- Zona 2 · Panel de contenido ---------- */
+.rb-cp__panel {
+  width: 581px;
+  flex: 0 0 auto;
+  border-right: 1px solid var(--rb-line);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--rb-white);
+}
+
+.rb-cp.is-collapsed .rb-cp__panel {
+  display: none;
+}
+
+.rb-cp__panel-head {
+  height: 48px;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  background: var(--rb-off);
+  border-bottom: 1px solid var(--rb-line);
+}
+
+.rb-cp__panel-head-icon {
+  font-size: 15px;
+  color: var(--rb-green-mid);
+}
+
+.rb-cp__panel-head-title {
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 0.3px;
+  color: var(--rb-green);
+}
+
+.rb-cp__panel-head-brand {
+  font-size: 11px;
+  color: var(--rb-muted);
+  padding-left: 8px;
+  border-left: 1px solid var(--rb-line);
+}
+
+.rb-cp__panel-head-collapse {
+  margin-left: auto;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: 1px solid var(--rb-line);
+  background: var(--rb-white);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  color: var(--rb-muted);
+}
+
+.rb-cp__panel-head-collapse:hover {
+  background: var(--rb-off);
+}
+
+.rb-cp__panel-body {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  padding: 12px;
+}
+
+/* ---------- Zona 3 · Visualizador ---------- */
+.rb-cp__viewer {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--rb-off);
+}
+
+/* Cabecera verde del visualizador */
+.rb-cp-vhead {
+  height: 44px;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 14px;
+  background: var(--rb-green);
+  color: var(--rb-white);
+}
+
+.rb-cp-vhead i {
+  color: var(--rb-gold);
+  font-size: 14px;
+}
+
+.rb-cp-vhead__title {
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.rb-cp-vhead__title.is-gold {
+  color: var(--rb-gold);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.rb-cp-vhead__meta {
+  margin-left: auto;
+  font-family: var(--rb-font-mono);
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* Estado vacío del visualizador */
+.rb-cp-vempty {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.rb-cp-vempty__inner {
+  text-align: center;
+  max-width: 420px;
+}
+
+.rb-cp-vempty__chip {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background: var(--rb-green-softer);
+  display: grid;
+  place-items: center;
+  margin: 0 auto 12px;
+}
+
+.rb-cp-vempty__chip i {
+  font-size: 28px;
+  color: var(--rb-green-ok);
+}
+
+.rb-cp-vempty__eyebrow {
+  font-family: var(--rb-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--rb-amber-text);
+  margin-bottom: 4px;
+}
+
+.rb-cp-vempty__hint {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--rb-ink);
+  margin: 0;
+}
+
+/* Tabla mock del visualizador */
+.rb-cp-vtable {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px 14px;
+}
+
+.rb-cp-vtable table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: max-content;
+  min-width: 100%;
+  background: var(--rb-white);
+  border: 1px solid var(--rb-line);
+  border-radius: 8px;
+  font-size: 12.5px;
+}
+
+.rb-cp-vtable th,
+.rb-cp-vtable td {
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--rb-line-soft);
+  white-space: nowrap;
+}
+
+.rb-cp-vtable thead th {
+  position: sticky;
+  top: 0;
+  background: var(--rb-green);
+  color: var(--rb-white);
+  font-weight: 700;
+  z-index: 2;
+  text-align: right;
+}
+
+.rb-cp-vtable thead th:first-child,
+.rb-cp-vtable thead th:nth-child(2) {
+  text-align: left;
+}
+
+.rb-cp-vtable tbody th {
+  position: sticky;
+  left: 0;
+  background: var(--rb-white);
+  font-weight: 600;
+  color: var(--rb-ink);
+  z-index: 1;
+  text-align: left;
+}
+
+.rb-cp-vtable thead th:first-child {
+  left: 0;
+  z-index: 3;
+}
+
+.rb-cp-vtable td {
+  font-family: var(--rb-font-mono);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--rb-body);
+}
+
+.rb-cp-vtable td.is-dim {
+  font-family: var(--rb-font-sans);
+  text-align: left;
+  color: var(--rb-ink);
+  font-weight: 600;
+}
+
+.rb-cp-vfoot {
+  flex: 0 0 auto;
+  padding: 8px 14px;
+  border-top: 1px solid var(--rb-line);
+  font-family: var(--rb-font-mono);
+  font-size: 10.5px;
+  color: var(--rb-muted);
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* ---------- Contenido pestaña Ingesta (mock) ---------- */
+.rb-cp-upcard {
+  border: 1px solid var(--rb-line);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 14px;
+  background: var(--rb-white);
+}
+
+.rb-cp-upcard__head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 12px;
+  background: var(--rb-green);
+  color: var(--rb-white);
+}
+
+.rb-cp-upcard__head i {
+  color: var(--rb-gold);
+  font-size: 15px;
+}
+
+.rb-cp-upcard__head strong {
+  font-size: 12.5px;
+  display: block;
+  line-height: 1.2;
+}
+
+.rb-cp-upcard__head small {
+  font-family: var(--rb-font-mono);
+  font-size: 9.5px;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.rb-cp-upcard__new {
+  margin-left: auto;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  background: var(--rb-gold);
+  color: var(--rb-ink);
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+
+.rb-cp-upcard__file {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 12px;
+  background: var(--rb-off);
+}
+
+.rb-cp-upcard__file > i {
+  font-size: 20px;
+  color: var(--rb-green-ok);
+}
+
+.rb-cp-upcard__file strong {
+  font-size: 12px;
+  color: var(--rb-ink);
+  display: block;
+  line-height: 1.25;
+}
+
+.rb-cp-upcard__file small {
+  font-size: 10.5px;
+  color: var(--rb-green-ok);
+}
+
+.rb-cp-upcard__change {
+  margin-left: auto;
+  border: 1px solid var(--rb-line);
+  background: var(--rb-white);
+  border-radius: 6px;
+  font-size: 11px;
+  padding: 4px 10px;
+  color: var(--rb-body);
+}
+
+.rb-cp-upcard__submit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: calc(100% - 24px);
+  margin: 10px 12px 12px;
+  padding: 9px 0;
+  border: 0;
+  border-radius: 8px;
+  background: var(--rb-green);
+  color: var(--rb-white);
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.4px;
+}
+
+.rb-cp-upcard__submit:disabled,
+.rb-cp-upcard__change:disabled {
+  opacity: 0.75;
+  cursor: not-allowed;
+}
+
+.rb-cp-treehd {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 2px 2px 8px;
+  font-size: 12.5px;
+  color: var(--rb-ink);
+}
+
+.rb-cp-badge {
+  font-family: var(--rb-font-mono);
+  font-size: 10px;
+  background: var(--rb-green-soft);
+  color: var(--rb-green-mid);
+  border-radius: 5px;
+  padding: 2px 7px;
+}
+
+.rb-cp-badge--blue {
+  background: #eaf1fe;
+  color: #2563eb;
+}
+
+.rb-cp-tree {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rb-cp-tree__sheet {
+  border: 1px solid var(--rb-line);
+  border-radius: 9px;
+  background: var(--rb-white);
+  overflow: hidden;
+}
+
+.rb-cp-tree__sheethd {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 9px 10px;
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--rb-ink);
+  text-align: left;
+}
+
+.rb-cp-tree__sheethd .rb-cp-chev {
+  font-size: 11px;
+  color: var(--rb-faint);
+  transition: transform 0.15s ease;
+}
+
+.rb-cp-tree__sheet.is-open .rb-cp-chev {
+  transform: rotate(90deg);
+}
+
+.rb-cp-tree__sheethd .rb-cp-ok {
+  color: var(--rb-green-ok);
+  font-size: 13px;
+}
+
+.rb-cp-tree__sheethd .rb-cp-badge {
+  margin-left: auto;
+}
+
+.rb-cp-tree__kids {
+  display: none;
+  padding: 2px 10px 10px 26px;
+}
+
+.rb-cp-tree__sheet.is-open .rb-cp-tree__kids {
+  display: block;
+}
+
+.rb-cp-tree__meta {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11.5px;
+  color: var(--rb-muted);
+  padding: 4px 2px;
+}
+
+.rb-cp-tree__meta i {
+  font-size: 12px;
+  color: var(--rb-faint);
+}
+
+.rb-cp-tree__meta code {
+  font-family: var(--rb-font-mono);
+  font-size: 10.5px;
+  background: var(--rb-green-soft);
+  color: var(--rb-green-mid);
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+
+.rb-cp-tree__grouphd {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--rb-body);
+  padding: 6px 2px 4px;
+}
+
+.rb-cp-tree__grouphd i {
+  color: var(--rb-faint);
+}
+
+.rb-cp-tree__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: 0;
+  border-left: 3px solid transparent;
+  background: transparent;
+  border-radius: 7px;
+  padding: 6px 8px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--rb-body);
+  text-align: left;
+}
+
+.rb-cp-tree__row i {
+  font-size: 12px;
+  color: var(--rb-faint);
+}
+
+.rb-cp-tree__row .rb-cp-badge {
+  margin-left: auto;
+}
+
+.rb-cp-tree__row:hover {
+  background: var(--rb-off);
+}
+
+.rb-cp-tree__row.is-active {
+  background: var(--rb-green-soft);
+  border-left-color: var(--rb-green-ok);
+  color: var(--rb-ink);
+  font-weight: 700;
+}
+
+.rb-cp-tree__row.is-active i {
+  color: var(--rb-green-mid);
+}
+
+.rb-cp-tree__rowtag {
+  font-family: var(--rb-font-mono);
+  font-size: 10px;
+  color: var(--rb-faint);
+}
+
+/* ---------- Placeholders Control / Análisis ---------- */
+.rb-cp-empty {
+  padding: 10px 6px;
+}
+
+.rb-cp-empty__eyebrow {
+  font-family: var(--rb-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--rb-amber-text);
+  margin-bottom: 6px;
+}
+
+.rb-cp-empty__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--rb-ink);
+  margin: 0 0 4px;
+}
+
+.rb-cp-empty__title i {
+  color: var(--rb-green-mid);
+}
+
+.rb-cp-empty__sub {
+  font-size: 12px;
+  color: var(--rb-muted);
+  margin: 0 0 14px;
+}
+
+.rb-cp-empty__drop {
+  min-height: 200px;
+  border: 1.5px dashed var(--rb-line);
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  color: var(--rb-faint);
+  padding: 18px;
+}
+
+.rb-cp-empty__drop i {
+  font-size: 26px;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.rb-cp-empty__drop span {
+  font-family: var(--rb-font-mono);
+  font-size: 11px;
+  display: block;
+}
+
+/* ---------- Accesibilidad · movimiento ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .rb-cp,
+  .rb-cp * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* ── Control Tab: árbol de reportes ── */
+.rb-cp-ctrl-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: linear-gradient(135deg, #f0faf5 0%, #e8f5e9 100%);
+  border-radius: 10px;
+  border: 1px solid #c8e6c9;
+}
+.rb-cp-ctrl-head i { font-size: 1.5rem; color: #2e7d32; }
+.rb-cp-ctrl-head strong { font-size: .88rem; color: #1b5e20; }
+.rb-cp-ctrl-head small { display: block; font-size: .72rem; color: #666; }
+
+.ct-tree {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: .82rem;
+}
+.ct-tree ul {
+  list-style: none;
+  padding-left: 18px;
+  margin: 0;
+}
+.ct-node > .ct-kids { display: none; }
+.ct-node.is-open > .ct-kids { display: block; }
+.ct-hd {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  cursor: pointer;
+  border-radius: 6px;
+  user-select: none;
+}
+.ct-hd:hover { background: #f0f4f0; }
+.ct-chev {
+  font-size: .65rem;
+  transition: transform .15s;
+  color: #888;
+  flex-shrink: 0;
+}
+.ct-node.is-open > .ct-hd > .ct-chev { transform: rotate(90deg); }
+.ct-hd i:not(.ct-chev) { color: #2e7d32; font-size: .85rem; }
+.ct-hd--leaf i:not(.ct-chev) { color: #1565c0; }
+.ct-archivo {
+  color: #999;
+  font-size: .7rem;
+  margin-left: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 140px;
+}
+.ct-filas {
+  color: #888;
+  font-size: .7rem;
+}
+.ct-leaf { padding-left: 4px; }
+.ct-leaf .ig-trow { width: 100%; }
+.ct-year > .ct-hd { font-size: .9rem; }
+.ct-month > .ct-hd { font-size: .85rem; }
+.ct-day > .ct-hd strong { color: #2e7d32; }
+
+/* ── Modal sobrescritura ingesta ── */
+.ig-modal-backdrop {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(0,0,0,.45);
+  display: flex; align-items: center; justify-content: center;
+  animation: ig-modal-fadein .2s ease;
+}
+@keyframes ig-modal-fadein { from { opacity: 0 } to { opacity: 1 } }
+.ig-modal {
+  background: #fff; border-radius: 12px; padding: 28px 32px;
+  max-width: 460px; width: 90%; box-shadow: 0 12px 40px rgba(0,0,0,.25);
+  text-align: center;
+}
+.ig-modal__icon { font-size: 2.5rem; color: #e6a200; margin-bottom: 8px; }
+.ig-modal__title { font-size: 1.15rem; font-weight: 700; margin-bottom: 12px; color: #333; }
+.ig-modal__body { font-size: .88rem; color: #555; line-height: 1.5; margin-bottom: 20px; }
+.ig-modal__detail {
+  background: #f8f9fa; border-radius: 8px; padding: 10px 14px;
+  margin: 12px 0; text-align: left; font-size: .82rem; color: #444;
+}
+.ig-modal__label { font-weight: 600; color: #333; }
+.ig-modal__actions { display: flex; gap: 10px; justify-content: center; }
+.ig-modal__btn {
+  padding: 8px 22px; border-radius: 8px; font-size: .88rem; font-weight: 600;
+  border: none; cursor: pointer; transition: background .15s;
+}
+.ig-modal__btn--cancel { background: #e9ecef; color: #333; }
+.ig-modal__btn--cancel:hover { background: #dee2e6; }
+.ig-modal__btn--confirm { background: #e6a200; color: #fff; }
+.ig-modal__btn--confirm:hover { background: #cc8f00; }
+
+/* ===== Chat de Consulta — "Asimétrico esencial" (2026-07-09) ===== */
+.rb-chat { flex:1; min-height:0; overflow-y:auto; background:var(--rb-off); padding:16px 14px 22px; }
+
+.rb-chat__bot { display:flex; gap:9px; align-items:flex-start; margin-bottom:14px; }
+.rb-chat__bot-bubble {
+  max-width:86%; background:var(--rb-white); border:1px solid var(--rb-line);
+  border-radius:4px 14px 14px 14px; padding:11px 13px;
+  font-size:13px; line-height:1.5; color:var(--rb-body); box-shadow:0 1px 2px rgba(20,40,30,.04);
+}
+.rb-chat__bot-bubble strong { font-weight:700; color:var(--rb-ink); }
+.rb-chat__bot-bubble em { font-style:italic; color:var(--rb-muted); }
+
+.rb-chat__user { display:flex; gap:9px; justify-content:flex-end; align-items:flex-start; margin-bottom:14px; }
+.rb-chat__user-bubble {
+  max-width:80%; background:var(--rb-user-bg); border-radius:14px 4px 14px 14px;
+  padding:9px 13px; font-size:13px; line-height:1.45; color:var(--rb-ink); font-weight:500;
+}
+
+.rb-chat__kicker {
+  display:flex; align-items:center; gap:6px; margin-bottom:6px;
+  font-size:11px; font-weight:800; letter-spacing:.4px; color:var(--rb-green-mid); text-transform:uppercase;
+}
+.rb-chat__kicker i { color:var(--rb-green-ok); font-size:13px; }
+
+.rb-chat__options { display:flex; flex-direction:column; gap:8px; margin:11px 0 0; padding:0; list-style:none; }
+.rb-chat__options li { list-style:none; }
+.rb-chat__option {
+  display:flex; align-items:center; gap:11px; width:100%; text-align:left; cursor:pointer;
+  font-family:inherit; color:var(--rb-ink);
+  border:1px solid var(--rb-line); border-radius:11px; background:var(--rb-white); padding:11px 12px;
+  transition:border-color .15s, background .15s;
+}
+.rb-chat__option:hover { border-color:var(--rb-green-ok); background:var(--rb-green-softer); }
+.rb-chat__option:focus-visible { outline:none; box-shadow:0 0 0 2px rgba(30,158,90,.5); }
+/* Estado seleccionado: refleja que su vista es la que está activa en el panel derecho */
+.rb-chat__option--active { border-color:var(--rb-green-ok); background:var(--rb-green-softer); }
+.rb-chat__option--active .rb-chat__option-chev,
+.rb-chat__option--active .rb-chat__option-tile i { color:var(--rb-green-ok); }
+.rb-chat__option-tile {
+  width:36px; height:36px; border-radius:9px; background:var(--rb-green-soft);
+  display:grid; place-items:center; flex:0 0 auto;
+}
+.rb-chat__option-tile i { font-size:16px; color:var(--rb-green-mid); }
+.rb-chat__option-body { min-width:0; flex:1; }
+.rb-chat__option-title { display:block; font-size:13px; font-weight:700; color:var(--rb-ink); }
+.rb-chat__option-desc  { display:block; font-size:11.5px; color:var(--rb-muted); margin-top:1px; line-height:1.35; }
+.rb-chat__option-chev  { flex:0 0 auto; align-self:center; color:var(--rb-faint); font-size:13px; }
+
+.rb-chat__date { display:flex; align-items:center; gap:8px; margin-top:9px; flex-wrap:wrap; }
+.rb-chat__date input {
+  font-family:monospace; font-size:12px; color:var(--rb-ink); height:32px; padding:0 10px;
+  border:1px solid var(--rb-line); border-radius:8px; background:var(--rb-white); color-scheme:light;
+}
+.rb-chat__date-badge {
+  font-family:monospace; font-size:9.5px; font-weight:700; letter-spacing:.4px; color:var(--rb-muted);
+  background:var(--rb-off); border:1px solid var(--rb-line); border-radius:6px; padding:3px 7px; text-transform:uppercase;
+}
+
+.rb-chat__note { margin:11px 0 0; font-size:11px; color:var(--rb-faint); font-style:italic; line-height:1.4; }
+
+.rb-chat__avatar { width:28px; height:28px; border-radius:9px; display:grid; place-items:center; flex:0 0 auto; }
+.rb-chat__avatar--bot { background:transparent; overflow:hidden; }
+.rb-chat__avatar--bot i { font-size:14px; color:var(--rb-chat-gold); }
+.rb-chat__avatar--bot img { width:100%; height:100%; object-fit:contain; display:block; }
+.rb-chat__avatar--user { background:var(--rb-user-bg); color:var(--rb-green-mid); font-size:12px; font-weight:800;
+  width:auto; min-width:28px; padding:0 10px; border-radius:9px; }
+
+@media (prefers-reduced-motion: reduce) { .rb-chat * { transition:none !important; } }
+
+/* ===== Hilo timeline · Chat de Consulta (2026-08-25 · CN-HILO-D) =====================
+   Convive con .rb-chat__* : esas clases NO se borran porque Test Clas las sigue usando
+   (#tc-messages, __tcAppendRaw). #cn-messages conserva su clase .rb-chat, así que el
+   contenedor (padding 16/14/22, fondo --rb-off) y las reglas de acordeon.css sobre
+   .cn-inicio > #cn-messages siguen valiendo sin tocarse. */
+
+.cn-row { display:flex; gap:11px; margin-bottom:14px; }
+.cn-row__rail { width:28px; flex:0 0 auto; display:flex; flex-direction:column; align-items:center; }
+/* El riel que une turnos: nace bajo el avatar y muere en el siguiente. En :last-child NO se pinta
+   (chat_n.md §6). Resuelto en CSS y no en JS: así ningún append tiene que repintar la fila previa.
+   [2026-08-25] Sube de --rb-line-soft (#eef2f5) a --rb-line (#e2e8ec): sobre el fondo --rb-off
+   (#f6f9fb) el soft daba 1.03:1 de contraste —invisible—. Y de 1.5px a 2px, porque una línea de
+   1.5px cae en medio píxel y el navegador la reparte entre dos filas, difuminándola todavía más.
+   El margin-bottom negativo la extiende sobre el hueco de 14px que .cn-row deja entre turnos: sin
+   él la línea moría al terminar la fila y el riel se veía a trozos, no como un hilo continuo. */
+.cn-row__rail::after { content:""; flex:1; width:2px; background:var(--rb-line); margin-top:5px;
+  margin-bottom:-14px; border-radius:1px; }
+.cn-row:last-child .cn-row__rail::after { display:none; }
+.cn-row__main { min-width:0; flex:1; padding-bottom:2px; }
+.cn-row__head { display:flex; align-items:center; gap:7px; margin-bottom:4px; }
+.cn-row__author { font-size:11.5px; font-weight:800; color:var(--rb-ink); }
+/* Mono SOLO para la hora. --rb-body y no --rb-faint: regla de contraste dura (chat_n.md §2). */
+.cn-row__time { font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+  font-size:10.5px; color:var(--rb-body); }
+
+.cn-avatar { width:26px; height:26px; border-radius:50%; display:grid; place-items:center; flex:0 0 auto; }
+/* Disco BLANCO con borde, no verde: el PNG del bot lleva su propio color y un fondo verde lo ensucia. */
+.cn-avatar--bot { background:var(--rb-white); border:1px solid var(--rb-line); overflow:hidden; }
+.cn-avatar--bot img { width:100%; height:100%; object-fit:contain; display:block; }
+.cn-avatar--user { background:var(--rb-user-bg); color:var(--rb-green-mid);
+  font-size:11.5px; font-weight:800; }
+
+/* [2026-08-25] Globo mas grande que el original (12.5px / padding 10-12): el acolchado y el radio
+   se quedan en el x1.25, pero la FUENTE baja 2px respecto a ese escalado (15.6->13.6) porque a
+   15.6px resultaba demasiado grande. Son dos medidas independientes a proposito. */
+.cn-bubble { border-radius:14px; padding:12.5px 15px; font-size:13.6px; line-height:1.55; }
+.cn-bubble.is-user { background:var(--rb-user-bg); border:1px solid transparent;
+  color:var(--rb-ink); font-weight:500; }
+.cn-bubble.is-bot  { background:var(--rb-white); border:1px solid var(--rb-line); color:var(--rb-body); }
+.cn-bubble.is-bot strong { font-weight:700; color:var(--rb-ink); }
+.cn-bubble.is-bot em { font-style:italic; color:var(--rb-muted); }
+/* Traza del clasificador (D-2). Filete lateral y NUNCA fondo: el soft de "cuantificar" es el
+   mismo #E9F3EC que --rb-user-bg. "desconocido" queda gris: no se le muestra al usuario (§8.4).
+   [2026-08-25] De 3px a 6px a peticion del usuario: el plan preveia bajarlo si resultaba fuerte,
+   y ha pasado lo contrario — a 3px la traza se lee, pero no salta a la vista. */
+.cn-bubble.is-bot[data-g]               { border-left:6px solid var(--v2c); }
+.cn-bubble.is-bot[data-g="desconocido"] { border-left-color:var(--rb-line); }
+/* .v2-msg lleva margin-top:8px para separarse de la fila de badges; en Consulta ya no hay badges
+   y quedaba con 18px de aire arriba contra 10px abajo. Solo aquí: Test Clas la necesita como está. */
+.cn-bubble.is-bot > .v2-msg:first-child { margin-top:0; }
+/* .v2-msg trae font-size:12.5px y line-height:1.5 propios (:1906) y, por especificidad, ganaban a
+   los de .cn-bubble: la respuesta del asistente —que es TODO el texto del bot— se habria quedado
+   sin escalar mientras la pregunta del usuario crecia. Se fijan aqui SOLO para Consulta; la regla
+   global sigue sirviendo a Test Clas con sus valores de siempre.
+   [2026-08-25] La fuente baja 2px (15.6->13.6) pero el interlineado se CONSERVA en los 26.2px que
+   ya tenia. Por eso aqui va en px y no en factor: con line-height:1.68 el interlineado habria
+   encogido junto con la letra (13.6 x 1.68 = 22.8px) y se habria perdido el aire que se pidio
+   mantener. Fijarlo en px es lo unico que desacopla las dos medidas.
+   Ojo: esto separa las lineas SEGUIDAS; los huecos grandes del texto son saltos reales (\n) que
+   manda el backend y que white-space:pre-line respeta, y miden tambien 26.2px. */
+.cn-bubble.is-bot .v2-msg { font-size:13.6px; line-height:26.2px; }
+/* Todo lo que vive DENTRO del globo acompaña al texto de 13.6px, o quedaria descompensado: la
+   franja de veredicto, la entidad detectada y las opciones de desambiguacion traen sus tamaños
+   propios de cuando el globo era de 12.5px. Acotado a Consulta: en Test Clas estas mismas clases
+   conservan su escala original. */
+.cn-bubble.is-bot .v2-vask,
+.cn-bubble.is-bot .v2-vdone { font-size:12.4px; }
+.cn-bubble.is-bot .v2-vbtn { font-size:13px; padding:3px 13px; border-radius:10px; }
+.cn-bubble.is-bot .v2-chip { font-size:11.8px; padding:3px 13px; }
+.cn-bubble.is-bot .v2-ent { font-size:11.8px; padding:2px 10px; }
+.cn-bubble.is-bot .v2-verdict { margin-top:10px; padding-top:10px; gap:8px; }
+.cn-bubble.is-bot .rb-chat__option-title { font-size:14.3px; }
+.cn-bubble.is-bot .rb-chat__option-desc { font-size:12.4px; }
+
+@media (max-width:340px) {
+  .cn-row__rail { width:22px; }
+  /* Proporcional al globo nuevo (era 9/11 cuando el padding base era 10/12): en un panel estrecho
+     el acolchado cede antes que la letra, que es lo que de verdad se necesita leer. */
+  .cn-bubble { padding:11px 13px; }
+}
+
+/* ===== Panel derecho "Panorama de Producción" (2026-07-09) ===== */
+.rb-pano { background:var(--rb-off); font-size:13px; color:var(--rb-body); }
+.rb-pano__subhead { display:flex; align-items:center; gap:9px; padding:11px 18px; background:var(--rb-white);
+  border-bottom:1px solid var(--rb-line); }
+.rb-pano__subhead i { color:var(--rb-green-mid); font-size:15px; }
+.rb-pano__subhead-title { font-size:14px; font-weight:800; color:var(--rb-ink); }
+.rb-pano__subhead-title strong { color:var(--rb-ink); }
+.rb-pano__subhead-tipo { font-size:12px; color:var(--rb-faint); }
+.rb-pano__body { padding:18px 20px 26px; display:flex; flex-direction:column; gap:16px; }
+.rb-pano__rule { height:1px; background:var(--rb-line); margin:20px 0; }
+.rb-pano__loading, .rb-pano__empty { padding:14px; color:var(--rb-muted); font-size:12.5px; }
+.rb-pano__empty i { color:var(--rb-green-mid); margin-right:6px; }
+.rb-pano__eyebrow { display:flex; align-items:center; gap:8px; margin-bottom:12px;
+  font-family:monospace; font-size:10.5px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--rb-green-mid); }
+
+/* KPI */
+.rb-pano__kpis { display:flex; gap:10px; margin-bottom:18px; }
+.rb-pano__kpi { flex:1; min-width:0; background:var(--rb-white); border:1px solid var(--rb-line); border-radius:13px; padding:13px 15px; }
+.rb-pano__kpi-icon { width:30px; height:30px; border-radius:9px; display:grid; place-items:center; margin-bottom:11px; }
+.rb-pano__kpi-icon i { font-size:15px; }
+.rb-pano__kpi--default .rb-pano__kpi-icon { background:var(--rb-green-softer); } .rb-pano__kpi--default .rb-pano__kpi-icon i { color:var(--rb-green-mid); }
+.rb-pano__kpi--warn .rb-pano__kpi-icon { background:var(--rb-amber-soft); } .rb-pano__kpi--warn .rb-pano__kpi-icon i { color:var(--rb-amber); }
+.rb-pano__kpi--gold .rb-pano__kpi-icon { background:var(--rb-gold-soft); } .rb-pano__kpi--gold .rb-pano__kpi-icon i { color:var(--rb-chat-gold); }
+.rb-pano__kpi-value { font-size:23px; font-weight:800; color:var(--rb-ink); letter-spacing:-.5px; line-height:1; }
+.rb-pano__kpi-label { font-size:10.5px; color:var(--rb-muted); margin-top:5px; font-weight:600; }
+
+/* Tarjetas de sección (matriz + cobertura, mismo estilo) */
+.rb-pano__matrix-card, .rb-pano__cov-card { background:var(--rb-white); border:1px solid var(--rb-line); border-radius:14px; padding:16px 18px; }
+.rb-pano__matrix { overflow-x:auto; }
+.rb-pano__matrix-card { --pano-labw: 96px; }   /* ancho de la etiqueta de mes ("Noviembre 2025") */
+/* Rejilla que LLENA el ancho: etiqueta fija + 31 columnas 1fr que se reparten el resto */
+.rb-pano__matrix-row { display:grid; grid-template-columns:var(--pano-labw) repeat(31, minmax(0,1fr)); align-items:center; column-gap:4px; margin-bottom:4px; }
+.rb-pano__matrix-mlabel { font-size:10.5px; font-weight:700; color:var(--rb-body); text-align:right; padding-right:8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.rb-pano__axis { text-align:center; font-family:monospace; font-size:8px; color:var(--rb-faint); }
+.rb-pano__dot { width:min(100%,22px); aspect-ratio:1; border-radius:50%; justify-self:center; }
+.rb-pano__dot--on { background:var(--rb-green-ok); }
+.rb-pano__dot--off { background:var(--rb-line-soft); }
+.rb-pano__dot--none { background:transparent; }
+.rb-pano__dot--on:hover { box-shadow:0 0 0 2px var(--rb-chat-gold); cursor:pointer; }
+.rb-pano__matrix-foot { display:flex; align-items:center; gap:14px; margin-top:12px; margin-left:var(--pano-labw); }
+.rb-pano__leg { display:flex; align-items:center; gap:5px; font-size:10.5px; color:var(--rb-muted); }
+.rb-pano__leg .rb-pano__dot { width:11px; height:11px; aspect-ratio:auto; }
+.rb-pano__matrix-range { margin-left:auto; font-family:monospace; font-size:10.5px; color:var(--rb-faint); }
+
+/* Cobertura */
+.rb-pano__cov-title { font-size:14px; font-weight:800; color:var(--rb-ink); }
+.rb-pano__cov-title b { color:var(--rb-green-mid); }
+.rb-pano__cov-desc { margin:3px 0 14px; font-size:11px; color:var(--rb-muted); line-height:1.45; }
+.rb-pano__cov-desc code { font-family:monospace; font-size:10.5px; color:var(--rb-green-mid); }
+.rb-pano__cov-group { margin-bottom:16px; }
+.rb-pano__cov-ghead { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+.rb-pano__cov-ldot { width:9px; height:9px; border-radius:3px; flex:0 0 auto; }
+.rb-pano__cov-ldot--ecp { background:var(--rb-layer-ecp); } .rb-pano__cov-ldot--fil { background:var(--rb-layer-fil); }
+.rb-pano__cov-ldot--mod { background:var(--rb-layer-mod); } .rb-pano__cov-ldot--brz { background:var(--rb-layer-brz); }
+.rb-pano__cov-ldot--com { background:var(--rb-muted); }
+.rb-pano__cov-glabel { font-size:12.5px; font-weight:800; color:var(--rb-ink); }
+.rb-pano__cov-gn { font-size:11px; color:var(--rb-faint); }
+.rb-pano__cov-gpct { margin-left:auto; font-family:monospace; font-size:10.5px; font-weight:700; color:var(--rb-muted); }
+.rb-pano__cov-row { display:grid; grid-template-columns:1fr 96px 52px; align-items:center; gap:12px; padding:7px 0; border-bottom:1px solid var(--rb-line-soft); }
+.rb-pano__cov-name { font-size:12.5px; color:var(--rb-ink); font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.rb-pano__cov-badge { font-family:monospace; font-size:9px; color:var(--rb-faint); border:1px solid var(--rb-line); border-radius:4px; padding:0 4px; margin-left:6px; }
+.rb-pano__meter { height:5px; border-radius:5px; background:var(--rb-line-soft); overflow:hidden; }
+.rb-pano__meter-fill { display:block; height:100%; border-radius:5px; background:var(--rb-green-mid); }
+.rb-pano__meter-fill--ecp { background:var(--rb-layer-ecp); } .rb-pano__meter-fill--fil { background:var(--rb-layer-fil); }
+.rb-pano__meter-fill--mod { background:var(--rb-layer-mod); } .rb-pano__meter-fill--brz { background:var(--rb-layer-brz); }
+.rb-pano__meter-fill--com { background:var(--rb-muted); }
+.rb-pano__meter-fill.is-full { background:var(--rb-green-ok); }   /* full gana (va DESPUÉS de los modificadores) */
+.rb-pano__cov-count { text-align:right; font-family:monospace; font-size:11.5px; font-weight:700; color:var(--rb-body); }
+.rb-pano__cov-count.is-full { color:var(--rb-green-mid); }
+.rb-pano__cov-count em { color:var(--rb-faint); font-weight:400; font-style:normal; }
+
+@media (prefers-reduced-motion: reduce) { .rb-pano * { transition:none !important; } }
+
+/* ============================================================
+   Consulta · Reporte de un día (2 tarjetas: árbol + visor de tabla)
+   ============================================================ */
+.cn-rep { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.cn-rep__bar { display: flex; align-items: center; gap: 12px; padding: 10px 14px;
+  border-bottom: 1px solid var(--rb-border, #e3e8e5); flex: 0 0 auto; }
+.cn-rep__back { border: 1px solid var(--rb-border, #cdd8d1); background: #fff; border-radius: 8px;
+  padding: 5px 10px; font-size: .82rem; color: var(--rb-green, #1f6b4a); cursor: pointer; white-space: nowrap; }
+.cn-rep__back:hover { background: var(--rb-green-soft, #eef5f1); }
+.cn-rep__date { font-size: .85rem; color: #4a5a52; font-weight: 600; }
+.cn-rep__grid { flex: 1 1 auto; min-height: 0; display: grid;
+  grid-template-columns: minmax(240px, 320px) 1fr; gap: 12px; padding: 12px 14px; }
+.cn-rep__tree, .cn-rep__table { border: 1px solid var(--rb-border, #e3e8e5); border-radius: 10px;
+  background: #fff; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.cn-rep__card-hd { flex: 0 0 auto; padding: 9px 12px; font-size: .78rem; font-weight: 700;
+  letter-spacing: .02em; text-transform: uppercase; color: #3a4a42;
+  background: var(--rb-green-soft, #eef5f1); border-bottom: 1px solid var(--rb-border, #e3e8e5); }
+.cn-rep__tree-body { flex: 1 1 auto; min-height: 0; overflow: auto; padding: 8px; }
+.cn-rep__table-body { flex: 1 1 auto; min-height: 0; overflow: auto; padding: 10px 12px; }
+.cn-rep .ct-root { list-style: none; margin: 0; padding: 0; }
+@media (max-width: 720px) {
+  .cn-rep__grid { grid-template-columns: 1fr; grid-auto-rows: minmax(180px, auto); }
+}
+
+/* ============================================================
+   Consulta · Desempeño del mes (Analizar {entidad})
+   ============================================================ */
+/* [2026-08-11] min-height (no height): el análisis vive dentro de .cn-col, que ahora es de alto
+   NATURAL para poder apilar la pila debajo. Con `height:100%` sobre un padre sin altura definida el
+   porcentaje queda indefinido y el reporte COLAPSA a 0 (desaparece); con min-height sigue llenando
+   la vista en el primer render y crece con su contenido. */
+.cn-desemp { display: flex; flex-direction: column; min-height: 100%; }
+.cn-desemp__body { flex: 1 1 auto; min-height: 0; overflow: auto; padding: 14px; display: flex; flex-direction: column; }
+/* 2026-07-24: el comportamiento se movió a los focos; este contenedor queda vacío salvo mensajes de
+   error → se colapsa cuando está vacío para no dejar un hueco bajo los focos. */
+.cn-desemp__body:empty { display: none; padding: 0; }
+.cn-desemp__monthlbl { font-size: .82rem; font-weight: 700; color: #2f4a3d; margin-bottom: 8px; }
+.cn-desemp__layout { display: grid; grid-template-columns: minmax(168px, 210px) 1fr; gap: 12px; align-items: stretch; }
+.cn-desemp__kpis { display: flex; flex-direction: column; gap: 8px; height: 100%; }
+.cn-desemp__right { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.cn-desemp__kpi { flex: 1 1 0; display: flex; flex-direction: column; justify-content: center;
+  border: 1px solid var(--rb-border, #e3e8e5); border-left: 4px solid #9aa7a0;
+  border-radius: 10px; background: #fff; padding: 8px 11px; }
+.cn-desemp__kpi.is-ok { border-left-color: #1e9e63; }
+.cn-desemp__kpi.is-warn { border-left-color: #E8912B; }
+.cn-desemp__kpi.is-bad { border-left-color: #d9534f; }
+.cn-desemp__kpi-prod { font-size: .68rem; font-weight: 700; letter-spacing: .04em; color: #6b7a72; text-transform: uppercase; }
+.cn-desemp__kpi-real { font-size: 1.15rem; font-weight: 800; color: #1f2d27; line-height: 1.15; }
+.cn-desemp__kpi-sub { font-size: .68rem; color: #8a968f; margin-bottom: 2px; }
+.cn-desemp__kpi-cumpl { font-size: .92rem; font-weight: 800; }
+.cn-desemp__kpi-cumpl span { font-size: .68rem; font-weight: 500; color: #8a968f; }
+.cn-desemp__kpi-cumpl.is-ok { color: #1e9e63; }
+.cn-desemp__kpi-cumpl.is-warn { color: #E8912B; }
+.cn-desemp__kpi-cumpl.is-bad { color: #d9534f; }
+.cn-desemp__card { border: 1px solid var(--rb-border, #e3e8e5); border-radius: 10px; background: #fff; margin-bottom: 0; overflow: hidden; }
+.cn-desemp__card-hd { display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 9px 12px; font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .02em;
+  color: #3a4a42; background: var(--rb-green-soft, #eef5f1); border-bottom: 1px solid var(--rb-border, #e3e8e5); }
+.cn-desemp__bars { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+.cn-desemp__bar-row { display: grid; grid-template-columns: 84px 1fr auto; align-items: center; gap: 10px; }
+.cn-desemp__bar-lbl { font-size: .78rem; font-weight: 600; color: #4a5a52; }
+.cn-desemp__bar-track { height: 14px; background: #eef2f0; border-radius: 7px; overflow: hidden; }
+.cn-desemp__bar-fill { height: 100%; background: #9aa7a0; border-radius: 7px; }
+.cn-desemp__bar-fill.is-ok { background: #1e9e63; }
+.cn-desemp__bar-fill.is-warn { background: #E8912B; }
+.cn-desemp__bar-fill.is-bad { background: #d9534f; }
+.cn-desemp__bar-val { font-family: monospace; font-size: 11.5px; font-weight: 700; color: #4a5a52; white-space: nowrap; }
+.cn-desemp__prodsel { display: inline-flex; gap: 4px; }
+.cn-desemp__prodbtn { border: 1px solid var(--rb-border, #cdd8d1); background: #fff; border-radius: 6px;
+  padding: 2px 8px; font-size: .68rem; font-weight: 700; color: #6b7a72; cursor: pointer; }
+.cn-desemp__prodbtn.is-active { background: var(--rb-green, #1f6b4a); color: #fff; border-color: var(--rb-green, #1f6b4a); }
+.cn-desemp__plot { padding: 4px; min-height: 140px; }
+.cn-desemp__foot { padding: 5px 12px 8px; font-size: .68rem; color: #8a968f; line-height: 1.3; }
+.cn-desemp__bars { padding: 9px 12px; }
+@media (max-width: 720px) {
+  .cn-desemp__layout { grid-template-columns: 1fr; }
+  .cn-desemp__kpis { flex-direction: row; flex-wrap: wrap; }
+  .cn-desemp__kpi { flex: 1 1 140px; }
+}
+
+/* ============================================================
+   Consulta · Titular ejecutivo (IA) — 3 columnas + panel de insight
+   ============================================================ */
+.cn-desemp__grid3 { display: grid; grid-template-columns: minmax(0,1.4fr) minmax(150px,190px) minmax(0,1.3fr); gap: 12px; align-items: stretch; }
+/* grid de 2 columnas (KPIs viven dentro de la tarjeta Real vs Ppto) — conserva anchos relativos de col1/col3 */
+.cn-desemp__grid2 { display: grid; grid-template-columns: minmax(0,1.4fr) minmax(0,1.3fr); gap: 12px; align-items: stretch; }
+/* [2026-07-28] variante con la tarjeta "Ejecución vs PPTO" como 1ª columna, a la izquierda del gráfico diario.
+   Reparto pedido: 30% / 35% / 35% (fr = proporción exacta, descontando el gap de 12px entre columnas) */
+.cn-desemp__grid2--kpi { grid-template-columns: 30fr 35fr 35fr; }
+.cp-foco__kpicol { min-width: 0; height: 100%; display: flex; flex-direction: column; }
+/* la tarjeta KPI llena el mismo alto que el gráfico diario y el panel de brecha (antes solo ocupaba su contenido) */
+.cp-foco__kpicol .cn-kpi__row--solo { flex: 1 1 auto; min-height: 0; }
+.cp-foco__kpicol .cp-mes__kpi { height: 100%; justify-content: space-between; }
+/* cuerpo de la tarjeta Real vs Presupuesto: KPIs (izq) | barras (der) */
+.cn-desemp__rvp-body { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: minmax(130px,180px) 1fr; gap: 12px; padding: 6px 8px 8px; }
+.cn-ins { display: flex; flex-direction: column; min-width: 0; border: 1px solid var(--rb-border,#e3e8e5); border-radius: 10px; background: #fff; overflow: hidden; }
+.cn-ins__cta { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; height: 100%; padding: 20px; text-align: center; color: #6b7a72; }
+.cn-ins__cta-ic { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--rb-green-soft,#eef5f1); color: var(--rb-chat-gold,#C9962E); font-size: 18px; }
+.cn-ins__cta-tx { font-size: .8rem; font-weight: 700; color: #3a4a42; }
+.cn-ins__cta-btn { border: 1px solid var(--rb-green,#1f6b4a); background: var(--rb-green,#1f6b4a); color: #fff; border-radius: 8px; padding: 6px 12px; font-size: .8rem; font-weight: 700; cursor: pointer; }
+.cn-ins__cta-btn:hover { filter: brightness(1.08); }
+.cn-ins__load { padding: 16px; font-size: .82rem; }
+.cn-ins__hd { padding: 8px 10px; font-size: .74rem; font-weight: 700; color: #2f4a3d; display: flex; align-items: center; gap: 6px; border-bottom: 1px solid var(--rb-line,#eef2f5); }
+.cn-ins__hd-ic { color: var(--rb-chat-gold,#C9962E); }
+.cn-ins__fb { color: #8a968f; font-weight: 500; }
+.cn-ins__chips { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; padding: 8px 10px; }
+.cn-ins__chip { border-radius: 8px; padding: 6px 8px; background: #f4f7f5; border-left: 3px solid #9aa7a0; }
+.cn-ins__chip.is-ok { background: #eaf6ef; border-left-color: #1e9e63; }
+.cn-ins__chip.is-warn { background: #fbf1e4; border-left-color: #E8912B; }
+.cn-ins__chip.is-bad { background: #fbeaea; border-left-color: #d9534f; }
+.cn-ins__chip-top { font-size: .64rem; font-weight: 700; letter-spacing: .04em; color: #6b7a72; text-transform: uppercase; }
+.cn-ins__chip-bot { font-size: .74rem; color: #2f3d36; }
+
+.cn-kpi__row { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; padding: 8px 10px; }
+@media (max-width: 900px) { .cn-kpi__row { grid-template-columns: 1fr; } }
+/* [2026-07-27 · opción A] encabezado = compromiso P50 + tarjeta operativa dentro de cada foco */
+/* [2026-07-28] el tope de 360px era de cuando esta tarjeta era una fila suelta de ancho completo;
+   ahora vive dentro de la columna del 30% (.cp-foco__kpicol) y debe llenarla entera, sin tope. */
+.cn-kpi__row--solo { grid-template-columns: minmax(0, 1fr); padding: 0 0 10px; }
+.cn-p50hd__lbl { display: flex; align-items: center; gap: 7px; padding: 10px 12px 2px;
+  font-size: 12.5px; font-weight: 600; color: #4B5A52; }
+.cn-p50hd__lbl b { color: #0E5C3A; }
+.cn-p50hd__lbl i { color: #0E5C3A; }
+.cn-p50hd__u { font-weight: 500; color: #8A968E; }
+.cn-p50hd__load, .cn-p50hd__na { grid-column: 1 / -1; padding: 14px 12px; color: #8A968E;
+  font-size: 12.5px; font-style: italic; }
+.cp-foco__kpihd { display: flex; align-items: center; gap: 6px; padding: 2px 2px 8px;
+  font-size: 11.5px; font-weight: 700; letter-spacing: .02em; color: #6E7C75; text-transform: uppercase; }
+.cp-foco__kpihd i { font-size: 13px; color: #E8912B; }
+.cn-kpi__card { border-radius: 8px; padding: 8px 10px; background: #fff; border: 1px solid #e7ebe9;
+  border-left: 3px solid #9aa7a0; }
+.cn-kpi__card.is-ok { border-left-color: #1e9e63; }
+.cn-kpi__card.is-warn { border-left-color: #E8912B; }
+.cn-kpi__card.is-bad { border-left-color: #d9534f; }
+.cn-kpi__top { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.cn-kpi__name { font-size: .85rem; font-weight: 700; color: #2f3d36; }
+.cn-kpi__badge { margin-left: auto; font-size: .62rem; font-weight: 700; letter-spacing: .02em;
+  padding: 2px 8px; border-radius: 8px; background: #e6ebe8; color: #5c6b63; }
+.cn-kpi__card.is-ok .cn-kpi__badge { background: #d8efe1; color: #0F6E56; }
+.cn-kpi__card.is-warn .cn-kpi__badge { background: #f8e6c8; color: #854F0B; }
+.cn-kpi__card.is-bad .cn-kpi__badge { background: #f6d6d6; color: #A32D2D; }
+.cn-kpi__unit-pend { font-size: .6rem; font-weight: 600; text-transform: none; color: #8a6d1f;
+  background: #fdf6e3; border-radius: 4px; padding: 1px 5px; cursor: help; }
+.cn-kpi__bar { position: relative; height: 8px; border-radius: 4px; background: #e3e8e5;
+  margin: 6px 0 5px; overflow: hidden; }
+.cn-kpi__fill { height: 100%; border-radius: 4px; background: #9aa7a0; }
+.cn-kpi__card.is-ok .cn-kpi__fill { background: #1e9e63; }
+.cn-kpi__card.is-warn .cn-kpi__fill { background: #E8912B; }
+.cn-kpi__card.is-bad .cn-kpi__fill { background: #d9534f; }
+.cn-kpi__anchors { display: flex; justify-content: space-between; font-size: .72rem; color: #6b7a72; }
+.cn-kpi__lbl { color: #9aa7a0; }
+.cn-kpi__micro { font-size: .72rem; color: #5c6b63; margin-top: 4px; }
+.cn-kpi__gap { font-weight: 700; }
+.cn-kpi__card.is-ok .cn-kpi__gap { color: #0F6E56; }
+.cn-kpi__card.is-warn .cn-kpi__gap { color: #854F0B; }
+.cn-kpi__card.is-bad .cn-kpi__gap { color: #A32D2D; }
+.cn-kpi__rate { margin: 2px 0 8px; }
+.cn-kpi__rate-hd { display: flex; justify-content: space-between; font-size: .68rem; font-weight: 700; color: #2f3d36; }
+.cn-kpi__rate-row { display: flex; align-items: center; gap: 6px; margin: 3px 0 2px; }
+.cn-kpi__rate-v { font-size: .68rem; color: #6b7a72; white-space: nowrap; }
+.cn-kpi__rate-bar { flex: 1; height: 14px; border-radius: 3px; background: #d3d9d6; overflow: hidden; }
+.cn-kpi__rate-real { height: 100%; background: #1e9e63; }
+.cn-kpi__rate-real.is-down { background: #d9534f; }   /* producción del mes por debajo del histórico */
+.cn-kpi__rate-pct { text-align: center; font-size: .68rem; font-weight: 700; color: #2f3d36; margin-top: 1px; }
+.cn-kpi__proy-lbl { font-size: .72rem; font-weight: 700; color: #2f3d36; margin-bottom: 3px; }
+/* Desglose por filial (segmento filiales) — bloque por filial + sus tarjetas */
+.cn-filial__wrap { margin: 6px 10px 12px; border-top: 1px solid #e7ebe9; padding-top: 8px; }
+.cn-filial__title { font-size: .8rem; font-weight: 700; color: #1f6b4a; margin: 6px 4px 8px; }
+.cn-filial { margin-bottom: 6px; border: 1px solid #e7ebe9; border-radius: 8px; overflow: hidden; background: #fff; }
+.cn-filial__hd { font-size: .78rem; font-weight: 700; color: #33443d; padding: 8px 10px; cursor: pointer;
+  display: flex; align-items: center; gap: 4px; user-select: none; }
+.cn-filial__hd:hover { background: #f5f8f6; }
+.cn-filial__hd .bi-diagram-3 { color: #1f6b4a; }
+.cn-filial__chev { color: #1f6b4a; transition: transform .15s ease; font-size: .7rem; }
+.cn-filial.is-open > .cn-filial__hd .cn-filial__chev { transform: rotate(90deg); }
+.cn-filial__note { font-weight: 500; color: #8a978f; font-size: .72rem; }
+/* chips-resumen (visibles cuando está colapsado; se ocultan al abrir para no duplicar) */
+.cn-filial__chips { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; }
+.cn-filial.is-open > .cn-filial__hd .cn-filial__chips { display: none; }
+.cn-filial__chip { display: inline-flex; align-items: center; gap: 4px; font-size: .7rem; font-weight: 600;
+  color: #55635b; background: #f1f4f2; border-radius: 999px; padding: 1px 8px; }
+.cn-filial__dot { width: 7px; height: 7px; border-radius: 50%; background: #adb5b1; display: inline-block; }
+.cn-filial__chip.is-ok .cn-filial__dot { background: #1f9d57; }
+.cn-filial__chip.is-warn .cn-filial__dot { background: #e0a10b; }
+.cn-filial__chip.is-bad .cn-filial__dot { background: #d64545; }
+.cn-filial__body { display: none; padding: 2px 8px 8px; }
+.cn-filial.is-open > .cn-filial__body { display: block; }
+/* Acordeón del producto foco (Desempeño del mes): placeholder de secciones pendientes */
+.cn-desemp__pend { padding: 22px 10px; color: #8a938f; font-size: 13px; font-style: italic; text-align: center; }
+/* Acordeón anidado DENTRO de cada foco (una por foco): alineado al foco, sin margen lateral del wrap */
+.cn-foco__acc { margin: 6px 0 2px; border-top: 1px dashed #e7ebe9; padding-top: 6px; }
+.cn-foco__acc .cn-desemp__grid2 { min-height: 300px; }   /* alto para las 2 gráficas del foco */
+.cn-foco__acc .cn-ins { height: auto; }                  /* dentro del acordeón la columna crece con su contenido */
+/* Evolución mensual (doble eje) del panel de UNA filial */
+.cn-fil-serie-wrap { margin: 14px 10px 6px; border-top: 1px solid #e7ebe9; padding-top: 10px; }
+.cn-fil-serie-hd { font-size: .82rem; font-weight: 700; color: #1f6b4a; margin: 0 2px 6px; }
+.cn-fil-serie-hd .bi { margin-right: 4px; }
+.cn-fil-serie { width: 100%; min-height: 300px; }
+
+.cn-foco__wrap { margin: 4px 10px 10px; }
+.cn-foco__hdr { font-size: .72rem; font-weight: 700; color: #6b7a72; margin: 6px 0; }
+.cn-foco { border: 1px solid #e7ebe9; border-radius: 8px; padding: 8px 10px; margin-bottom: 6px; background: #fff; }
+.cn-foco__hd { display: flex; align-items: flex-start; gap: 8px; }
+.cn-foco__rk { font-weight: 700; color: #9aa7a0; min-width: 14px; }
+.cn-foco__main { flex: 1; min-width: 0; }
+.cn-foco__titulo { font-size: .82rem; color: #2f3d36; }
+.cn-foco__ca { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 3px; font-size: .72rem; color: #5c6b63; }
+.cn-foco__causa--warn { color: #A32D2D; }
+.cn-foco__num { font-weight: 700; color: #A32D2D; white-space: nowrap; margin: 0 6px; }
+.cn-foco__ver { border: 1px solid #d3d9d6; background: #fff; border-radius: 6px; font-size: .7rem; padding: 2px 8px; cursor: pointer; white-space: nowrap; }
+.cn-foco__det { margin: 6px 0 0 22px; font-size: .72rem; color: #5c6b63; }
+.cn-foco__sin { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: .72rem; color: #5c6b63; margin-top: 6px; }
+.cn-ejec__series { margin-top: 8px; }
+.cn-ins__card { margin: 8px 10px; border: 1px solid var(--rb-line,#eef2f5); border-radius: 8px; overflow: hidden; }
+.cn-ins__card-hd { padding: 6px 10px; font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .02em; color: #3a4a42; background: var(--rb-green-soft,#eef5f1); }
+.cn-ins__plot { min-height: 150px; padding: 4px; }
+/* [2026-07-24] "Producido vs Meta por campo" (gas.md, artboard B) — barra de progreso por campo */
+.gpm { background: #fff; border: 1px solid #E4E9E5; border-radius: 14px; overflow: hidden; box-shadow: 0 1px 3px rgba(20,40,30,.05); }
+.gpm__head { display: flex; align-items: center; gap: 8px; padding: 12px 16px; background: #F3F9F4; border-bottom: 1px solid #EEF2EF; }
+.gpm__head i { font-size: 13px; color: #15794C; flex: 0 0 auto; }
+.gpm__title { font-size: 11.5px; font-weight: 800; letter-spacing: .5px; color: #0A4A2E; text-transform: uppercase; }
+.gpm__total { margin-left: auto; font-family: ui-monospace,'SF Mono',Menlo,Consolas,monospace; font-size: 10px; color: #98A69E; white-space: nowrap; }
+.gpm__body { padding: 18px 18px 6px; display: flex; flex-direction: column; gap: 18px; }
+.gpm__top { display: flex; align-items: baseline; gap: 8px; margin-bottom: 7px; flex-wrap: wrap; }
+.gpm__name { font-size: 13px; font-weight: 800; color: #17241E; }
+.gpm__pct { font-family: ui-monospace,'SF Mono',Menlo,Consolas,monospace; font-size: 11px; font-weight: 700; color: #15794C; white-space: nowrap; }
+.gpm__pct.is-low { color: #B04A38; }
+.gpm__falta { margin-left: auto; font-size: 11.5px; color: #6E7C75; white-space: nowrap; }
+.gpm__falta b { font-family: ui-monospace,'SF Mono',Menlo,Consolas,monospace; color: #B04A38; font-weight: 700; }
+.gpm__bar { position: relative; height: 20px; border-radius: 6px; background: #EEF2EF; overflow: hidden; }
+.gpm__fill { display: block; height: 100%; background: #0E5C3A; border-radius: 6px; transition: width .45s ease; }
+.gpm__foot { display: flex; justify-content: space-between; margin-top: 4px; font-family: ui-monospace,'SF Mono',Menlo,Consolas,monospace; font-size: 10px; color: #98A69E; }
+.gpm__legend { margin: 10px 18px 16px; padding-top: 14px; border-top: 1px solid #EEF2EF; display: flex; gap: 16px; }
+.gpm__lg { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #6E7C75; }
+.gpm__chip { width: 16px; height: 9px; border-radius: 3px; display: inline-block; flex: 0 0 auto; }
+.gpm__chip--fill { background: #0E5C3A; }
+.gpm__chip--track { background: #EEF2EF; }
+.gpm__empty { padding: 18px; font-size: 12px; color: #6E7C75; }
+/* [2026-07-26] compensador (campo por encima de meta): delta en verde positivo */
+.gpm__falta--up { color: #2E8B47; }
+.gpm__falta--up b { color: #2E8B47; }
+/* barra por banda de cumplimiento (decisión del usuario): ≥90% verde sólido · 60–<90% el mismo
+   verde difuminado al 50% · <60% amarillo. El color lo asigna __cnGpmBand en el frontend. */
+.gpm__fill--ok  { background: #0E5C3A; }
+.gpm__fill--mid { background: rgba(14,92,58,0.5); }
+.gpm__fill--low { background: #E8B923; }
+@media (prefers-reduced-motion: reduce) { .gpm__fill { transition: none; } }
+.cn-ins__cap { padding: 7px 10px 9px; font-size: 11px; line-height: 1.45; color: #6b7a72; border-top: 1px solid var(--rb-line,#eef2f5); }
+.cn-ins__cap b { color: #2f4a3d; font-weight: 700; }
+.cn-ins__ev { width: 100%; border-collapse: collapse; font-size: .72rem; }
+.cn-ins__ev td { padding: 4px 8px; border-top: 1px solid var(--rb-line,#eef2f5); }
+.cn-ins__ev-campo { font-weight: 700; color: #2f3d36; white-space: nowrap; }
+.cn-ins__ev-txt { color: #566; }
+.cn-ins__ev-n { text-align: right; font-family: monospace; font-weight: 700; color: #4a5a52; }
+.cn-ins__ev-more td { color: #8a968f; font-style: italic; }
+/* Filiales: diagnóstico del valle por filial (reemplaza la tabla de eventos, que no existe para filiales) */
+.cn-ins__card--diag { border-left: 3px solid var(--rb-chat-gold,#C9962E); }
+.cn-ins__diag-src { font-weight: 500; color: #8a968f; text-transform: none; letter-spacing: 0; }
+.cn-ins__diag { padding: 8px 10px; }
+.cn-ins__diag-tx { font-size: .78rem; color: #3d4d46; line-height: 1.4; margin: 0 0 8px; }
+.cn-ins__diag-rec { font-size: .76rem; color: #7a4e00; background: #fdf6e3; border: 1px solid #f0e2b0;
+  border-radius: 6px; padding: 6px 8px; margin: 0; line-height: 1.35; display: flex; gap: 6px; align-items: flex-start; }
+.cn-ins__diag-rec i { color: var(--rb-chat-gold,#C9962E); margin-top: 2px; }
+
+.cn-ins__lect { margin: 8px 10px 10px; border: 1px solid var(--rb-line,#eef2f5); border-left: 3px solid #d9534f; border-radius: 8px; padding: 8px 10px; }
+.cn-ins__lect-hd { font-size: .68rem; font-weight: 700; text-transform: uppercase; color: #3a4a42; margin-bottom: 4px; }
+.cn-ins__lect-tx { font-size: .78rem; color: #3d4d46; margin: 0 0 8px; line-height: 1.4; }
+.cn-ins__acts { display: flex; flex-wrap: wrap; gap: 6px; }
+.cn-ins__act { border: 1px solid var(--rb-border,#cdd8d1); background: #fff; border-radius: 6px; padding: 4px 8px; font-size: .72rem; font-weight: 600; color: #3a4a42; cursor: pointer; }
+.cn-ins__act:hover { background: var(--rb-green-soft,#eef5f1); }
+@media (max-width: 980px) {
+  .cn-desemp__grid3 { grid-template-columns: 1fr; }
+  .cn-ins__chips { grid-template-columns: repeat(3,1fr); }
+}
+
+/* ---- Aprovechar TODO el alto disponible (recuadros del Desempeño) ---- */
+.cn-desemp__grid3, .cn-desemp__grid2 { flex: 1 1 auto; min-height: 0; }   /* el grid llena el alto del lienzo */
+.cn-ins { height: 100%; }                                           /* col1: la tarjeta IA llena la columna */
+/* col1: las 3 secciones (curva valle · eventos · lectura) al MISMO alto — un tercio cada una */
+.cn-ins > .cn-ins__card, .cn-ins > .cn-ins__lect { flex: 1 1 0; min-height: 0; }
+.cn-ins > .cn-ins__card { display: flex; flex-direction: column; }
+.cn-ins__card > .cn-ins__plot { flex: 1 1 auto; min-height: 0; }    /* la curva del valle llena su tercio */
+.cn-ins__ev-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; }  /* eventos scrollea dentro de su tercio */
+/* col3: los 2 gráficos (Real vs Presupuesto · Producción diaria) reparten el alto 50/50 */
+.cn-desemp__right > .cn-desemp__card { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
+.cn-desemp__right > .cn-desemp__card .cn-desemp__bars { flex: 1 1 auto; justify-content: center; }  /* barras centradas en su mitad */
+.cn-desemp__right > .cn-desemp__card .cn-desemp__plot { flex: 1 1 auto; min-height: 0; }             /* la curva llena su mitad */
+@media (max-width: 980px) {
+  .cn-desemp__grid3, .cn-desemp__grid2 { flex: 0 0 auto; grid-template-columns: 1fr; }   /* 1 columna, alto natural */
+  .cn-desemp__rvp-body { grid-template-columns: 1fr; }              /* KPIs sobre las barras */
+  .cn-ins { height: auto; }
+  .cn-ins > .cn-ins__card, .cn-ins > .cn-ins__lect { flex: 0 0 auto; }
+  .cn-ins__ev-scroll { overflow: visible; }
+  .cn-desemp__right > .cn-desemp__card { flex: 0 0 auto; }
+  .cn-desemp__right > .cn-desemp__card .cn-desemp__bars { justify-content: flex-start; }
+}
+
+/* ---- Apilado: brief ejecutivo ARRIBA + módulos de desempeño ABAJO (scroll ÚNICO) ---- */
+/* [2026-08-11] Deja de ser scroller: ahora el único del panel es .cn-col, que envuelve al análisis
+   Y a la pila. ⚠️ El SELECTOR .cn-desemp__scroll NO se toca — de él cuelgan las ~19 reglas de altura
+   de abajo (incluidas las de 375px y 230px que sostienen las gráficas de los focos); renombrarlo o
+   quitarlo de la plantilla las apagaría todas y los plots colapsarían. */
+.cn-desemp__scroll { flex: 0 0 auto; min-height: 0; overflow: visible; }
+.cn-ejec-top { padding: 12px 16px 6px; border-bottom: 1px solid var(--rb-border, #e3e8e5); }
+.cn-ejec-top .cn-ejec-body { width: 100%; }
+/* [2026-08-24] Panorama global "solo P50": sin los focos debajo, el border-bottom de
+   .cn-ejec-top queda como una línea colgando bajo las tarjetas. La clase la pone
+   __cnAnalizar cuando pinta el panorama global ECP. */
+.cn-ejec-top--solo { border-bottom: none; padding-bottom: 12px; }
+/* el desempeño ya NO scrollea por sí mismo: lo hace el scroll externo; alturas naturales */
+.cn-desemp__scroll > .cn-desemp__body { flex: 0 0 auto; overflow: visible; }
+.cn-desemp__scroll .cn-desemp__grid2 { flex: 0 0 auto; }
+.cn-desemp__scroll .cn-ins { height: auto; }
+.cn-desemp__scroll .cn-ins > .cn-ins__card { flex: 0 0 auto; }
+.cn-desemp__scroll .cn-ins__ev-scroll { overflow: visible; }
+.cn-desemp__scroll .cn-desemp__right > .cn-desemp__card { flex: 0 0 auto; }
+/* plots con alto determinista en apilado (evita el colapso de flex:1/min-height:0 sin lienzo que llenar) */
+.cn-desemp__scroll .cn-ins__card > .cn-ins__plot,
+.cn-desemp__scroll .cn-desemp__right > .cn-desemp__card .cn-desemp__plot {
+  flex: 0 0 auto; min-height: 0; height: 230px; }
+
+/* [2026-07-28] "Comportamiento diario" del foco (Crudo/Gas/Blancos): el contenedor de las 3 tarjetas
+   (KPI · gráfico diario · brecha por campo) baja de ~500px a 300px, luego +25% a 375px (pedido del
+   usuario, más aire tras la compresión). El scroll interno queda solo como respaldo (casos con muchos
+   campos) — el contenido de la brecha por campo se COMPRIME (barra más delgada, márgenes más chicos)
+   para que los campos típicos (hasta ~5) quepan completos sin cortarse. */
+.cn-desemp__scroll .cp-foco__panel .cn-desemp__grid2--kpi { height: 375px; min-height: 0; }
+.cn-desemp__scroll .cp-foco__panel .cn-desemp__grid2--kpi > * { height: 100%; min-height: 0; overflow-y: auto; }
+.cn-desemp__scroll .cp-foco__panel .cn-desemp__grid2--kpi .cn-ins__card { height: 100%; }
+.cn-desemp__scroll .cp-foco__panel .cn-desemp__grid2--kpi .cn-ins__card > .cn-ins__plot {
+  height: auto; flex: 1 1 auto; min-height: 0; }
+/* brecha por campo (.gpm) comprimida para caber sin recortarse dentro del alto reducido */
+.cn-desemp__scroll .cp-foco__panel .cn-desemp__grid2--kpi .gpm { display: flex; flex-direction: column; height: 100%; }
+.cn-desemp__scroll .cp-foco__panel .cn-desemp__grid2--kpi .gpm__head { padding: 8px 14px; flex: 0 0 auto; }
+.cn-desemp__scroll .cp-foco__panel .cn-desemp__grid2--kpi .gpm__body {
+  padding: 8px 14px 4px; gap: 6px; flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+.cn-desemp__scroll .cp-foco__panel .cn-desemp__grid2--kpi .gpm__top { margin-bottom: 2px; }
+.cn-desemp__scroll .cp-foco__panel .cn-desemp__grid2--kpi .gpm__bar { height: 10px; }
+.cn-desemp__scroll .cp-foco__panel .cn-desemp__grid2--kpi .gpm__foot { margin-top: 1px; }
+.cn-desemp__scroll .cp-foco__panel .cn-desemp__grid2--kpi .gpm__legend { margin: 4px 14px 8px; padding-top: 6px; flex: 0 0 auto; }
+
+/* [2026-08-13] MISMO acordeón, OTRO contenedor: el bloque "analiza_foco" de Analizar/causal se apila
+   en la pila de Consulta (.cn-stk__body), que NO es .cn-desemp__scroll → heredaba las reglas BASE sin
+   comprimir (barra 20px, gap 18px) y, sobre todo, SIN TECHO de alto: .cp-foco__panel .cn-desemp__grid2
+   (:1663) solo fija min-height:300px, que es un PISO. Con 5-6 campos el .gpm crecía ~150-200px de más.
+   Se replican los valores YA CALIBRADOS del tablero (arriba), con DOS diferencias deliberadas:
+   🔑 1) max-height en vez de height: en la pila el bloque debe poder ser MÁS BAJO si el foco trae
+        pocos campos (el tablero fija 375px exactos porque su columna vive en un alto reservado).
+   🔑 2) overflow:visible en los hijos — el tablero usa overflow-y:auto (:1347), pero aquí eso crearía
+        un SCROLLER ANIDADO dentro de .cn-col, y la regla de oro (:1367-1372) lo prohíbe: dos
+        scrollers anidados atrapan la rueda del ratón y dejan la pila inalcanzable. Con el interior
+        comprimido los ~5 campos típicos caben en 375px; si un foco trae muchos más, el bloque crece
+        hacia abajo y scrollea .cn-col — degradación correcta para una pila, no para un tablero.
+   Las otras 8 reglas de .cn-desemp__scroll (:1326-1339) NO se replican: lo equivalente ya lo fijan
+   las reglas .cp-foco__panel (:1668-1670) con mayor especificidad, y .cn-ins__ev-scroll no se emite
+   en este acordeón (verificado). */
+.cn-stk__body .cp-foco__panel .cn-desemp__grid2--kpi { max-height: 375px; min-height: 0; }
+.cn-stk__body .cp-foco__panel .cn-desemp__grid2--kpi > * { height: 100%; min-height: 0; overflow: visible; }
+.cn-stk__body .cp-foco__panel .cn-desemp__grid2--kpi .cn-ins__card { height: 100%; }
+.cn-stk__body .cp-foco__panel .cn-desemp__grid2--kpi .cn-ins__card > .cn-ins__plot {
+  height: auto; flex: 1 1 auto; min-height: 0; }
+.cn-stk__body .cp-foco__panel .cn-desemp__grid2--kpi .gpm { display: flex; flex-direction: column; height: 100%; }
+.cn-stk__body .cp-foco__panel .cn-desemp__grid2--kpi .gpm__head { padding: 8px 14px; flex: 0 0 auto; }
+.cn-stk__body .cp-foco__panel .cn-desemp__grid2--kpi .gpm__body {
+  padding: 8px 14px 4px; gap: 6px; flex: 1 1 auto; min-height: 0; overflow: visible; }
+.cn-stk__body .cp-foco__panel .cn-desemp__grid2--kpi .gpm__top { margin-bottom: 2px; }
+.cn-stk__body .cp-foco__panel .cn-desemp__grid2--kpi .gpm__bar { height: 10px; }
+.cn-stk__body .cp-foco__panel .cn-desemp__grid2--kpi .gpm__foot { margin-top: 1px; }
+.cn-stk__body .cp-foco__panel .cn-desemp__grid2--kpi .gpm__legend { margin: 4px 14px 8px; padding-top: 6px; flex: 0 0 auto; }
+
+/* ============================================================
+   Consulta · Multi-tab de análisis (rail de previews + lienzo)
+   ============================================================ */
+.cn-shell { display: flex; height: 100%; min-height: 0; }
+/* [2026-08-25] CN-WAFFLE · el riel de 158px pasó a un botón que abre un popover; la barra
+   solo reserva el ancho del botón. Se recuperan ~130px para los gráficos. */
+.cn-railbar { flex: 0 0 auto; padding: 12px 8px; border-right: 1px solid var(--rb-border,#e3e8e5);
+  background: #f6f8f7; display: flex; flex-direction: column; align-items: center; }
+
+.cn-anbtn { width: 34px; height: 34px; border-radius: 9px; border: 1px solid var(--rb-border,#e3e8e5);
+  background: #fff; color: #2f4a3d; cursor: pointer; display: grid; place-items: center;
+  font-size: 1rem; position: relative; transition: border-color .12s, box-shadow .12s; }
+.cn-anbtn:hover { border-color: var(--rb-green,#1f6b4a); }
+.cn-anbtn[aria-expanded="true"] { border-color: var(--rb-green,#1f6b4a);
+  box-shadow: 0 0 0 1px var(--rb-green,#1f6b4a); }
+/* Punto indicador: con solo el icono, el título del análisis activo ya no se ve (H5).
+   Sin esto el botón parece inerte. */
+.cn-anbtn.is-active::after { content: ""; position: absolute; top: -2px; right: -2px;
+  width: 8px; height: 8px; border-radius: 50%; background: var(--rb-chat-gold,#C9962E);
+  border: 1.5px solid #fff; }
+
+/* Popover. fixed + coords en JS: la cadena de ancestros tiene varios overflow:hidden que
+   lo recortarían con absolute (H3, mismo motivo documentado en mainchat.css:50-53).
+   max-height + scroll: sin tope, una rejilla larga desborda el viewport (visto en el
+   waffle de usuario, mainchat.css:66-69). */
+.cn-anpop { position: fixed; top: 0; left: 0; z-index: 1000; width: 268px; background: #fff;
+  border: 1px solid var(--rb-border,#e3e8e5); border-radius: 10px; padding: 12px;
+  box-shadow: 0 8px 32px rgb(0 0 0 / 18%); max-height: calc(100vh - 16px); overflow-y: auto; }
+.cn-anpop[hidden] { display: none; }
+.cn-anpop__hd { font-size: .7rem; font-weight: 700; color: #8a968f; text-transform: uppercase;
+  letter-spacing: .04em; margin-bottom: 9px; }
+/* auto-fit para que crecer de 2 a N tarjetas no deje filas cojas (mismo criterio que
+   mainchat.css:135-139). */
+.cn-anpop__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 8px; }
+/* [2026-08-11] SCROLL ÚNICO: .cn-col es el ÚNICO scroller del panel derecho; dentro van el análisis
+   (.cn-canvas) y la pila (.cn-stack) uno debajo del otro, ambos de alto NATURAL. Antes .cn-canvas
+   tenía su propio overflow y se excluía con la pila vía .is-stack; ahora conviven. Regla de oro: ni
+   .cn-canvas ni .cn-stack pueden volver a llevar overflow — dos scrollers anidados dejarían la pila
+   inalcanzable (el reporte scrollearía por dentro y nunca llegarías a los resultados). */
+.cn-col { flex: 1 1 auto; min-width: 0; min-height: 0; overflow: auto; position: relative; }
+.cn-canvas { flex: 0 0 auto; min-width: 0; padding: 0; }
+.cn-canvas:empty { display: none; }   /* sin análisis todavía → nada de hueco sobre la pila */
+
+/* Pila acumulativa de resultados del Motor Q v2 (ver __cnPintarPanelCuant en multitab_shell.js).
+   Alto natural: crece hacia abajo y quien scrollea es .cn-col. */
+.cn-stack { min-width: 0; padding: 14px; }
+.cn-stack:empty { display: none; }
+
+.cn-stk { border: 1px solid var(--rb-border,#e3e8e5); border-radius: 10px; background: #fff;
+  padding: 10px 12px 12px; margin-bottom: 14px; }
+
+/* [2026-08-24] Guía de arranque: ocupa el hueco bajo las tarjetas P50 mientras la pila está
+   vacía y se retira en cuanto llega el primer panel (__cnStackEnsure). Recupera el menú de
+   categorías que salió del saludo del chat — ahí era un muro de texto antes de escribir nada;
+   aquí acompaña a los datos que el usuario ya está viendo.
+   Sin caja ni borde: es una nota sobre el panel, no una tarjeta más de la pila. */
+.cn-guia { font-size: 12.5px; line-height: 1.55; color: #3C4A44; padding: 2px 2px 4px; }
+.cn-guia__hd { margin: 0 0 10px; font-size: 13px; color: #17241E; }
+.cn-guia__p { margin: 0 0 8px; }
+.cn-guia__lista { margin: 0 0 10px; padding-left: 18px; list-style: disc; }
+.cn-guia__lista li { margin-bottom: 6px; }
+.cn-guia__lista strong { color: #17241E; }
+.cn-guia em { font-style: italic; color: #6B7A74; }
+
+/* [2026-08-24] Entrada progresiva del bloque, para que aparezca A LA VEZ que el chat
+   se escribe en vez de saltar entero mientras el texto todavía se revela. La clase la
+   pone y la quita __cnPintarPanelCuant; la duración se pasa por --cn-stk-in para que
+   coincida con la del typing (__cnRevelar la calcula según el largo de la respuesta).
+   Solo opacidad y desplazamiento: NADA que altere el ALTO del bloque — __cnStackScroll
+   mide altura con un ResizeObserver y espera 600ms de calma, así que animar height o
+   scale reiniciaría esa espera y retrasaría la bajada hasta el techo de 8s. */
+@keyframes cnStkIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.cn-stk--in { animation: cnStkIn var(--cn-stk-in, 900ms) cubic-bezier(0.22, 0.61, 0.36, 1) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .cn-stk--in { animation: none; }
+}
+.cn-stk:last-child { margin-bottom: 4px; }
+.cn-stk__hd { display: flex; align-items: center; gap: 8px; padding-bottom: 8px; margin-bottom: 10px;
+  border-bottom: 1px solid var(--rb-border,#e3e8e5); }
+.cn-stk__n { flex: 0 0 auto; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px;
+  display: grid; place-items: center; background: var(--rb-green-soft,#eef5f1); color: #1f6b4a;
+  font-size: .66rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.cn-stk__q { flex: 1 1 auto; min-width: 0; font-size: .8rem; font-weight: 700; color: #2f4a3d;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cn-stk__ts { flex: 0 0 auto; font-size: .68rem; color: #8a968f; font-variant-numeric: tabular-nums; }
+/* [2026-08-11] Identidad de producto sobre el BLOQUE de la pila: el dispatcher (__cnPintarPanelCuant)
+   inyecta --cp-prod/-soft/-text leyendo el data-prod que el constructor puso en su raíz — la regla
+   base de .cn-stk__n NO se reemplaza, esta es una variante aditiva. */
+.cn-stk--prod { border-top: 3px solid var(--cp-prod, var(--rb-border,#e3e8e5)); }
+.cn-stk--prod .cn-stk__n { background: var(--cp-prod-soft, var(--rb-green-soft,#eef5f1));
+  color: var(--cp-prod-text, #1f6b4a); }
+
+.cn-railcard { text-align: left; border: 1px solid var(--rb-border,#e3e8e5); background: #fff;
+  border-radius: 10px; padding: 8px; cursor: pointer; display: flex; flex-direction: column; gap: 6px;
+  transition: border-color .12s, box-shadow .12s; }
+.cn-railcard:hover { border-color: var(--rb-green,#1f6b4a); }
+.cn-railcard.is-active { border-color: var(--rb-chat-gold,#C9962E); box-shadow: 0 0 0 1px var(--rb-chat-gold,#C9962E); }
+.cn-railcard.is-disabled { opacity: .45; filter: grayscale(.7); cursor: not-allowed; }
+.cn-railcard.is-disabled:hover { border-color: var(--rb-border,#e3e8e5); }
+.cn-railcard__thumb { height: 46px; border-radius: 6px; background: #f1f5f3; display: grid;
+  place-items: center; overflow: hidden; }
+.cn-railcard__thumb svg { width: 100%; height: 100%; display: block; }
+.cn-railcard__meta { display: flex; flex-direction: column; gap: 2px; }
+.cn-railcard__title { font-size: .74rem; font-weight: 700; color: #2f4a3d; line-height: 1.15; }
+.cn-railcard__chk { font-size: .64rem; color: #1e9e63; font-weight: 700; }
+.cn-railcard__prox { font-size: .6rem; color: #8a968f; font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
+.cn-prox { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 10px; color: #6b7a72; text-align: center; padding: 30px; }
+.cn-prox__ic { width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--rb-green-soft,#eef5f1); color: var(--rb-chat-gold,#C9962E); font-size: 24px; }
+.cn-prox__tt { font-size: 1rem; font-weight: 800; color: #2f4a3d; }
+.cn-prox__sub { font-size: .82rem; max-width: 360px; }
+.cn-desemp__stack { display: flex; flex-direction: column; gap: 12px; }
+.cn-desemp__kpisrow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+@media (max-width: 720px) {
+  .cn-desemp__kpisrow { grid-template-columns: 1fr; }
+  /* [2026-08-25] CN-WAFFLE · el botón ya es compacto; solo se ajusta el padding. */
+  .cn-railbar { padding: 8px 6px; }
+}
+
+/* ============================================================
+   Consulta · Análisis Ejecutivo (IA) -- sandbox tarjeta Filiales (H6: badge "EN PRUEBAS")
+   ============================================================ */
+.cn-railcard__beta { font-size: .6rem; color: #B45309; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
+.cn-ejec-wrap { padding: 10px 16px 24px; width: 100%; }
+.cn-ejec__hd { padding: 8px 10px; font-size: .78rem; font-weight: 700; color: #2f4a3d; display: flex;
+  align-items: center; gap: 6px; border-bottom: 1px solid var(--rb-line,#eef2f5); margin-bottom: 8px; }
+.cn-ejec__hd-ic { color: var(--rb-chat-gold,#C9962E); }
+.cn-ejec__note { margin: 4px 10px 10px; font-size: .7rem; color: #8a6d1f; background: #fdf6e3;
+  border: 1px solid #f0e2b0; border-radius: 6px; padding: 6px 8px; }
+.cn-ejec__sec { margin: 10px; border: 1px solid var(--rb-line,#eef2f5); border-radius: 8px; overflow: hidden; }
+.cn-ejec__sec-hd { padding: 6px 10px; font-size: .7rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .02em; color: #3a4a42; background: var(--rb-green-soft,#eef5f1); display: flex;
+  align-items: center; gap: 6px; }
+.cn-ejec__list { list-style: none; margin: 0; padding: 8px 12px; display: flex; flex-direction: column; gap: 6px; }
+.cn-ejec__list li { font-size: .8rem; color: #3d4d46; line-height: 1.4; padding-left: 14px; position: relative; }
+.cn-ejec__list li::before { content: "•"; position: absolute; left: 0; color: var(--rb-green,#1f6b4a); font-weight: 700; }
+
+/* Panel ejecutivo en 2 columnas: brief (izq) + gráficos de respaldo (der) */
+.cn-ejec__cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; align-items: stretch; }
+.cn-ejec__left { min-width: 0; }
+.cn-ejec__right { min-width: 0; }
+@media (max-width: 900px) { .cn-ejec__cols { grid-template-columns: 1fr; } }
+.cn-ejec__charts-hd { padding: 6px 10px; font-size: .7rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .04em; color: #3a4a42; display: flex; align-items: center; gap: 6px; }
+.cn-ejec__tabs { display: flex; gap: 8px; padding: 2px 10px 10px; flex-wrap: wrap; }
+.cn-ejec__tab { flex: 1 1 0; min-width: 96px; cursor: pointer; border: 1px solid var(--rb-line,#d9e2dc);
+  background: #fff; border-radius: 8px; padding: 7px 10px; font-size: .78rem; font-weight: 700;
+  color: #4a5a52; display: flex; flex-direction: column; align-items: flex-start; gap: 1px;
+  transition: background .12s, border-color .12s, color .12s; }
+.cn-ejec__tab span { font-size: .72rem; font-weight: 600; color: #8a978f; }
+.cn-ejec__tab:hover { border-color: #b7c4bc; }
+/* [2026-08-11] D1: la pestaña activa y el sub-encabezado dejan de colorearse por ESTADO
+   (is-ok/is-warn/is-bad, ya retirado del JS que las genera) y pasan a colorearse por PRODUCTO vía
+   --cp-prod (inyectado inline por __cnEjecChartsHtml/__cnEjecProdHtml). El fallback conserva el
+   verde de marca solo si, por lo que sea, ningún producto resolvió color. */
+.cn-ejec__tab.is-active { background: var(--cp-prod, var(--rb-green,#1f6b4a));
+  border-color: var(--cp-prod, var(--rb-green,#1f6b4a)); color: #fff; }
+.cn-ejec__tab.is-active span { color: rgba(255,255,255,.82); }
+.cn-ejec__prod { margin: 8px 10px 12px; border: 1px solid var(--rb-line,#eef2f5); border-radius: 8px; overflow: hidden; }
+.cn-ejec__prod-hd { padding: 6px 10px; font-size: .8rem; font-weight: 700; color: #2b3a33;
+  background: var(--rb-green-soft,#eef5f1); border-left: 3px solid var(--cp-prod, #9aa8a0); }
+.cn-ejec__prod-hd span { font-weight: 500; color: #5c6b63; font-size: .74rem; }
+.cn-ejec__ch { padding: 8px 10px 4px; }
+.cn-ejec__ch-t { font-size: .72rem; color: #5c6b63; margin-bottom: 2px; }
+.cn-ejec__svg { display: block; width: 100%; height: auto; }
+.cn-ejec__empty { margin: 10px; font-size: .78rem; color: #7a8a82; }
+
+/* Fase 3 · respuesta numérica del chat de Consulta (determinista) */
+.cn-answer { margin-bottom: 10px; }
+.cn-answer__head { font-weight: 600; font-size: .82rem; color: #14532d; margin-bottom: 6px; }
+.cn-answer__list { list-style: none; margin: 0; padding: 0; }
+.cn-answer__row { font-variant-numeric: tabular-nums; font-size: .86rem; padding: 3px 0;
+  border-bottom: 1px dashed rgba(0,0,0,.06); }
+.cn-answer__row:last-child { border-bottom: 0; }
+/* Fase 3.1 · narración redactada por el LLM (párrafo en vez de viñetas) */
+.cn-answer--narrada { margin-bottom: 10px; }
+.cn-answer__prosa { margin: 0; font-size: .9rem; line-height: 1.55; color: var(--rb-ink); }
+/* D-D5 · nota de zoom ("también se reconoce como Activo") entre las acciones y su botón */
+.cn-zoom-nota { margin: 10px 0 4px; }
+
+/* ===== Sección "Diferidas" del acordeón de foco (histórico de frecuencia por causa) ===== */
+.cn-dif { padding: 4px 2px 2px; }
+.cn-dif__hd { font-size: 13px; color: #1c231f; margin-bottom: 10px; }
+.cn-dif__hd b { font-weight: 700; }
+.cn-dif__sub { display: block; font-size: 11px; color: #8b948e; margin-top: 2px; }
+.cn-dif__cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px; align-items: stretch; }
+.cn-dif__c { background: #fff; border: 1px solid #e4e6df; border-radius: 10px; padding: 12px 12px 14px; min-width: 0; }
+.cn-dif__ct { font-size: 13px; font-weight: 650; color: #1c231f; }
+.cn-dif__note { font-size: 11px; color: #8b948e; margin: 2px 0 6px; }
+.cn-dif__pareto { height: 230px; }
+/* tabla de tendencia */
+.cn-dif__tblscroll { overflow-x: auto; }
+.cn-dif__tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+.cn-dif__tbl thead th { text-align: right; font-size: 9.5px; letter-spacing: .04em; text-transform: uppercase; color: #8b948e; font-weight: 700; padding: 0 6px 7px; border-bottom: 1px solid #e4e6df; }
+.cn-dif__tbl thead th:first-child { text-align: left; }
+.cn-dif__tbl thead th.cur { color: #1f6b4a; }
+.cn-dif__tbl thead th.c { text-align: center; }
+.cn-dif__tbl tbody td { padding: 6px; border-bottom: 1px solid #eef0ea; text-align: right; font-variant-numeric: tabular-nums; }
+.cn-dif__tbl tbody td:first-child { text-align: left; color: #1c231f; font-weight: 500; }
+.cn-dif__tbl tbody td.cur { font-weight: 700; }
+.cn-dif__tbl tbody td.dim { color: #8b948e; }
+.cn-dif__tbl tbody tr.otros td { color: #8b948e; font-style: italic; }
+.cn-dif__tbl td.semcell { text-align: center; }
+.cn-dif__sem { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 600; white-space: nowrap; text-transform: capitalize; }
+.cn-dif__sem--up { color: #1f7a4d; }
+.cn-dif__sem--down { color: #c0392b; }
+.cn-dif__sem--flat { color: #d69a1a; }
+/* pozos por grupo (conteo, barras horizontales) */
+.cn-dif__kpi { font-size: 11.5px; color: #55605a; margin: 0 0 8px; }
+.cn-dif__kpi b { color: #1c231f; font-weight: 700; }
+.cn-dif__plist { display: flex; flex-direction: column; gap: 8px; }
+.cn-dif__prow { display: grid; grid-template-columns: 78px 1fr 24px; align-items: center; gap: 8px; }
+.cn-dif__plab { font-size: 11px; color: #1c231f; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cn-dif__ptrack { height: 16px; background: #eef0ea; border-radius: 4px; overflow: hidden; }
+.cn-dif__pfill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, #1f5c43, #8ba23a); }
+.cn-dif__pval { font-size: 12px; font-weight: 700; color: #1c231f; text-align: right; font-variant-numeric: tabular-nums; }
+.cn-dif__pnote { margin-top: 10px; font-size: 10.5px; color: #8b948e; font-style: italic; }
+/* Impacto por causa (NV04): barras de volumen perdido — reusa .cn-dif__ptrack/__pfill. [2026-07-25] */
+.cn-dif__irow { display: grid; grid-template-columns: 128px 1fr auto; align-items: center; gap: 8px; }
+.cn-dif__ilab { font-size: 11px; color: #1c231f; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cn-dif__ival { font-size: 11px; font-weight: 700; color: #1c231f; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.cn-dif__ipct { color: #8b948e; font-weight: 600; margin-left: 5px; }
+
+/* ===== [2026-07-26] Pill EBITDA-NOPAT · waterfall Ingresos→NOPAT (réplica EBITDA Inspector) ===== */
+.cn-wf { padding: 4px 2px 2px; min-height: 380px; }
+.cn-wf__bar-top { display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  flex-wrap: wrap; margin: 2px 2px 8px; }
+.cn-wf__units { display: inline-flex; border: 1px solid #DDE4DF; border-radius: 8px; overflow: hidden; }
+.cn-wf__unit { border: 0; background: #fff; color: #6E7C75; font-size: 12px; font-weight: 700;
+  padding: 5px 12px; cursor: pointer; font-family: ui-monospace,'SF Mono',Menlo,Consolas,monospace; }
+.cn-wf__unit + .cn-wf__unit { border-left: 1px solid #DDE4DF; }
+.cn-wf__unit.is-active { background: #004236; color: #fff; }
+.cn-wf__scope { font-size: 11.5px; color: #6E7C75; font-variant-numeric: tabular-nums; }
+.cn-wf__svgwrap { position: relative; width: 100%; }
+.cn-wf__svg { display: block; width: 100%; height: auto; min-height: 380px; }
+.cn-wf__band { fill: #6b6f63; font-size: 9px; font-weight: 500; letter-spacing: .02em; }
+.cn-wf__tick { fill: #6b6f63; font-size: 12px; font-weight: 700;
+  font-family: ui-monospace,'SF Mono',Menlo,Consolas,monospace; }
+.cn-wf__val { font-size: 10px; font-weight: 600; font-variant-numeric: tabular-nums;
+  font-family: ui-monospace,'SF Mono',Menlo,Consolas,monospace; }
+.cn-wf__xlbl { fill: #333; font-size: 11px; font-weight: 400; }
+.cn-wf__xlbl.is-total { fill: #111827; font-weight: 700; }
+.cn-wf__bar-rect { cursor: pointer; transition: opacity .1s; }
+.cn-wf__hover { position: absolute; top: 8px; right: 12px; z-index: 5; display: flex; align-items: center;
+  gap: 8px; background: #fff; border: 1px solid #ecf1f6; border-radius: 8px; padding: 8px 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.1); pointer-events: none; }
+.cn-wf__hdot { width: 10px; height: 10px; border-radius: 50%; flex: 0 0 auto; }
+.cn-wf__hlbl { font-size: 12px; color: #374151; }
+.cn-wf__hval { font-size: 13px; font-weight: 600; color: #111827; font-variant-numeric: tabular-nums; }
+.cn-wf__load { display: flex; align-items: center; gap: 8px; justify-content: center; padding: 40px 0;
+  color: #6E7C75; font-size: 13px; }
+.cn-wf__blank { display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; padding: 40px 20px; color: #6E7C75; }
+.cn-wf__blank > i { font-size: 26px; color: #B7C2BB; margin-bottom: 10px; }
+.cn-wf__blanktit { font-size: 14px; font-weight: 700; color: #3C4A44; margin: 0 0 4px; }
+.cn-wf__blanksub { font-size: 12px; color: #8b948e; margin: 0; max-width: 380px; }
+.cn-wf__retry { margin-top: 12px; border: 1px solid #DDE4DF; background: #fff; color: #3C4A44;
+  font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: 8px; cursor: pointer; }
+.cn-wf__retry:hover { background: #F1F4F1; }
+
+/* ===== [2026-07-24] Rediseño A+C · Fase 1: tarjetas KPI con anillo (anal.md §4/§7) ===== */
+.cp-mes__kpi { display: flex; flex-direction: column; background: #fff; border: 1px solid #E4E9E5;
+  border-radius: 14px; padding: 15px 16px; box-shadow: 0 1px 2px rgba(20,40,30,.04); min-width: 0; }
+.cp-mes__kpi-hd { display: flex; align-items: center; gap: 9px; margin-bottom: 14px; }
+.cp-mes__kpi-chip { width: 26px; height: 26px; border-radius: 8px; display: inline-flex;
+  align-items: center; justify-content: center; background: var(--cp-st-soft); flex: 0 0 auto; }
+.cp-mes__kpi-chip i { font-size: 14px; color: var(--cp-st); }
+/* [2026-08-11] Identidad de PRODUCTO (filete + badge) — SOLO en tarjetas que opten con la clase
+   --prod (__cnTarjetasKpiHtml, __cnP50CardHtml). __cnCuantCardHtml NO la lleva a propósito: su
+   color es 100% de ESTADO (Alineado/Rezagado/Foco), deuda documentada aparte. El estado sigue
+   viviendo en --cp-st/--cp-st-soft (chip de texto, anillo) — ambas paletas conviven sin pisarse. */
+.cp-mes__kpi--prod { border-top: 3px solid var(--cp-prod, #E4E9E5); }
+.cp-mes__kpi--prod .cp-mes__kpi-chip { background: var(--cp-prod-soft, #F1F4F1); }
+.cp-mes__kpi--prod .cp-mes__kpi-chip i { color: var(--cp-prod, #6E7C75); }
+.cp-mes__kpi-name { font-size: 15px; font-weight: 800; color: #17241E; }
+.cp-mes__kpi-badge { margin-left: auto; display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; font-weight: 700; color: var(--cp-st); background: var(--cp-st-soft);
+  border-radius: 20px; padding: 3px 10px; white-space: nowrap; }
+.cp-mes__kpi-badge i { font-size: 10px; }
+.cp-mes__kpi-mid { display: flex; align-items: center; gap: 14px; }
+.cp-mes__ring { flex: 0 0 auto; }
+.cp-mes__kpi-fig { min-width: 0; }
+.cp-mes__kpi-figlbl { font-size: 11px; font-weight: 600; color: #98A69E; }
+.cp-mes__kpi-figval { font-size: 22px; font-weight: 800; color: #17241E; letter-spacing: -.5px; line-height: 1.15; }
+.cp-mes__kpi-unit { font-size: 11.5px; font-weight: 600; color: #6E7C75; letter-spacing: 0; }
+.cp-mes__kpi-ppto { font-size: 11px; color: #98A69E; margin-top: 1px; }
+.cp-mes__kpi-ppto b { color: #3C4A44; font-weight: 700; }
+.cp-mes__kpi-sep { height: 1px; background: #EEF2EF; margin: 13px 0 11px; }
+.cp-mes__kpi-proyhd { display: flex; justify-content: space-between; align-items: baseline;
+  font-size: 11px; font-weight: 600; color: #98A69E; }
+.cp-mes__kpi-proyval { font-family: ui-monospace,'SF Mono',Menlo,Consolas,monospace; font-size: 11px; color: #6E7C75; }
+.cp-mes__meter { height: 7px; border-radius: 7px; background: #EEF2EF; overflow: hidden; margin-top: 5px; }
+.cp-mes__meter > span { display: block; height: 100%; border-radius: 7px; }
+.cp-mes__kpi-close { font-size: 11.5px; color: #3C4A44; margin-top: 9px; }
+.cp-mes__kpi-gap { font-weight: 700; color: var(--cp-st); }
+
+/* [2026-07-29] Épica 2 · cuerpo de la tarjeta P50 del ENCABEZADO (mockup artifact c14c7dc8).
+   Solo el cuerpo: el contenedor, el borde y el header siguen siendo .cp-mes__kpi* (arriba), así
+   que la tarjeta no se despega del sistema visual del panel. Las clases .cp-p50__* NO las usa
+   ninguna otra tarjeta → cambiarlas no toca los KPI del foco. */
+.cp-p50__ring { display: flex; justify-content: center; margin: 2px 0 5px; }
+.cp-p50__real { text-align: center; margin-bottom: 11px; }
+.cp-p50__realval { font-size: 20px; font-weight: 800; color: #17241E; letter-spacing: -.4px; line-height: 1.15; }
+.cp-p50__reallbl { font-size: 11px; color: #98A69E; margin-top: 1px; }
+.cp-p50__rows { border-top: 1px solid #EEF2EF; padding-top: 3px; }
+.cp-p50__r { display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 6px 0; font-size: 12px; border-bottom: 1px dashed #EEF2EF; }
+.cp-p50__r:last-child { border-bottom: 0; }
+.cp-p50__k { color: #6E7C75; display: flex; align-items: center; gap: 7px; min-width: 0; }
+/* ◆ dorado = las dos referencias del compromiso (Base P50 y Compromiso/Reto) */
+.cp-p50__mk { width: 8px; height: 8px; border-radius: 2px; transform: rotate(45deg);
+  background: #B8920A; display: inline-block; flex: 0 0 auto; }
+.cp-p50__v { font-weight: 700; color: #3C4A44; white-space: nowrap;
+  font-family: ui-monospace,'SF Mono',Menlo,Consolas,monospace; font-size: 11.5px; }
+.cp-p50__r--gap .cp-p50__k { color: #17241E; font-weight: 600; }
+.cp-p50__v--neg { color: #C5311E; }
+.cp-p50__v--pos { color: #1E9E5A; }
+@media (prefers-reduced-motion: reduce) { .cp-mes__kpi * { transition: none !important; } }
+
+/* ===== [2026-07-24] Fase 2 · Focos master-detail (anal.md §8-§9) ===== */
+/* [2026-08-11] Filete superior = identidad de producto (--cp-prod, inyectado inline por fila). */
+.cp-foco { background:#fff; border:1px solid #E4E9E5; border-top:3px solid var(--cp-prod,#E4E9E5);
+  border-radius:14px; overflow:hidden; margin:0 10px 14px; }
+.cp-foco__hd { display:flex; align-items:center; gap:12px; padding:13px 16px; }
+.cp-foco__rk { width:24px; height:24px; border-radius:7px; background:#0E5C3A; color:#fff; flex:0 0 auto;
+  display:inline-flex; align-items:center; justify-content:center;
+  font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace; font-size:12px; font-weight:800; }
+/* Badge con icono (2ª vía de la spec): fondo suave del producto + icono en su color. */
+.cp-foco__prod { width:22px; height:22px; border-radius:6px; flex:0 0 auto; font-size:12px;
+  display:inline-flex; align-items:center; justify-content:center;
+  background: var(--cp-prod-soft,#F1F4F1); color: var(--cp-prod,#6E7C75); }
+.cp-foco__tit { font-size:14px; font-weight:800; color:#17241E; text-transform:uppercase;
+  min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.cp-foco__meta { margin-left:auto; font-size:11.5px; color:#6E7C75; white-space:nowrap; flex:0 0 auto; }
+/* 4ª vía de la spec: énfasis del % de concentración con la variante de TEXTO del producto
+   (oscurecida, ≥4.5:1 sobre blanco) — nunca con `color`, que en Blancos/Gas no alcanza contraste. */
+.cp-foco__share { color: var(--cp-prod-text, #3C4A44); font-weight: 800; }
+.cp-foco__pills { display:flex; gap:8px; padding:0 16px 14px; }
+.cp-foco__pill { flex:1; min-width:0; display:flex; align-items:center; gap:9px; text-align:left; cursor:pointer;
+  border:1px solid #E4E9E5; background:#fff; border-radius:11px; padding:10px 12px;
+  transition:border-color .15s, background .15s; }
+.cp-foco__pill:hover { border-color:#7FB79A; }
+.cp-foco__pill.is-active { border-color:#1E9E5A; background:#F3F9F4; }
+.cp-foco__pill:focus-visible { outline:none; box-shadow:0 0 0 2px rgba(30,158,90,.5); }
+.cp-foco__ptile { width:30px; height:30px; border-radius:8px; flex:0 0 auto; display:inline-flex;
+  align-items:center; justify-content:center; background:#F3F9F4; }
+.cp-foco__ptile i { font-size:15px; color:#15794C; }
+.cp-foco__pill.is-active .cp-foco__ptile { background:#0E5C3A; }
+.cp-foco__pill.is-active .cp-foco__ptile i { color:#fff; }
+.cp-foco__ptxt { display:flex; flex-direction:column; min-width:0; }
+.cp-foco__ptit { font-size:12.5px; font-weight:800; color:#17241E; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cp-foco__psub { font-size:10.5px; color:#6E7C75; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cp-foco__pcheck { margin-left:auto; font-size:14px; color:#1E9E5A; flex:0 0 auto; display:none; }
+.cp-foco__pill.is-active .cp-foco__pcheck { display:inline; }
+.cp-foco__panel { display:none; padding:16px; background:#F6F8F5; border-top:1px solid #E4E9E5; }
+.cp-foco__panel.is-active { display:block; }
+.cp-foco__panel .cn-desemp__grid2 { min-height:300px; }   /* [Hallazgo C] repone la altura de .cn-foco__acc */
+/* [2026-07-26] La curva diaria del foco LLENA el alto de su celda (el grid se estira a la columna más
+   alta = el desglose por campo). Antes el plot tenía alto FIJO 230px (regla de .cn-desemp__scroll) y
+   dejaba hueco blanco abajo. Se sobreescribe SOLO en el panel del foco: la columna y el plot crecen
+   (flex) — el desglose por campo garantiza altura de fila, así que flex:1 no colapsa. */
+.cp-foco__panel .cn-ins { height:100%; }
+.cp-foco__panel .cn-ins > .cn-ins__card { flex:1 1 auto; min-height:0; display:flex; flex-direction:column; }
+.cp-foco__panel .cn-ins__card > .cn-ins__plot { flex:1 1 auto; min-height:120px; height:auto; }
+.cp-foco__phd { display:flex; align-items:center; gap:7px; margin-bottom:11px; font-size:12px; font-weight:800; color:#0A4A2E; }
+.cp-foco__phd i { font-size:13px; color:#15794C; }
+.cp-foco__pmeta { font-weight:600; color:#98A69E; font-size:11px; }
+.cp-foco__mock { font-size:11px; font-style:italic; color:#8b948e; margin-bottom:8px; }
+.cp-foco__mock i { font-size:11px; }
+/* Épica 1 — Atribución del gap (barriles por campo + fuente/soporte real) dentro del panel
+   "Comportamiento diario" de cada foco ECP. */
+.cp-foco__atrib { background:#fff; border:1px solid #E4E9E5; border-radius:8px; padding:8px 10px; margin-bottom:10px; font-size:11px; }
+.cp-foco__atrib b { color:#0A4A2E; font-size:11px; }
+.cp-foco__atrib ul { margin:5px 0 0 16px; padding:0; color:#5c6b63; }
+.cp-foco__atrib li { margin-bottom:2px; }
+.cp-foco__evento { margin-top:6px; color:#3a4a42; }
+.cp-foco__evento--warn { color:#A32D2D; font-style:italic; }
+.cp-foco__mtbl { border:1px solid #E4E9E5; border-radius:10px; overflow:hidden; background:#fff; }
+/* [2026-08-13] Anchos re-calibrados para datos REALES: el mock tenía pozos de 6 chars
+   ("CUS-14") y ahora llegan a 24 ("CHICHIMENE SOUTH WEST 23", ~173px en la monoespaciada de
+   12px) y tipos de hasta 68 ("MANTENIMIENTO DE BOMBEO NEUMÁTICO (Gas Lift) POR COILED TUBING
+   (CTG)"). minmax(0,…) + min-width:0 son lo que permite que una celda de grid se ENCOJA por
+   debajo de su contenido (sin eso, `1fr` no cede y la fila desborda). El texto completo queda
+   en el title= que pone el JS. La 3ª columna baja a 92px: ahora dice "Abierto"/"Cerrado",
+   no "En ejecución". */
+.cp-foco__mrow { display:grid; grid-template-columns:minmax(0,132px) minmax(0,1fr) 92px 70px;
+  align-items:center; gap:12px; padding:9px 13px; border-top:1px solid #EEF2EF; }
+.cp-foco__mrow:first-child { border-top:none; }
+.cp-foco__mpozo { font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace; font-size:12px; font-weight:700; color:#17241E; }
+.cp-foco__mtipo { font-size:12.5px; color:#3C4A44; }
+.cp-foco__mpozo, .cp-foco__mtipo { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.cp-foco__mest { display:inline-flex; align-items:center; gap:6px; font-size:11.5px; font-weight:600; }
+.cp-foco__mdot { width:6px; height:6px; border-radius:50%; background:#98A69E; display:inline-block; flex:0 0 auto; }
+.cp-foco__mest.is-ejec { color:#E8912B; }
+.cp-foco__mest.is-ejec .cp-foco__mdot { background:#E8912B; }
+.cp-foco__mest.is-prog { color:#6E7C75; }
+.cp-foco__mfin { font-size:11.5px; color:#6E7C75; text-align:right; }
+@media (max-width:720px) {
+  .cp-foco__pills { flex-direction:column; }
+  .cp-foco__mrow { grid-template-columns:1fr 1fr; }
+}
+@media (prefers-reduced-motion: reduce) { .cp-foco * { transition:none !important; } }
+
+/* [2026-07-29] Respuesta de datos del chat — «Titular + métricas» (spec resp.md, artboard A).
+   Reemplaza el párrafo en prosa por jerarquía: cabecera → dato principal → métricas → cierre.
+   El defecto que ataca: en prosa, proyección (6.860.389) y presupuesto (6.679.262) eran
+   indistinguibles. REGLA DE CONTRASTE (§2 del spec): ningún texto <=12px en gris claro; el
+   mínimo es #3C4A44 (~8.6:1 sobre blanco). Etiquetas nunca por debajo de 10.5px.
+   El color de estado entra por --da-st/--da-st-soft, que fija el JS por respuesta. */
+.da__head { display:flex; align-items:center; gap:8px; margin-bottom:11px; flex-wrap:wrap; }
+.da__eyebrow { font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace; font-size:10.5px;
+  font-weight:700; letter-spacing:.7px; color:#3C4A44; text-transform:uppercase; }
+.da__entidad { font-size:14.5px; font-weight:800; color:#1A2A24; }
+.da__chip { margin-left:auto; display:inline-flex; align-items:center; gap:5px; font-size:11px;
+  font-weight:700; border-radius:20px; padding:3px 9px; color:var(--da-st); background:var(--da-st-soft); }
+.da__chip i { font-size:10px; }
+
+.da__headline { padding-bottom:12px; border-bottom:1px solid #EEF2EF; }
+.da__periodo { font-size:11px; font-weight:600; color:#3C4A44; }
+.da__big { display:flex; align-items:baseline; gap:7px; margin-top:3px; flex-wrap:wrap; }
+.da__big b { font-size:27px; font-weight:800; color:#1A2A24; letter-spacing:-.8px; line-height:1;
+  font-variant-numeric:tabular-nums; }
+.da__big span { font-size:12px; font-weight:600; color:#3C4A44; }
+.da__ritmo { font-size:11.5px; color:#3C4A44; margin-top:5px; }
+.da__ritmo b { font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace; font-weight:700; color:#3C4A44; }
+
+/* A6 · la grilla tiene 1, 2 o 3 celdas según lo que exista (nunca repite el número del titular) */
+.da__grid { display:grid; gap:10px; padding:12px 0; margin:0; }
+.da__grid--1 { grid-template-columns:1fr; }
+.da__grid--2 { grid-template-columns:1fr 1fr; }
+.da__grid--3 { grid-template-columns:1fr 1fr 1fr; }
+.da__grid dd { margin:0; }
+.da__m-label { font-size:10.5px; font-weight:700; letter-spacing:.4px; text-transform:uppercase; color:#3C4A44; }
+.da__m-value { font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace; font-size:13.5px;
+  font-weight:800; color:#1A2A24; margin-top:3px; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+.da__m-value.is-hero { font-size:15px; color:var(--da-st); }
+.da__m-unit { font-size:10.5px; color:#3C4A44; margin-top:1px; }
+
+/* D1 · productos NO titulares: una línea cada uno, sin competir con el titular */
+.da__otros { padding-top:10px; border-top:1px solid #EEF2EF; display:flex; flex-direction:column; gap:6px; }
+.da__otro { display:flex; align-items:baseline; gap:8px; font-size:11.5px; color:#3C4A44; flex-wrap:wrap; }
+.da__otro-prod { font-weight:700; color:#1A2A24; min-width:62px; }
+.da__otro-val { font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace; font-weight:700; }
+.da__otro-est { margin-left:auto; font-weight:700; color:var(--da-st2); }
+
+.da__cierre { margin:0; padding-top:11px; border-top:1px solid #EEF2EF; font-size:12px;
+  line-height:1.5; color:#3C4A44; }
+.da__cierre b { font-weight:700; color:var(--da-st); }
+
+@media (max-width:380px) { .da__grid--3 { grid-template-columns:1fr 1fr; } }
+
+/* [2026-07-30] Invitación de cierre de la respuesta del chat (texto plano, sin botones).
+   Va debajo del pie y los avisos, y queda justo encima de la fila "Analizar el <Nivel> X" que
+   __cnRender concatena después — adyacencia buscada. Cursiva y 11.5px para que se lea como
+   invitación y no compita con las cifras. Respeta la regla de contraste del rediseño: nada
+   <=12px por debajo de #3C4A44. */
+.da__invita { margin:9px 0 0; padding-top:9px; border-top:1px dashed #E4EAE6; font-size:11.5px;
+  font-style:italic; color:#3C4A44; line-height:1.45; }
+
+/* =====================================================================
+   [2026-07-30] MOTOR Q v2 · Fase 1 — selector de motor, burbuja del
+   clasificador y pestaña «Test Clas» (libreta con calificación inline).
+   Solo AGREGA clases nuevas (cn-motor / v2-* / tc-*): cero colisión con
+   el chat v1 (.rb-chat*) ni con la respuesta de datos (.da*).
+   ===================================================================== */
+
+/* Selector Motor v1|v2 (cabecera del chat de Consulta) */
+.cn-motor { display:flex; align-items:center; gap:6px; padding:7px 12px;
+  border-bottom:1px solid #E4EAE6; background:#FAFCFA; flex:0 0 auto; }
+.cn-motor__lbl { font-size:10.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+  color:#5C6B64; }
+.cn-motor__btn { border:1px solid #D7DFDA; background:#fff; color:#3C4A44; font-size:11.5px;
+  font-weight:700; padding:2px 12px; border-radius:999px; cursor:pointer; line-height:1.5; }
+.cn-motor__btn.is-active { background:var(--rb-green, #1F5B3F); border-color:var(--rb-green, #1F5B3F);
+  color:#fff; }
+.cn-motor__btn:not(.is-active):hover { border-color:#9FB3A8; }
+
+/* Burbuja del clasificador (función pura __cnRenderV2) */
+.v2-badge { display:inline-flex; align-items:center; gap:5px; font-size:10px; font-weight:800;
+  letter-spacing:.05em; text-transform:uppercase; color:#5C6B64; background:#EEF1EF;
+  border-radius:999px; padding:2px 9px; margin-right:6px; }
+.v2-grupo { display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:800;
+  color:var(--v2c, #3C4A44); background:var(--v2s, #EEF1EF); border:1px solid var(--v2c, #D7DFDA);
+  border-radius:999px; padding:2px 11px; margin-right:6px; }
+.v2-capa { font-size:10.5px; color:#5C6B64; font-style:italic; margin-right:6px; }
+.v2-ent { display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:700;
+  color:#1A2A24; background:#F2F6F3; border-radius:6px; padding:1px 8px; }
+/* Indicador de carga del panorama del saludo (mientras responde /ejecutivo · la IA) */
+.cn-sal-load { color:#6b7a72; font-style:italic; }
+.cn-sal-load .cn-sal-dot { animation: cnSalBlink 1.4s infinite ease-in-out; }
+.cn-sal-load .cn-sal-dot:nth-child(2) { animation-delay:.2s; }
+.cn-sal-load .cn-sal-dot:nth-child(3) { animation-delay:.4s; }
+@keyframes cnSalBlink { 0%,80%,100% { opacity:.25; } 40% { opacity:1; } }
+
+.v2-msg { margin:8px 0 0; font-size:12.5px; line-height:1.5; color:#3C4A44;
+  white-space:pre-line; }   /* respeta los saltos de línea del árbol de jerarquizar */
+
+/* [2026-08-24] Fallo del Motor v2 — NO es un grupo del clasificador. Rojo para que no se lea como
+   una clasificación legítima: antes un 502 llegaba como "Desconocido" con la burbuja vacía. */
+.v2-badge--err { color:#C5311E; background:#FBECEA; }
+.v2-msg--det { margin-top:4px; font-size:11px; color:#8A9691; font-style:italic; }
+
+/* Control 1 — franja ✓/✗ declarativa (sin pregunta). ⚠ SIN <div> anidados (ver __v2MarcarVotado) */
+.v2-verdict { margin-top:8px; padding-top:8px; border-top:1px dashed #E4EAE6;
+  display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.v2-vbtn { border:1px solid #D7DFDA; background:#fff; border-radius:8px; padding:2px 10px;
+  cursor:pointer; font-size:12px; line-height:1.5; }
+.v2-vbtn--ok { color:#1E9E5A; } .v2-vbtn--ok:hover { background:#E9F3EC; border-color:#1E9E5A; }
+.v2-vbtn--no { color:#C5311E; } .v2-vbtn--no:hover { background:#FBECEA; border-color:#C5311E; }
+.v2-chip { border:1px solid var(--v2c, #D7DFDA); background:var(--v2s, #fff); color:var(--v2c, #3C4A44);
+  font-size:11px; font-weight:700; border-radius:999px; padding:2px 10px; cursor:pointer; }
+.v2-chip:hover { filter:brightness(.96); }
+.v2-vlbl { font-size:11px; font-weight:700; color:#5C6B64; }
+/* Microcopy del Control 1: invita a calificar la respuesta antes de los botones ✓/✗. */
+.v2-vask { font-size:11.5px; color:#5C6B64; margin-right:2px; }
+.v2-vdone { font-size:11.5px; font-weight:700; color:#1A2A24; }
+.v2-vsrc { font-weight:400; color:#5C6B64; font-style:italic; }
+
+/* Pestaña «Test Clas» — panel izquierdo (chat de prueba) */
+.tc-head { flex:0 0 auto; padding:7px 12px; border-bottom:1px solid #E4EAE6; background:#FAFCFA;
+  font-size:10.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:#5C6B64;
+  display:flex; align-items:center; gap:6px; }
+
+/* Pestaña «Test Clas» — visor derecho (libreta tabulada) */
+.tc-resumen { display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:8px; }
+.tc-kpi { font-size:12px; color:#3C4A44; }
+.tc-kpi b { font-size:15px; color:#1A2A24; margin-right:3px; }
+.tc-kpi--gold b { color:var(--rb-chat-gold, #C9962E); }
+.tc-filtros { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; }
+.tc-chip { border:1px solid #D7DFDA; background:#fff; color:#3C4A44; font-size:11.5px; font-weight:700;
+  border-radius:999px; padding:2px 12px; cursor:pointer; }
+.tc-chip.is-active { background:var(--rb-green, #1F5B3F); border-color:var(--rb-green, #1F5B3F); color:#fff; }
+/* [2026-08-24] Gate del clasificador desde la UI. El resultado se pinta con textContent y
+   salto de línea por fallo -> pre-wrap para que la lista se lea sin construir HTML. */
+.tc-golden { display:flex; align-items:flex-start; gap:10px; margin:0 0 10px; flex-wrap:wrap; }
+.tc-golden__btn { display:inline-flex; align-items:center; gap:5px; }
+.tc-golden__out { font-size:11.5px; color:#5C6B64; white-space:pre-wrap; line-height:1.5;
+  flex:1; min-width:220px; }
+.tc-golden__out.is-ok { color:#1E9E5A; font-weight:700; }
+.tc-golden__out.is-fail { color:#C5311E; font-weight:700; }
+.tc-scroll { overflow-x:auto; }
+.tc-tbl { width:100%; border-collapse:collapse; font-size:12px; background:#fff;
+  border:1px solid #E4EAE6; border-radius:8px; }
+.tc-tbl th { text-align:left; font-size:10.5px; font-weight:800; letter-spacing:.05em;
+  text-transform:uppercase; color:#5C6B64; background:#FAFCFA; padding:7px 10px;
+  border-bottom:1px solid #E4EAE6; position:sticky; top:0; }
+.tc-tbl td { padding:8px 10px; border-bottom:1px solid #F0F4F1; vertical-align:top; color:#3C4A44; }
+.tc-tbl tr:last-child td { border-bottom:none; }
+.tc-preg { max-width:340px; font-weight:600; color:#1A2A24; }
+.tc-vcell { min-width:260px; }
+.tc-fecha { white-space:nowrap; font-size:11px; color:#5C6B64; }
+.tc-diag { font-size:10px; color:#C5311E; background:#FBECEA; border-radius:4px; padding:0 5px;
+  margin-left:4px; }
+.tc-ok { font-weight:700; color:#1E9E5A; }
+.tc-no { font-weight:700; color:#C5311E; }
+.tc-pend { font-size:11px; font-weight:700; color:#5C6B64; display:block; margin-bottom:4px; }
+.tc-pend--sosp { color:#E8912B; }
+
+/* Franja de calificación inline (estilo barra de feedback: label + botones discretos) */
+.tc-ratewrap { display:flex; gap:5px; flex-wrap:wrap; }
+.tc-rate { border:1px solid #D7DFDA; background:#fff; color:#3C4A44; font-size:11px; font-weight:600;
+  border-radius:7px; padding:1px 9px; cursor:pointer; line-height:1.6; }
+.tc-rate:hover { border-color:#9FB3A8; background:#F7FAF8; }
+.tc-rate--ok { color:#1E9E5A; border-color:#BFE3CD; }
+.tc-rate--ok:hover { background:#E9F3EC; border-color:#1E9E5A; }
+
+/* [2026-08-02] Calificación rápida: carga por lote + confirmar-todo + navegación por teclado */
+.tc-lote { margin-top:8px; border-top:1px dashed #E4EAE6; padding-top:6px; }
+.tc-lote > summary { cursor:pointer; font-size:12px; font-weight:700; color:#3C4A44;
+  list-style:none; display:flex; align-items:center; gap:6px; }
+.tc-lote > summary::-webkit-details-marker { display:none; }
+.tc-lote > summary:hover { color:var(--rb-green, #1F5B3F); }
+.tc-lote__txt { margin-top:8px; font-size:12.5px; resize:vertical; }
+.tc-lote__bar { display:flex; align-items:center; justify-content:space-between; margin-top:8px; }
+.tc-lote__hint { font-size:11.5px; color:#5C6B64; font-weight:600; }
+
+.tc-actions { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:8px; min-height:2px; }
+.tc-confirmall { border:1px solid #1E9E5A; background:#1E9E5A; color:#fff; font-size:12px; font-weight:700;
+  border-radius:7px; padding:6px 12px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; }
+.tc-confirmall:hover { background:#178049; border-color:#178049; }
+.tc-confirmall:disabled { opacity:.7; cursor:default; }
+.tc-kbhint { font-size:11px; color:#5C6B64; display:inline-flex; align-items:center; gap:5px; }
+.tc-kbhint b { display:inline-block; min-width:15px; text-align:center; padding:1px 4px; border-radius:4px;
+  background:#EEF3F0; color:#1A2A24; font-size:10.5px; font-weight:800; }
+.tc-kbhint--muted { color:#9AA7A0; }
+
+/* Fila pendiente y cursor del teclado */
+.tc-tbl tr.tc-row--pend td { background:#FCFEFD; }
+.tc-tbl tr.tc-row--cursor td { background:#FBF6E7; box-shadow:inset 3px 0 0 var(--rb-chat-gold, #C9962E); }
+
+/* Barra de progreso del lote (en la burbuja del chat de prueba) */
+.tc-prog { height:6px; border-radius:4px; background:#E9EFEB; overflow:hidden; margin-top:6px; }
+.tc-prog__fill { height:100%; background:var(--rb-green, #1F5B3F); border-radius:4px; transition:width .18s ease; }
+/* Destello suave de la fila recién clasificada durante el lote */
+@keyframes tc-nuevo { from { background:#EAF4EE; } to { background:transparent; } }
+.tc-tbl tr.tc-row--nuevo td { animation:tc-nuevo 1s ease; }
+
+/* Motor Q v2 · Cuantificar N3/N4 (serie mensual + variación) — panel transitorio */
+/* [2026-08-25] QV2-PANEL-MES · N3 y N4 pasaron de filas de texto a GRÁFICO (curva mensual y
+   waterfall), así que las 12 reglas de la tabla quedaron sin emisor y se retiran: .cq-card,
+   .cq-hd, .cq-unit, .cq-row, .cq-mes (+em), .cq-bar (+__fill), .cq-val, .cq-foot y .cq-delta
+   (+is-up/is-down). Verificado en TODO el repo (js y html) que nadie más las emitía: los otros
+   dos paneles de Cuantificar usan familias propias — __cnCuantCardHtml emite las cp-mes__ y
+   cp-p50__, y __cnCuantRankHtml las cn-rank__.
+   Los colores de .cq-delta no se podían heredar en el waterfall de todos modos: son `color:`
+   (texto) y un <rect> SVG necesita `fill:`, así que el pintor lleva los hex literales, igual
+   que ya hacía __cnWaterfallSVG.
+   Se CONSERVA .cq-aviso: los avisos siguen bajo el gráfico. */
+.cq-aviso { margin-top: 6px; font-size: 12px; color: #8A6D3B; }
+
+/* Motor Q v2 · Cuantificar N5 (ranking) — panel transitorio (2026-08-04) */
+.cn-rank { font-size: 13px; color: #3C4A44; }
+.cn-rank__hd { font-weight: 700; margin-bottom: 8px; }
+.cn-rank__item { display: flex; align-items: center; gap: 8px; padding: 4px 0; border-bottom: 1px solid #F4F6F5; }
+.cn-rank__pos { flex: 0 0 20px; color: #6B7A74; font-weight: 600; font-variant-numeric: tabular-nums; }
+.cn-rank__ent { flex: 1 1 auto; }
+.cn-rank__op { margin-left: 6px; font-size: 11px; color: #8A6D3B; }
+.cn-rank__val { flex: 0 0 auto; font-variant-numeric: tabular-nums; font-weight: 600; }
+.cn-rank__badge { margin-left: 6px; font-size: 10px; padding: 1px 6px; border-radius: 8px; background: #F4EFE4; color: #8A6D3B; }
+.cn-rank__badge--proy { margin-left: 8px; background: #EDF2FA; color: #3D5A80; }
+.cn-rank__foot { margin-top: 8px; padding-top: 6px; border-top: 1px solid #EEF1F0; color: #6B7A74; }
+.cn-rank__aviso { margin-top: 6px; font-size: 12px; color: #8A6D3B; }
+
+/* ===== [2026-08-11] Dot plot del ranking de PRODUCCIÓN (Cuantificar N5, metrica=="real") =====
+   Las 2 variantes por "gap" (mayor faltante/excedente, valores negativos) siguen en .cn-rank
+   (arriba), sin tocar. La identidad de producto (--cp-prod/-soft/-text) la define el DISPATCHER
+   sobre el ancestro .cn-stk--prod — este bloque solo la HEREDA, nunca la define. Sin overflow
+   propio: el único scroller del panel derecho es .cn-col. */
+.cn-dot { font-size: 13px; color: #3C4A44; }
+.cn-dot__ctx { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+.cn-dot__badge { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700;
+  color: var(--cp-prod-text, #3C4A44); background: var(--cp-prod-soft, #F1F4F1);
+  border-radius: 20px; padding: 3px 10px; white-space: nowrap; }
+.cn-dot__meta { font-size: 11.5px; color: #6B7A74; }
+.cn-dot__chip { font-size: 10px; padding: 1px 6px; border-radius: 8px; background: #EDF2FA; color: #3D5A80; }
+.cn-dot__unit { margin-left: auto; font-size: 11.5px; font-weight: 700; color: #6B7A74; text-transform: uppercase; }
+
+/* [2026-08-12] padding vertical 5→10: deja respirar el subtítulo de operador (.cn-dot__op) de
+   los campos de terceros, que antes quedaba pegado a la fila siguiente. */
+.cn-dot__row { display: grid; grid-template-columns: 150px 1fr 78px; align-items: center; gap: 10px;
+  padding: 10px 0; }
+.cn-dot__name { text-align: right; font-size: 11.5px; font-weight: 600; color: #2f3d37; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cn-dot__op { font-size: 9px; font-style: italic; color: #9aa38c; font-weight: 500; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; }
+.cn-dot__track { position: relative; height: 11px; }
+.cn-dot__guide { position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: #efefe6;
+  transform: translateY(-50%); }
+.cn-dot__stem { position: absolute; left: 0; top: 50%; height: 2px; background: var(--cp-prod, #6E7C75);
+  transform: translateY(-50%); }
+.cn-dot__pt { position: absolute; top: 50%; width: 11px; height: 11px; border-radius: 50%;
+  background: var(--cp-prod, #6E7C75); transform: translate(-50%, -50%); }
+.cn-dot__pt--hollow { background: #fff; border: 2.5px solid var(--cp-prod, #6E7C75); }
+.cn-dot__val { text-align: right; font-size: 11.5px; font-weight: 600; font-variant-numeric: tabular-nums;
+  color: #2f3d37; }
+
+.cn-dot__bandwrap { margin-top: 8px; }
+.cn-dot__band { height: 9px; border-radius: 5px; background: #e6e6dc; overflow: hidden; }
+.cn-dot__band > span { display: block; height: 100%; background: var(--cp-prod, #6E7C75); border-radius: 5px; }
+.cn-dot__bandfoot { display: flex; justify-content: space-between; margin-top: 5px; font-size: 11.5px; color: #6B7A74; }
+.cn-dot__bandfoot b { color: var(--cp-prod-text, #2f3d37); }
+
+.cn-dot__legend { display: flex; gap: 14px; margin-top: 8px; font-size: 10.5px; color: #6B7A74; }
+.cn-dot__legend span { display: inline-flex; align-items: center; gap: 5px; }
+.cn-dot__legend i.cn-dot__pt { position: static; transform: none; display: inline-block; }
+
+.cn-dot__foot { margin-top: 8px; padding-top: 6px; border-top: 1px solid #EEF1F0; color: #6B7A74;
+  font-size: 11.5px; }
+.cn-dot__aviso { margin-top: 6px; font-size: 12px; color: #8A6D3B; }
+
+/* [2026-08-11] Dos columnas: dot plot (bbl, izquierda) + dona de participación (%, derecha).
+   Solo aparece cuando concentracion_pct es válido (metrica=="real" && direccion=="top") — ver
+   guard en __cnRankDotHtml. Por debajo de 1440px de VIEWPORT (no de contenedor: el panel derecho
+   ya es angosto por el rail + el chat) la dona baja debajo del dot plot, que si no se comprime por
+   debajo de su ancho legible. Sin overflow propio: el único scroller del panel es .cn-col — el
+   contenido crece verticalmente sin límite, ni siquiera con 20 filas + leyenda de 20 ítems. */
+/* [2026-08-12] gap 14→46: el canal ancho es lo que hace que el dot plot (magnitud en bbl) y la
+   dona (participación en %) se lean como DOS bloques y no como un continuo. El espacio sale de
+   compactar la leyenda de la dona (ver .cn-dona), no de estrechar el dot plot. */
+.cn-dot__cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 46px; align-items: start; }
+.cn-dot__rowswrap { min-width: 0; }
+/* [2026-08-12] Umbral 1280→1440: con la dona a 180px la mitad derecha pide ~380px (dona 180 +
+   gap 18 + leyenda ~182), y entre 1280 y 1440px de viewport solo dispone de ~323-403px una vez
+   descontados el rail, el chat y los paddings de .cn-stack/.cn-stk. La franja 1281-1439 era
+   justo donde las 2 columnas seguían activas SIN caber — y 1366px es un portátil corporativo
+   típico. Por debajo del umbral la dona baja bajo el dot plot y usa el ancho completo. */
+@media (max-width: 1440px) { .cn-dot__cols { grid-template-columns: 1fr; } }
+
+/* [2026-08-12] Dona (izq) + leyenda (der) LADO A LADO, antes apiladas verticalmente.
+   🔑 Va con grid-template-areas y NO con grid-template-columns a secas: __cnDonaHtml emite TRES
+   hijos HERMANOS (__hd, <svg>, __legend) sin envoltorio, así que una rejilla de 2 columnas
+   metería el encabezado como primera celda, al lado del círculo. Con áreas, __hd ocupa una fila
+   entera y svg+legend comparten la segunda → layout resuelto SIN tocar el DOM del JS.
+   🔑 La 2ª columna es minmax(0, max-content), NUNCA max-content a secas: max-content no cede,
+   EMPUJA. Medido, la mitad derecha necesita ~380px (y ~451px con "PALERMO-SANTA CLARA
+   UNIFICADO", el campo de nombre más largo del catálogo) mientras que entre 1280 y 1440px de
+   viewport solo dispone de ~323-403px. Como el panel es una pila acumulativa sin overflow
+   propio (regla de oro: el único scroller es .cn-col), ese desbordamiento ensancharía la
+   COLUMNA ENTERA. Con minmax, la leyenda compacta cuando cabe y cede cuando no, dejando
+   trabajar al text-overflow:ellipsis de .cn-dona__leg-name (los nombres llevan title= → se leen
+   con el cursor encima). El % nunca se recorta: .cn-dona__leg-pct es flex:0 0 auto. */
+.cn-dona { min-width: 0; display: grid; grid-template-columns: 180px minmax(0, max-content);
+  grid-template-areas: "hd hd" "svg legend"; gap: 0 18px; align-items: center;
+  justify-content: start; }
+.cn-dona__hd { grid-area: hd; font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .03em; color: #8A968E; margin-bottom: 10px; text-align: left; }
+/* justify-self:start + sin margin:auto — como grid item, el margin auto de antes lo centraría
+   en su celda y el atributo width del <svg> podría estirarse con el justify-self:stretch
+   por defecto. */
+.cn-dona__svg { grid-area: svg; display: block; justify-self: start; }
+.cn-dona__legend { grid-area: legend; display: flex; flex-direction: column; gap: 7px;
+  min-width: 0; }
+.cn-dona__leg-row { display: flex; align-items: center; gap: 9px; font-size: 11.5px; color: #3C4A44; }
+.cn-dona__sw { flex: 0 0 auto; width: 10px; height: 10px; border-radius: 2px; }
+.cn-dona__sw--otros { background: #D8DCD9; }
+.cn-dona__leg-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; }
+.cn-dona__leg-pct { flex: 0 0 auto; margin-left: 14px; font-weight: 700;
+  font-variant-numeric: tabular-nums; color: #2f3d37; }
+
+/* Variante top_n==1 (spec §6): cifra grande, sin dot plot. */
+.cn-dot--single .cn-dot__single-fig { font-size: 15px; font-weight: 800; color: #17241E; margin-top: 4px; }
+.cn-dot--single .cn-dot__single-val { font-size: 22px; font-weight: 800; letter-spacing: -.5px;
+  margin-top: 2px; color: var(--cp-prod-text, #17241E); }
+
+/* [2026-08-25] Panel JERARQUIZAR — árbol con conectores (plan_jerarquia_arbol_conectores_
+   2026-08-25.md; diseño jerarq_elem.md, artboard B). Reemplaza el bloque .cn-jer* anterior
+   (listado plano con sangría inline). Consumidores: __cnJerArbolHtml / __cnJerOperadorHtml.
+
+   TRES REGLAS DEL PROYECTO QUE ESTE BLOQUE RESPETA (no son opcionales):
+   1. SCROLL ÚNICO (:1400-1405): el único scroller del panel derecho es .cn-col. Ningún
+      elemento de aquí lleva overflow propio. Nombres largos → ellipsis + title.
+   2. NO ALTERAR ALTURAS (:1417-1424): .cn-stk--in anima la entrada del bloque y
+      __cnStackScroll mide con ResizeObserver esperando 600ms de calma. Cualquier
+      transition/animation sobre height, padding, margin, font-size o scale RETRASARÍA la
+      bajada del panel hasta el techo de 8s. Aquí no hay ninguna, a propósito.
+   3. PADDING: el contenedor .cn-stk ya aporta 10px 12px 12px (:1414) dentro de .cn-stack
+      con 14px (:1411). El diseño pide 10px 14px 13px para .jq-tree, pero SUMADO daría ~26px
+      de margen interno. Se deja casi a cero y el pie sangra en negativo para tocar los
+      bordes del bloque, que es el efecto que el diseño busca.
+
+   CONTRASTE (jerarq_elem.md §2): todo texto <=12px va en #3C4A44 o más oscuro. #98A69E queda
+   PROHIBIDO en texto (solo rieles y bordes). Mínimo de chip/etiqueta: 10.5px. */
+/* [2026-08-25 · ajuste] Centrado horizontal + fuentes al 110% (pedido directo tras revisar en
+   la app real). width:fit-content + margin:auto encoge la caja a su contenido y la centra
+   dentro de .cn-stk__body SIN tocar .jq-foot (hermano aparte, sigue a sangre por su cuenta) ni
+   forzar text-align en el padre (cero riesgo para otros paneles que compartan ese contenedor).
+   Los font-size de abajo son los originales ×1.1, redondeados a 1 decimal. */
+.jq-tree { padding: 2px 0 0; font-family: inherit; color: #3C4A44;
+  width: fit-content; max-width: 100%; margin: 0 auto; }
+
+.jq-node { display: flex; align-items: stretch; min-height: 34px; }
+
+/* Riel: 20px por nivel de profundidad. Vertical completa salvo en el codo del último
+   hermano, donde se corta a 17px para formar la "└". */
+.jq-rail { width: 20px; flex: 0 0 auto; position: relative; }
+.jq-rail::before { content: ''; position: absolute; left: 9px; top: 0; bottom: 0;
+  width: 1.5px; background: #EEF2EF; }
+.jq-rail.is-elbow::after { content: ''; position: absolute; left: 9px; top: 17px;
+  width: 11px; height: 1.5px; background: #EEF2EF; }
+.jq-rail.is-elbow.is-last::before { bottom: auto; height: 17px; }
+
+.jq-node__body { display: flex; align-items: center; gap: 8px; padding: 6px 0;
+  min-width: 0; flex: 1; }
+
+.jq-node__tile { width: 22px; height: 22px; border-radius: 6px; flex: 0 0 auto;
+  display: grid; place-items: center; background: #F3F9F4; border: 1px solid #E9F3EC; }
+.jq-node__tile i { font-size: 11.6px; color: #15794C; line-height: 1; }
+.jq-node__tile.is-leaf { background: #fff; border-color: #E4E9E5; }
+.jq-node__tile.is-focus { background: #0E5C3A; border-color: #0E5C3A; }
+.jq-node__tile.is-focus i { color: #C9962E; }
+
+.jq-node__abbr { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 11.6px; font-weight: 700; letter-spacing: .5px; color: #3C4A44;
+  border: 1px solid #E4E9E5; border-radius: 4px; padding: 1px 6px; flex: 0 0 auto; }
+
+.jq-node__value { font-size: 13.8px; font-weight: 600; color: #1A2A24;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.jq-node__value.is-focus { font-size: 14.9px; font-weight: 800; }
+
+.jq-node__count { flex: 0 0 auto;
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 11.6px; font-weight: 700; color: #15794C; background: #E9F3EC;
+  border-radius: 20px; padding: 2px 8px; }
+
+/* Badge CONSULTADO: verde OSCURO sobre oro CLARO (~11:1). Oro sobre oro claro da 2.4:1
+   y está explícitamente prohibido en jerarq_elem.md §2. */
+.jq-node__badge { flex: 0 0 auto; font-size: 11.6px; font-weight: 800; letter-spacing: .5px;
+  color: #0A4A2E; background: #FBF3DF; border-radius: 5px; padding: 2px 7px; }
+
+.jq-group { display: flex; align-items: center; gap: 8px; margin-left: 20px;
+  margin-top: 7px; margin-bottom: 1px; }
+.jq-group.is-first { margin-top: 4px; }
+.jq-group__label { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 11.6px; font-weight: 700; letter-spacing: .7px; color: #15794C;
+  text-transform: uppercase; }
+.jq-group__rule { flex: 1; height: 1px; background: #EEF2EF; }
+
+/* Texto secundario a #3C4A44, NO al #98A69E de antes: el mínimo de contraste sigue cumplido
+   tras el +10% (12.7px > 10.5px). */
+.jq-more, .jq-vacio { font-size: 12.7px; color: #3C4A44; font-style: italic; }
+
+/* Nota de level-shift y de fuera-de-estructura: es un AVISO, mantiene el ámbar. */
+.jq-nota { margin: 0 0 8px; font-size: 13.2px; color: #8A6D3B; background: #FBF6EC;
+  border-radius: 6px; padding: 6px 10px; }
+
+/* El pie va a sangre: márgenes negativos que cancelan el padding de .cn-stk (:1414 —
+   10px arriba / 12px a los lados / 12px abajo) para que la banda gris toque los bordes
+   del bloque y su borde superior lea como separador real, tal como el diseño §Paso 6.
+   El -12px inferior debe coincidir con el padding-bottom de .cn-stk: si ese cambia, este
+   también. Es hermano de .jq-tree (no su hijo): el centrado de arriba no lo afecta. */
+.jq-foot { display: flex; align-items: center; gap: 8px; padding: 10px 14px;
+  margin: 10px -12px -12px; border-top: 1px solid #EEF2EF; background: #F7FAF8;
+  border-radius: 0 0 9px 9px; }
+.jq-foot i { font-size: 13.2px; color: #15794C; }
+.jq-foot__label { font-size: 12.7px; color: #3C4A44; }
+.jq-foot__value { margin-left: auto;
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 14.3px; font-weight: 800; color: #1A2A24; font-variant-numeric: tabular-nums; }
+
+/* Profundidad >4 (§8 del diseño): rieles a 16px. NO se activa en esta entrega: con el
+   payload real la profundidad máxima es 5 (VP→GER→ACT→CMP→hijos) y a 20px caben (100px).
+   Queda lista por si una entrega futura la necesita — basta añadir .jq-tree--deep. */
+.jq-tree--deep .jq-rail { width: 16px; }
+.jq-tree--deep .jq-rail::before,
+.jq-tree--deep .jq-rail.is-elbow::after { left: 7px; }
+.jq-tree--deep .jq-rail.is-elbow::after { width: 9px; }
+
+/* ============================================================
+   [2026-08-25] QV2-MAPA · Jerarquizar en dos columnas: árbol + mapa
+   ============================================================ */
+/* La altura NO se fija aquí: la manda el ÁRBOL, que es de alto natural. El mapa se estira
+   a esa altura con align-items:stretch. Si el árbol crece (una VP lista más hijos), el
+   mapa crece con él — sin número mágico que mantener. */
+.jq-split { display: flex; align-items: stretch; gap: 0; }
+.jq-split__arbol { flex: 0 0 auto; min-width: 0; padding-right: 12px; }
+.jq-split__mapa { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column;
+  border-left: 1px solid var(--rb-line,#e3e8e5); background: #f6f8f7;
+  border-radius: 0 8px 8px 0; overflow: hidden; }
+/* Degradación: sin mapa disponible el árbol se queda con todo el ancho (nunca un hueco). */
+.jq-split.is-solo .jq-split__mapa { display: none; }
+.jq-split.is-solo .jq-split__arbol { flex: 1 1 auto; padding-right: 0; }
+
+.jm__hd { flex: 0 0 auto; display: flex; align-items: center; gap: 8px; padding: 6px 12px;
+  border-bottom: 1px solid var(--rb-line,#e3e8e5); }
+.jm__t { flex: 1 1 auto; min-width: 0; font-size: 11.5px; font-weight: 600;
+  letter-spacing: .05em; text-transform: uppercase; color: #6E7C75;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.jm__zoom { flex: 0 0 auto; display: inline-flex; border: 1px solid var(--rb-line,#e3e8e5);
+  border-radius: 7px; overflow: hidden; }
+.jm__zb { font: inherit; font-size: 11px; font-weight: 600; color: #6E7C75; background: #fff;
+  border: 0; padding: 4px 10px; cursor: pointer; }
+.jm__zb + .jm__zb { border-left: 1px solid var(--rb-line,#e3e8e5); }
+.jm__zb:hover { color: #2f4a3d; }
+.jm__zb.is-on { background: var(--rb-green,#0e5c3a); color: #fff; }
+.jm__zb:focus-visible { outline: 2px solid var(--rb-green-mid,#15794c); outline-offset: -2px; }
+
+/* overflow:hidden — sin esto el canvas se desborda del panel al hacer zoom.
+   min-height:0 — un ítem flex no encoge por debajo de su contenido sin esto, y el
+   canvas ampliado estiraría el panel entero.
+   [2026-08-25] `.jm__cv` va `position:absolute` — medido con Edge headless: con
+   `display:block;width:100%;height:100%` dentro de un `.jm__lienzo` de alto indefinido
+   (flex:1 1 auto sin alto propio), `height:100%` no resuelve y el canvas cae a su RATIO
+   INTRÍNSECO por defecto (300x150 = 2:1): a 382px de ancho medido eso da ~191px de alto
+   FANTASMA, que hace al mapa más alto que el árbol y `align-items:stretch` termina
+   estirando el ÁRBOL para igualarlo (36px de hueco muerto bajo el último nodo, medido).
+   Sacándolo del flujo con `position:absolute; inset:0`, el canvas deja de aportar alto
+   hipotético: el árbol vuelve a ser quien manda, como pide la decisión #4 del plan. */
+.jm__lienzo { flex: 1 1 auto; position: relative; min-height: 0; overflow: hidden; }
+.jm__cv { position: absolute; inset: 0; width: 100%; height: 100%; }
+.jm__carga { position: absolute; inset: 0; display: grid; place-items: center;
+  font-size: 12px; color: #8a968f; }
+
+.jm__ctrl { position: absolute; top: 8px; right: 8px; display: flex; flex-direction: column;
+  border: 1px solid var(--rb-line,#e3e8e5); border-radius: 8px; overflow: hidden;
+  background: #fff; box-shadow: 0 1px 4px rgb(16 40 30 / 10%); z-index: 4; }
+.jm__zc { width: 26px; height: 24px; border: 0; background: #fff; color: #3C4A44;
+  font: 600 13px/1 inherit; cursor: pointer; display: grid; place-items: center; padding: 0; }
+.jm__zc + .jm__zc, .jm__pct + .jm__zc { border-top: 1px solid var(--rb-line,#e3e8e5); }
+.jm__zc:hover { background: var(--rb-green-softer,#f1f9f4); color: var(--rb-green,#0e5c3a); }
+.jm__zc:focus-visible { outline: 2px solid var(--rb-green-mid,#15794c); outline-offset: -2px; }
+.jm__pct { border-top: 1px solid var(--rb-line,#e3e8e5); font-size: 8.5px; font-weight: 600;
+  color: #8a968f; text-align: center; padding: 3px 0;
+  font-family: ui-monospace, Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; }
+
+.jm__tip { position: absolute; pointer-events: none; opacity: 0; transition: opacity .12s;
+  background: #1A2A24; color: #fff; font-size: 11px; padding: 4px 7px; border-radius: 5px;
+  font-family: ui-monospace, Menlo, Consolas, monospace; white-space: nowrap; z-index: 5;
+  transform: translate(-50%,-140%); }
+.jm__tip.is-on { opacity: 1; }
+
+/* Móvil / panel estrecho: las dos mitades se apilan y el mapa toma altura propia. */
+@media (max-width: 720px) {
+  .jq-split { flex-direction: column; }
+  .jq-split__arbol { padding-right: 0; padding-bottom: 10px; }
+  .jq-split__mapa { border-left: 0; border-top: 1px solid var(--rb-line,#e3e8e5);
+    border-radius: 0 0 8px 8px; min-height: 240px; }
+}
+@media (prefers-reduced-motion: reduce) { .jm__tip { transition: none; } }
+
+.jq-vh { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* [2026-08-13] Tarjeta P50 por VICEPRESIDENCIA (Analizar/referencia, panel "p50_vp").
+   plan_panel_p50_vp_2026-08-13.md. Clases NUEVAS, cero colisión. Sin overflow propio (regla de
+   oro del scroll único, :1367-1372: el único scroller del panel derecho es .cn-col). Reusa los
+   mismos colores de estado ya establecidos en el proyecto (#1E9E5A "En meta" / #D64545 "Foco",
+   ver __CN_*_ESTADO en multitab_shell.js:2376) en vez de inventar una paleta nueva. */
+.cn-p50vp { font-size: 13px; color: #3C4A44; }
+.cn-p50vp__hd { display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  margin-bottom: 6px; }
+.cn-p50vp__name { font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .08em; color: #6B7A74; }
+.cn-p50vp__chip { font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 999px;
+  border: 1px solid currentColor; white-space: nowrap; }
+.cn-p50vp__chip--bajo  { color: #D64545; }
+.cn-p50vp__chip--sobre { color: #1E9E5A; }
+.cn-p50vp__chip--par   { color: #8A968E; }
+.cn-p50vp__big { display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px;
+  font-size: 26px; font-weight: 800; letter-spacing: -.02em; color: #17241E;
+  font-variant-numeric: tabular-nums; }
+.cn-p50vp__unit { font-size: 11.5px; font-weight: 500; color: #8A968E; }
+.cn-p50vp__svg { display: block; width: 100%; height: auto; margin: 4px 0 8px; }
+.cn-p50vp__linea-p50 { fill: none; stroke: #9AA7A0; stroke-width: 2; }
+.cn-p50vp__linea-real { fill: none; stroke: #0F6B4C; stroke-width: 2.6; stroke-linejoin: round;
+  stroke-linecap: round; }
+.cn-p50vp__punto { fill: #0F6B4C; }
+.cn-p50vp__cortevert { stroke: #C7CDC9; stroke-width: 1; stroke-dasharray: 2 3; }
+.cn-p50vp__cortetxt { font-size: 8px; fill: #8A968E; }
+.cn-p50vp__axtx { font-size: 8.5px; fill: #8A968E; }
+.cn-p50vp__foot { display: flex; flex-direction: column; gap: 4px; padding-top: 8px;
+  border-top: 1px solid #EEF1F0; }
+.cn-p50vp__kv { display: flex; justify-content: space-between; gap: 12px; font-size: 12.5px; }
+.cn-p50vp__kv span { color: #6B7A74; }
+.cn-p50vp__kv b { font-variant-numeric: tabular-nums; }
+.cn-p50vp__pos { color: #1E9E5A; }
+.cn-p50vp__neg { color: #D64545; }
+.cn-p50vp__note { margin-top: 8px; font-size: 11px; color: #8A968E; font-style: italic; }
+
+/* [2026-08-25] QV2-PANEL-DIA · panel «Comportamiento {Producto}» de las preguntas de grano día.
+   Clase PROPIA: .cn-desemp__grid2--kpi es de TRES columnas (30fr 35fr 35fr, para el gap por campo)
+   y este panel emite solo DOS hijos — reutilizarla dejaría una columna vacía y encogería ambas
+   tarjetas al 65% del ancho. Anchos 30/70 según la maqueta aprobada. */
+.cn-compprod__grid { display: grid; grid-template-columns: 30fr 70fr; gap: 12px;
+                     align-items: stretch; }
+.cn-compprod__grid--solo { grid-template-columns: 1fr; }   /* sin tarjeta KPI: la curva ocupa todo */
+/* min-height:0 es obligatorio: sin él un hijo flex no se encoge y DESBORDA la fila. */
+.cn-compprod__grid > * { min-width: 0; min-height: 0; height: 100%; }
+.cn-compprod__grid .cp-mes__kpi { flex: 1 1 auto; min-height: 0; }
+/* [2026-08-25] Sin pie de texto en este panel: el <div class="cn-ins__cap"> se emite igual
+   (lo crea __cnDailyInto, compartido) pero vacío dejaría 16px de padding + el border-top
+   flotando bajo la curva. */
+.cn-compprod__grid .cn-ins__cap { display: none; }
+/* Altura en la pila del chat, replicando :1350 de .cn-desemp__grid2--kpi. */
+.cn-desemp__scroll .cp-foco__panel .cn-compprod__grid { height: 375px; min-height: 0; }
+/* [2026-08-25] QV2-PANEL-MES · altura de los paneles de gráfico en la PILA.
+   La regla de arriba exige .cn-desemp__scroll, que es del TABLERO: la pila cuelga de
+   .cn-stk__body (ver :1446) y NO lo tiene, así que allí el grid se queda con la altura
+   INTRÍNSECA de su contenido. MEDIDO en el DOM real (2026-08-25): sin esta regla el grid
+   da 168px y el plot cae al min-height:120px de :1840 — una curva de 12 meses con ejes no
+   respira ahí, y el waterfall de N4 (2 totales + hasta 12 saltos) no cabe. Con ella: grid
+   375px, plot 327px, los mismos que el panel ya tiene en el tablero.
+   [2026-08-26] Se generaliza del selector --mes al grid COMPLETO: al quitarle la tarjeta KPI
+   al panel de grano día, su curva pasó a ancho completo y esos 120px de alto la dejaban muy
+   ancha y muy plana. Día y mes comparten ahora la misma altura, que es la del tablero.
+   🔑 overflow:visible en los hijos, NO auto: la regla de oro (:1403) prohíbe un segundo
+   scroller dentro de .cn-col. Verificado en la medición: ningún scroller anidado. */
+.cn-stk__body .cp-foco__panel .cn-compprod__grid { height: 375px; min-height: 0; }
+.cn-stk__body .cp-foco__panel .cn-compprod__grid > * {
+  height: 100%; min-height: 0; overflow: visible; }
+/* [2026-08-25] QV2-PANEL-MES · el WATERFALL de N4 dentro del panel mensual.
+   Clase propia --var porque .cn-wf__svg (:1711) fija min-height:380px para el waterfall de
+   EBITDA, que vive en un host de 480px; aquí el host mide 327px (medido) y ese piso lo
+   desbordaría. El SVG lleva viewBox 880x430 y se ajusta al host manteniendo proporción.
+   NADA de overflow:auto: si un año completo aprieta, el bloque crece hacia abajo y scrollea
+   .cn-col — la degradación correcta para una pila (misma decisión que :1451-1457). */
+.cn-wf__svg--var { min-height: 0; height: 100%; }
+.cn-compprod__grid--mes .cn-ins__plot { position: relative; padding: 0; }
+/* Unidad en la cabecera de la tarjeta, en gris y sin negrita (el título ya la nombra). */
+.cn-ins__hdu { color: #8A968E; font-weight: 500; }
+/* Avisos del panel mensual: van BAJO el gráfico. El gráfico reemplaza la tabla de cifras,
+   nunca las advertencias (p.ej. "el último mes es proyección de cierre"). */
+.cq-avisos { padding: 6px 2px 0; }
+@media (max-width: 1024px) {
+  .cn-compprod__grid { grid-template-columns: 1fr; }
+  .cn-compprod__grid > * { height: auto; }
+}

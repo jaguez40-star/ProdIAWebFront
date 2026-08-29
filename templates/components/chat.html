@@ -1,0 +1,125 @@
+<!-- Chat Messages Container -->
+<div class="chat-container">
+    <!-- Chat Banner/Logo -->
+    <div class="chat-banner">
+        <img src="{{ url_for('static', filename='img/Pord_IA.png') }}" alt="ECP Insights Assistant" class="chat-logo" style="width: 50%; height: auto;">
+    </div>
+
+    <!-- Welcome Section -->
+    <div class="chat-welcome-section {{ 'd-none' if current_messages else '' }}">
+        <h4>¡Bienvenido {{ session.get('user', {}).get('first_name', '') }}, soy el asistente de producción de Ecopetrol ProdIA!</h4>
+        <p class="welcome-subtitle">
+            Estoy aquí para ayudarte a consultar, analizar y visualizar la información de producción de crudo, gas y balance de manera rápida y sencilla.
+        </p>
+
+        <div class="insight-selector">
+            <p class="selector-title">Selecciona un Insight destacado para comenzar o formula tu propia pregunta:</p>
+
+            <div class="insight-buttons">
+                <button class="insight-btn insight-btn-primary insight-btn-dark" onclick="startAdvancedDailyAnalysis()">
+                    <div class="insight-btn-content">
+                        <div class="insight-btn-text">
+                            <span style="font-size:1.25em; font-weight:600;">📈 Análisis avanzado de producción diaria</span>
+                            <small>(Tendencias, variaciones y detalle por día)</small>
+                        </div>
+                    </div>
+                </button>
+
+                <button class="insight-btn insight-btn-primary" onclick="openProductionReportModal()">
+                    <div class="insight-btn-content">
+                        <div class="insight-btn-text">
+                            <span style="font-size:1.25em; font-weight:600;">📊 DEMO: Reporte Semanal de Producción</span>
+                            <small>(  Balance - Eventos en la semana - Hitos POP  )</small>
+                        </div>
+                    </div>
+                </button>
+
+
+                <button class="insight-btn insight-btn-primary" onclick="startRobustezChat()">
+                    <div class="insight-btn-content">
+                        <div class="insight-btn-text">
+                            <span style="font-size:1.25em; font-weight:600;">🌐 DEMO: Análisis de Producción y Rentabilidad</span>
+                            <small>(Breakeven, EBITDA, costos por pozo/campo/gerencia)</small>
+                        </div>
+                    </div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="chat-messages {{ 'empty-chat' if not current_messages else 'has-content' }}" id="chat-messages" {{ 'style="display:none;"' if not current_messages else '' }}>
+        {% if current_messages %}
+            {% for message in current_messages %}
+            <div class="message message-{{ message.role }}">
+                <div class="message-content">
+                    <div class="message-avatar">
+                        {% if message.role == 'user' %}
+                            <i class="fas fa-user"></i>
+                        {% else %}
+                            <i class="fas fa-robot"></i>
+                        {% endif %}
+                    </div>
+                    <div class="message-text">
+                        {{ message.content|safe }}
+                    </div>
+                </div>
+                <div class="message-time">
+                    {% if message.timestamp %}
+                        {{ message.timestamp.strftime('%H:%M') if message.timestamp.__class__.__name__ == 'datetime' else message.timestamp[-5:] if message.timestamp|length > 5 else message.timestamp }}
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+    
+    <!-- Typing Indicator -->
+    <div class="typing-indicator" id="typing-indicator" style="display: none;">
+        <div class="message message-assistant">
+            <div class="message-content">
+                <div class="message-avatar">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="message-text">
+                    <div class="llm-processing-indicator">
+                        <div class="d-flex align-items-center">
+                            <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                            <span class="processing-text fw-bold">Procesando con LLM...</span>
+                        </div>
+                    </div>
+                    <div class="typing-dots mt-2">
+                        <span>.</span>
+                        <span>.</span>
+                        <span>.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chat Input (hidden on main/welcome page, shown when conversation starts) -->
+<div class="chat-input-container" {% if not current_messages %}style="display:none;"{% endif %}>
+    <div class="input-group">
+        <input type="text" 
+               class="form-control" 
+               id="message-input" 
+               placeholder="{% if current_conversation_id %}Escribe tu mensaje...{% else %}Escribe tu mensaje para comenzar una nueva conversación...{% endif %}"
+               autocomplete="off">
+        <button class="btn {% if current_conversation_id %}btn-primary{% else %}btn-success{% endif %}" 
+                type="button" 
+                id="send-btn">
+            <i class="fas fa-paper-plane"></i>
+        </button>
+        <button class="btn btn-dark-custom"
+                type="button"
+                id="new-conversation-tab-btn"
+                title="Nueva conversación en pestaña nueva">
+            <i class="fa-solid fa-robot"></i>
+        </button>
+        
+    </div>
+    
+        
+    
+</div>

@@ -1,0 +1,457 @@
+query_examples:
+  - id: "ecp_001_national_production_by_year"
+    question: "¿Cuál ha sido la producción nacional (BOPD) por año?"
+    question_variants:
+      - "Producción anual de crudo (BOPD)"
+      - "Producción anual de petróleo"
+      - "Producción de crudo por año"
+      - "BOPD nacional anual"
+      - "Producción nacional de crudo histórica"
+    keywords: ["producción nacional", "BOPD", "por año", "anual", "total", "crudo", "petróleo"]
+    intent: "Obtener producción nacional total agregada por año"
+    complexity: "simple"
+    database: "ecp_prod"
+
+    sql_query: |
+      SELECT
+        AÑO,
+        BOPD AS TOTAL_BOPD
+      FROM TT_GERENCIA_AÑO_PROD
+      ORDER BY AÑO DESC;
+
+    explanation: "Usa la vista TT_GERENCIA_AÑO_PROD que ya tiene la producción nacional agregada por año. La vista consolida datos de 2023, 2024 y 2025."
+
+    expected_output:
+      columns: ["AÑO", "TOTAL_BOPD"]
+      rows_estimate: 3
+      data_type: "time_series_annual"
+
+    expected_charts:
+      - type: "bar"
+        title: "Variación Anual de Producción Nacional (BOPD)"
+        x_axis: "AÑO"
+        y_axis: "TOTAL_BOPD"
+
+    tables_used: ["TT_GERENCIA_AÑO_PROD"]
+
+  - id: "ecp_002_production_by_gerencia_year"
+    question: "¿Cómo ha sido la producción por gerencia en cada año?"
+    keywords: ["por gerencia", "participación", "distribución", "VICE_HOM"]
+    intent: "Desglosar producción por gerencia y año con participación porcentual"
+    complexity: "medium"
+    database: "ecp_prod"
+
+    sql_query: |
+      WITH all_years AS (
+        SELECT '2023' AS AÑO, VICE as GERENCIA, SUM(Real_Acum) as BOPD_GERENCIA
+        FROM PROD_2023
+        WHERE TRIM(PRODUCTO) = 'CRUDO'
+        GROUP BY VICE
+        UNION ALL
+        SELECT '2024', VICE, SUM(Real_Acum)
+        FROM PROD_2024
+        WHERE TRIM(PRODUCTO) = 'CRUDO'
+        GROUP BY VICE
+        UNION ALL
+        SELECT '2025', VICE, SUM(Real_Acum)
+        FROM PROD_2025
+        WHERE TRIM(PRODUCTO) = 'CRUDO'
+        GROUP BY VICE
+      )
+      SELECT
+        AÑO,
+        GERENCIA,
+        BOPD_GERENCIA,
+        ROUND(BOPD_GERENCIA * 100.0 / SUM(BOPD_GERENCIA) OVER (PARTITION BY AÑO), 2) as PARTICIPACION_PCT
+      FROM all_years
+      ORDER BY AÑO DESC, BOPD_GERENCIA DESC;
+
+    explanation: "Calcula producción por gerencia con participación porcentual usando UNION ALL y window functions sobre Real_Acum"
+
+    expected_output:
+      columns: ["AÑO", "GERENCIA", "BOPD_GERENCIA", "PARTICIPACION_PCT"]
+      rows_estimate: [20, 50]
+      data_type: "categorical_comparison"
+
+    expected_charts:
+      - type: "pie"
+        title: "Distribución de Producción por Gerencia"
+        x_axis: "GERENCIA"
+        y_axis: "BOPD_GERENCIA"
+      - type: "bar"
+        title: "Producción por Gerencia"
+        x_axis: "GERENCIA"
+        y_axis: "BOPD_GERENCIA"
+
+    tables_used: ["PROD_2023", "PROD_2024", "PROD_2025"]
+
+  - id: "ecp_003_top_fields_ranking"
+    question: "¿Cuáles son los campos con mayor producción en el último año?"
+    keywords: ["ranking", "top", "mayor producción", "mejores campos"]
+    intent: "Ranking de campos más productivos en año reciente"
+    complexity: "simple"
+    database: "ecp_prod"
+
+    sql_query: |
+      SELECT
+        CAMPO,
+        VICE as GERENCIA,
+        Real_Acum as BOPD,
+        '2025' as AÑO
+      FROM PROD_2025
+      WHERE TRIM(PRODUCTO) = 'CRUDO'
+      ORDER BY Real_Acum DESC
+      LIMIT 10;
+
+    explanation: "Lista los 10 campos con mayor producción acumulada en 2025 (año más reciente), filtrando solo producción de crudo."
+
+    expected_output:
+      columns: ["CAMPO", "GERENCIA", "BOPD", "AÑO"]
+      rows_estimate: 10
+      data_type: "ranking"
+
+    expected_charts:
+      - type: "ranking_bar"
+        title: "Top 10 Campos por Producción (BOPD)"
+        x_axis: "CAMPO"
+        y_axis: "BOPD"
+
+    tables_used: ["PROD_2025"]
+
+  - id: "ecp_004_national_production_statistics"
+    question: "¿Cuál ha sido la producción nacional total con estadísticas?"
+    keywords: ["producción nacional", "total", "BOPD nacional", "estadísticas"]
+    intent: "Estadísticas agregadas de producción nacional por año"
+    complexity: "simple"
+    database: "ecp_prod"
+
+    sql_query: |
+      SELECT
+        '2023' AS AÑO,
+        SUM(Real_Acum) as TOTAL_BOPD_NACIONAL,
+        AVG(Real_Acum) as PROMEDIO_BOPD_CAMPO,
+        MAX(Real_Acum) as MAX_BOPD_CAMPO,
+        MIN(Real_Acum) as MIN_BOPD_CAMPO
+      FROM PROD_2023
+      WHERE TRIM(PRODUCTO) = 'CRUDO'
+      UNION ALL
+      SELECT
+        '2024',
+        SUM(Real_Acum),
+        AVG(Real_Acum),
+        MAX(Real_Acum),
+        MIN(Real_Acum)
+      FROM PROD_2024
+      WHERE TRIM(PRODUCTO) = 'CRUDO'
+      UNION ALL
+      SELECT
+        '2025',
+        SUM(Real_Acum),
+        AVG(Real_Acum),
+        MAX(Real_Acum),
+        MIN(Real_Acum)
+      FROM PROD_2025
+      WHERE TRIM(PRODUCTO) = 'CRUDO'
+      ORDER BY AÑO DESC;
+
+    explanation: "Calcula producción total nacional con estadísticas de distribución (promedio, máximo, mínimo por campo) usando Real_Acum"
+
+    expected_output:
+      columns: ["AÑO", "TOTAL_BOPD_NACIONAL", "PROMEDIO_BOPD_CAMPO", "MAX_BOPD_CAMPO", "MIN_BOPD_CAMPO"]
+      rows_estimate: 3
+      data_type: "time_series_aggregated"
+
+    expected_charts:
+      - type: "bar"
+        title: "Producción Nacional Total por Año"
+        x_axis: "AÑO"
+        y_axis: "TOTAL_BOPD_NACIONAL"
+
+    tables_used: ["PROD_2023", "PROD_2024", "PROD_2025"]
+
+  - id: "ecp_005_yoy_variance_analysis"
+    question: "¿Cómo ha variado la producción nacional entre años?"
+    question_variants:
+      - "¿Cuál ha sido la variación de producción entre años?"
+      - "¿Cómo cambió la producción nacional año a año?"
+      - "Variación interanual de producción nacional"
+      - "Comparativa de producción entre 2023, 2024 y 2025"
+    keywords: ["variado", "variación", "crecimiento", "comparar años", "interanual", "YoY", "entre años", "cambió", "diferencia años"]
+    intent: "Análisis de variación año a año (YoY) de producción nacional"
+    complexity: "advanced"
+    database: "ecp_prod"
+
+    sql_query: |
+      WITH ProductionByYear AS (
+        SELECT '2023' AS AÑO, SUM(Real_Acum) as TOTAL_BOPD
+        FROM PROD_2023 WHERE TRIM(PRODUCTO) = 'CRUDO'
+        UNION ALL
+        SELECT '2024', SUM(Real_Acum)
+        FROM PROD_2024 WHERE TRIM(PRODUCTO) = 'CRUDO'
+        UNION ALL
+        SELECT '2025', SUM(Real_Acum)
+        FROM PROD_2025 WHERE TRIM(PRODUCTO) = 'CRUDO'
+      )
+      SELECT
+        p1.AÑO,
+        p1.TOTAL_BOPD as BOPD_ACTUAL,
+        p2.TOTAL_BOPD as BOPD_ANTERIOR,
+        ROUND((p1.TOTAL_BOPD - COALESCE(p2.TOTAL_BOPD, p1.TOTAL_BOPD)) * 100.0 / COALESCE(p2.TOTAL_BOPD, p1.TOTAL_BOPD), 2) as VARIACION_PCT
+      FROM ProductionByYear p1
+      LEFT JOIN ProductionByYear p2 ON CAST(p1.AÑO AS INTEGER) = CAST(p2.AÑO AS INTEGER) + 1
+      ORDER BY p1.AÑO DESC;
+
+    explanation: "Calcula variación porcentual año a año de la producción nacional comparando entre 2023, 2024 y 2025. ⚠️ CRÍTICO: Usar SELECT '2023' AS AÑO (literal) porque PROD_2023/2024/2025 NO tienen columna AÑO. NUNCA usar SELECT AÑO FROM PROD_2023 porque esa columna no existe."
+
+    critical_notes:
+      - "⚠️⚠️⚠️ NO EXISTE columna AÑO en PROD_2023/2024/2025"
+      - "✅ CORRECTO: SELECT '2023' AS AÑO (literal string)"
+      - "❌ INCORRECTO: SELECT AÑO FROM PROD_2023 (columna no existe)"
+      - "⚠️ Usar CTE para crear años literales antes de comparar"
+
+    expected_output:
+      columns: ["AÑO", "BOPD_ACTUAL", "BOPD_ANTERIOR", "VARIACION_PCT"]
+      rows_estimate: 3
+      data_type: "variance_analysis"
+
+    expected_charts:
+      - type: "bar"
+        title: "Variación Interanual de Producción (%)"
+        x_axis: "AÑO"
+        y_axis: "VARIACION_PCT"
+
+    tables_used: ["PROD_2023", "PROD_2024", "PROD_2025"]
+
+  - id: "ecp_006_monthly_distribution_2025"
+    question: "¿Cómo se distribuye la producción nacional de hidrocarburos a lo largo de los meses de 2025?"
+    keywords: ["distribución mensual", "meses de 2025", "hidrocarburos", "crudo gas blancos", "mes a mes"]
+    intent: "Obtener distribución mensual de producción por producto en 2025"
+    complexity: "simple"
+    database: "ecp_prod"
+
+    sql_query: |
+      SELECT
+        '2025' AS Anio,
+        TRIM(PRODUCTO) AS Producto,
+        SUM(ENERO) AS Enero,
+        SUM(FEBRERO) AS Febrero,
+        SUM(MARZO) AS Marzo,
+        SUM(ABRIL) AS Abril,
+        SUM(MAYO) AS Mayo,
+        SUM(JUNIO) AS Junio,
+        SUM(JULIO) AS Julio,
+        SUM(AGOSTO) AS Agosto,
+        SUM(SEPTIEMBRE) AS Septiembre,
+        SUM(OCTUBRE) AS Octubre,
+        SUM(NOVIEMBRE) AS Noviembre,
+        SUM(DICIEMBRE) AS Diciembre
+      FROM PROD_2025
+      WHERE TRIM(PRODUCTO) IN ('CRUDO','GAS','BLANCOS')
+      GROUP BY TRIM(PRODUCTO);
+
+    explanation: "Extrae producción mensual de hidrocarburos por tipo de producto de la tabla PROD_2025"
+
+    expected_output:
+      columns: ["Anio", "Producto", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+      rows_estimate: 3
+      data_type: "monthly_distribution"
+
+    expected_charts:
+      - type: "stacked_bar"
+        title: "Distribución Mensual de Producción por Producto 2025"
+        x_axis: "Mes"
+        y_axis: "Produccion"
+        group_by: "Producto"
+
+    tables_used: ["PROD_2025"]
+
+  - id: "ecp_007_crude_monthly_2025"
+    question: "¿Cuál ha sido la producción de crudo mes a mes en 2025?"
+    keywords: ["producción crudo", "mes a mes", "mensual 2025", "variación mensual"]
+    intent: "Obtener producción mensual de crudo con serie temporal"
+    complexity: "medium"
+    database: "ecp_prod"
+
+    sql_query: |
+      WITH m AS (
+        SELECT 1 AS mes_n, 'Enero' AS Mes, SUM(ENERO) AS BOPD
+        FROM PROD_2025 WHERE TRIM(PRODUCTO)='CRUDO'
+        UNION ALL SELECT 2, 'Febrero', SUM(FEBRERO)
+        FROM PROD_2025 WHERE TRIM(PRODUCTO)='CRUDO'
+        UNION ALL SELECT 3, 'Marzo', SUM(MARZO)
+        FROM PROD_2025 WHERE TRIM(PRODUCTO)='CRUDO'
+        UNION ALL SELECT 4, 'Abril', SUM(ABRIL)
+        FROM PROD_2025 WHERE TRIM(PRODUCTO)='CRUDO'
+        UNION ALL SELECT 5, 'Mayo', SUM(MAYO)
+        FROM PROD_2025 WHERE TRIM(PRODUCTO)='CRUDO'
+        UNION ALL SELECT 6, 'Junio', SUM(JUNIO)
+        FROM PROD_2025 WHERE TRIM(PRODUCTO)='CRUDO'
+        UNION ALL SELECT 7, 'Julio', SUM(JULIO)
+        FROM PROD_2025 WHERE TRIM(PRODUCTO)='CRUDO'
+        UNION ALL SELECT 8, 'Agosto', SUM(AGOSTO)
+        FROM PROD_2025 WHERE TRIM(PRODUCTO)='CRUDO'
+        UNION ALL SELECT 9, 'Septiembre', SUM(SEPTIEMBRE)
+        FROM PROD_2025 WHERE TRIM(PRODUCTO)='CRUDO'
+        UNION ALL SELECT 10, 'Octubre', SUM(OCTUBRE)
+        FROM PROD_2025 WHERE TRIM(PRODUCTO)='CRUDO'
+        UNION ALL SELECT 11, 'Noviembre', SUM(NOVIEMBRE)
+        FROM PROD_2025 WHERE TRIM(PRODUCTO)='CRUDO'
+        UNION ALL SELECT 12, 'Diciembre', SUM(DICIEMBRE)
+        FROM PROD_2025 WHERE TRIM(PRODUCTO)='CRUDO'
+      )
+      SELECT Mes, BOPD FROM m ORDER BY mes_n;
+
+    explanation: "Obtiene producción de crudo por mes en 2025 usando UNION ALL para convertir columnas de meses en filas (unpivot)"
+
+    expected_output:
+      columns: ["Mes", "BOPD"]
+      rows_estimate: 12
+      data_type: "monthly_time_series"
+
+    expected_charts:
+      - type: "line"
+        title: "Evolución Mensual de Producción de Crudo 2025"
+        x_axis: "Mes"
+        y_axis: "BOPD"
+
+    tables_used: ["PROD_2025"]
+
+  - id: "ecp_008_monthly_product_percentage"
+    question: "¿Qué porcentaje de la producción total mensual corresponde a Crudo, Gas y Blancos en 2025?"
+    keywords: ["porcentaje", "participación", "distribución por producto", "mensual 2025"]
+    intent: "Calcular participación porcentual de cada producto por mes"
+    complexity: "advanced"
+    database: "ecp_prod"
+
+    sql_query: |
+      WITH base AS (
+        SELECT 1 AS mes_n, 'Enero' AS Mes,
+               SUM(ENERO) AS total_mes,
+               SUM(CASE WHEN TRIM(PRODUCTO)='CRUDO' THEN ENERO ELSE 0 END) AS crudo,
+               SUM(CASE WHEN TRIM(PRODUCTO)='GAS' THEN ENERO ELSE 0 END) AS gas,
+               SUM(CASE WHEN TRIM(PRODUCTO)='BLANCOS' THEN ENERO ELSE 0 END) AS blancos
+        FROM PROD_2025
+        UNION ALL SELECT 2,'Febrero',
+               SUM(FEBRERO),
+               SUM(CASE WHEN TRIM(PRODUCTO)='CRUDO' THEN FEBRERO ELSE 0 END),
+               SUM(CASE WHEN TRIM(PRODUCTO)='GAS' THEN FEBRERO ELSE 0 END),
+               SUM(CASE WHEN TRIM(PRODUCTO)='BLANCOS' THEN FEBRERO ELSE 0 END)
+        FROM PROD_2025
+        UNION ALL SELECT 3,'Marzo',
+               SUM(MARZO),
+               SUM(CASE WHEN TRIM(PRODUCTO)='CRUDO' THEN MARZO ELSE 0 END),
+               SUM(CASE WHEN TRIM(PRODUCTO)='GAS' THEN MARZO ELSE 0 END),
+               SUM(CASE WHEN TRIM(PRODUCTO)='BLANCOS' THEN MARZO ELSE 0 END)
+        FROM PROD_2025
+        UNION ALL SELECT 4,'Abril',
+               SUM(ABRIL),
+               SUM(CASE WHEN TRIM(PRODUCTO)='CRUDO' THEN ABRIL ELSE 0 END),
+               SUM(CASE WHEN TRIM(PRODUCTO)='GAS' THEN ABRIL ELSE 0 END),
+               SUM(CASE WHEN TRIM(PRODUCTO)='BLANCOS' THEN ABRIL ELSE 0 END)
+        FROM PROD_2025
+        UNION ALL SELECT 5,'Mayo',
+               SUM(MAYO),
+               SUM(CASE WHEN TRIM(PRODUCTO)='CRUDO' THEN MAYO ELSE 0 END),
+               SUM(CASE WHEN TRIM(PRODUCTO)='GAS' THEN MAYO ELSE 0 END),
+               SUM(CASE WHEN TRIM(PRODUCTO)='BLANCOS' THEN MAYO ELSE 0 END)
+        FROM PROD_2025
+        UNION ALL SELECT 6,'Junio',
+               SUM(JUNIO),
+               SUM(CASE WHEN TRIM(PRODUCTO)='CRUDO' THEN JUNIO ELSE 0 END),
+               SUM(CASE WHEN TRIM(PRODUCTO)='GAS' THEN JUNIO ELSE 0 END),
+               SUM(CASE WHEN TRIM(PRODUCTO)='BLANCOS' THEN JUNIO ELSE 0 END)
+        FROM PROD_2025
+        UNION ALL SELECT 7,'Julio',
+               SUM(JULIO),
+               SUM(CASE WHEN TRIM(PRODUCTO)='CRUDO' THEN JULIO ELSE 0 END),
+               SUM(CASE WHEN TRIM(PRODUCTO)='GAS' THEN JULIO ELSE 0 END),
+               SUM(CASE WHEN TRIM(PRODUCTO)='BLANCOS' THEN JULIO ELSE 0 END)
+        FROM PROD_2025
+        UNION ALL SELECT 8,'Agosto',
+               SUM(AGOSTO),
+               SUM(CASE WHEN TRIM(PRODUCTO)='CRUDO' THEN AGOSTO ELSE 0 END),
+               SUM(CASE WHEN TRIM(PRODUCTO)='GAS' THEN AGOSTO ELSE 0 END),
+               SUM(CASE WHEN TRIM(PRODUCTO)='BLANCOS' THEN AGOSTO ELSE 0 END)
+        FROM PROD_2025
+        UNION ALL SELECT 9,'Septiembre',
+               SUM(SEPTIEMBRE),
+               SUM(CASE WHEN TRIM(PRODUCTO)='CRUDO' THEN SEPTIEMBRE ELSE 0 END),
+               SUM(CASE WHEN TRIM(PRODUCTO)='GAS' THEN SEPTIEMBRE ELSE 0 END),
+               SUM(CASE WHEN TRIM(PRODUCTO)='BLANCOS' THEN SEPTIEMBRE ELSE 0 END)
+        FROM PROD_2025
+        UNION ALL SELECT 10,'Octubre',
+               SUM(OCTUBRE),
+               SUM(CASE WHEN TRIM(PRODUCTO)='CRUDO' THEN OCTUBRE ELSE 0 END),
+               SUM(CASE WHEN TRIM(PRODUCTO)='GAS' THEN OCTUBRE ELSE 0 END),
+               SUM(CASE WHEN TRIM(PRODUCTO)='BLANCOS' THEN OCTUBRE ELSE 0 END)
+        FROM PROD_2025
+        UNION ALL SELECT 11,'Noviembre',
+               SUM(NOVIEMBRE),
+               SUM(CASE WHEN TRIM(PRODUCTO)='CRUDO' THEN NOVIEMBRE ELSE 0 END),
+               SUM(CASE WHEN TRIM(PRODUCTO)='GAS' THEN NOVIEMBRE ELSE 0 END),
+               SUM(CASE WHEN TRIM(PRODUCTO)='BLANCOS' THEN NOVIEMBRE ELSE 0 END)
+        FROM PROD_2025
+        UNION ALL SELECT 12,'Diciembre',
+               SUM(DICIEMBRE),
+               SUM(CASE WHEN TRIM(PRODUCTO)='CRUDO' THEN DICIEMBRE ELSE 0 END),
+               SUM(CASE WHEN TRIM(PRODUCTO)='GAS' THEN DICIEMBRE ELSE 0 END),
+               SUM(CASE WHEN TRIM(PRODUCTO)='BLANCOS' THEN DICIEMBRE ELSE 0 END)
+        FROM PROD_2025
+      ),
+      pct AS (
+        SELECT mes_n, Mes, 'CRUDO' AS Producto,
+               ROUND(crudo * 100.0 / NULLIF(total_mes,0), 2) AS Porcentaje
+        FROM base WHERE total_mes IS NOT NULL
+        UNION ALL
+        SELECT mes_n, Mes, 'GAS',
+               ROUND(gas * 100.0 / NULLIF(total_mes,0), 2)
+        FROM base WHERE total_mes IS NOT NULL
+        UNION ALL
+        SELECT mes_n, Mes, 'BLANCOS',
+               ROUND(blancos * 100.0 / NULLIF(total_mes,0), 2)
+        FROM base WHERE total_mes IS NOT NULL
+      )
+      SELECT Mes, Producto, Porcentaje FROM pct ORDER BY mes_n, Producto;
+
+    explanation: "Calcula porcentaje de participación de cada producto en la producción total mensual usando CTEs anidados. IMPORTANTE: Cada SELECT del UNION debe tener exactamente 6 columnas (mes_n, Mes, total_mes, crudo, gas, blancos) en ese orden."
+
+    expected_output:
+      columns: ["Mes", "Producto", "Porcentaje"]
+      rows_estimate: [24, 36]
+      data_type: "percentage_distribution"
+
+    expected_charts:
+      - type: "stacked_bar"
+        title: "Participación Porcentual por Producto - 2025"
+        x_axis: "Mes"
+        y_axis: "Porcentaje"
+        group_by: "Producto"
+
+    tables_used: ["PROD_2025"]
+
+table_selection_rules:
+  historical_annual:
+    description: "For historical annual data (multiple years)"
+    use_tables: ["PROD_2023", "PROD_2024", "PROD_2025"]
+    keywords: ["histórico", "anual", "por año", "años", "interanual"]
+    critical_rules:
+      - "⚠️ Use UNION ALL between PROD_2023, PROD_2024, PROD_2025"
+      - "⚠️ Filter WHERE TRIM(PRODUCTO) = 'CRUDO' for crude oil"
+      - "⚠️ Use Real_Acum for accumulated production data"
+
+  monthly_2025:
+    description: "For 2025 monthly distribution"
+    use_table: "PROD_2025"
+    keywords: ["2025", "meses", "mensual", "mes a mes", "distribución mensual", "hidrocarburos"]
+    critical_rules:
+      - "⚠️⚠️⚠️ Questions about '2025' + 'meses'/'mensual' → MUST use PROD_2025"
+      - "⚠️ DO NOT use VOLUME_PROD_DAILY for 2025 monthly aggregated data"
+      - "⚠️ Columns: ENERO, FEBRERO, MARZO, ..., DICIEMBRE (uppercase)"
+
+  rango_fechas_reporte_diario:
+    description: "Rango de fechas disponibles en el reporte diario"
+    sql: |
+      SELECT MIN(FECHA) AS fecha_inicio, MAX(FECHA) AS fecha_fin
+      FROM REPORTE_SEMANAL;
+    notes: "Usar solo en modo Reporte Diario"
+

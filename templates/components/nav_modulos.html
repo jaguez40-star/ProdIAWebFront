@@ -1,0 +1,18 @@
+{# [2026-08-25] WAFFLE-NAV · navegación entre las 3 vistas HTML de la app. Se incluye desde el
+   {% block sidebar %} de cada plantilla, que las 3 heredan de base.html. Un solo parcial en vez de
+   un control por plantilla: mismo patrón que components/sidebar.html.
+   `request.path` marca la vista activa sin JS. #}
+<nav class="nav-modulos" aria-label="Módulos">
+    <a class="nav-modulos__item{% if request.path == '/mainchat' %} is-active{% endif %}"
+       href="{{ url_for('mainchat.mainchat_view') }}">
+        <i class="bi bi-chat-dots" aria-hidden="true"></i><span>Chat</span>
+    </a>
+    <a class="nav-modulos__item{% if request.path == '/' %} is-active{% endif %}"
+       href="{{ url_for('main.index') }}">
+        <i class="bi bi-columns-gap" aria-hidden="true"></i><span>Clásico</span>
+    </a>
+    <a class="nav-modulos__item{% if request.path.startswith('/layout') %} is-active{% endif %}"
+       href="{{ url_for('colapsable.colapsable_view') }}">
+        <i class="bi bi-layout-sidebar-inset" aria-hidden="true"></i><span>Colapsable</span>
+    </a>
+</nav>

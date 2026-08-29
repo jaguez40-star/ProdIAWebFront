@@ -1,0 +1,205 @@
+/* MainChat — cascarón: navbar blanca + burbuja de usuario con menú waffle.
+   La zona central queda vacía a propósito; el contenido real llega después. */
+
+:root {
+    --mc-primary: #004236;
+    --mc-lime: #ccd32a;
+    --mc-navy: #00214d;
+    --mc-border: #ddddd5;
+    --mc-lime-soft: #f8f9e6;
+    --mc-muted: #6b6f63;
+    --mc-neg: #e24b4a;
+}
+
+/* Oculta el sidebar y sus botones, que vienen de base.html (compartido con
+   / y /layout/colapsable, por eso no se tocan allá sino aquí). En MainChat
+   la única navegación es la burbuja de la navbar. */
+body:has(.mc-shell) .sidebar,
+body:has(.mc-shell) .sidebar-toggle,
+body:has(.mc-shell) .mobile-menu-toggle {
+    display: none !important;
+}
+
+body:has(.mc-shell) .main-content {
+    margin-left: 0 !important;
+    width: 100% !important;
+}
+
+/* height:100% y no 100vh: este shell vive dentro de .main-content, que ya tiene
+   height:100vh MÁS padding vertical de 1rem arriba y abajo — con 100vh
+   desbordaría 32px y aparecería scroll al llenarse el cuerpo. */
+.mc-shell {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* style.css:.app-footer es position:fixed;bottom:0 — pensado para el layout clásico,
+   que descuenta su alto de sus cálculos (p.ej. .two-panel-layout: calc(100vh - 80px)).
+   Aquí el footer es el último hijo del flex column de .mc-shell: fixed lo saca del
+   flujo y lo pinta flotando sobre lo último que haya en .mc-body — que es la caja de
+   texto del chat, y quedaba tapada. static lo devuelve al flujo normal: ocupa su alto
+   real como cualquier otro hijo, y .mc-body (flex:1) se acorta justo lo necesario —
+   sin número mágico que mantener si el footer cambia de tamaño. */
+.mc-shell > .app-footer {
+    position: static;
+}
+
+/* ── Menú waffle ────────────────────────────────────────────────────── */
+
+/* fixed, no absolute: el disparador vive dentro del panel Historial, cuya cadena de
+   ancestros acumula seis overflow:hidden (historial.css:10, acordeon.css:29 y :146,
+   mainchat.css:36, style.css:190/51/40) que lo recortarían. Las coordenadas las
+   calcula situar() en mainchat.js; top/left aquí son solo el valor de arranque. */
+.mc-menu {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 330px;
+    background: #fff;
+    border: 1px solid var(--mc-border);
+    border-radius: 10px;
+    box-shadow: 0 8px 32px rgb(0 0 0 / 18%);
+    padding: 14px;
+    z-index: 1000;
+    /* [2026-08-25] situar() topa el popover en MARGEN=8 (mainchat.js:40-41) y .mc-menu no tenía
+       límite de alto: al crecer la rejilla desbordaba el viewport SIN scroll. 2*MARGEN = 16px. */
+    max-height: calc(100vh - 16px);
+    overflow-y: auto;
+}
+
+.mc-menu[hidden] {
+    display: none;
+}
+
+.mc-menu__user {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+}
+
+.mc-menu__avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: var(--mc-primary);
+    color: #fff;
+    display: grid;
+    place-items: center;
+    font-size: 17px;
+    font-weight: 800;
+    flex: 0 0 auto;
+}
+
+.mc-menu__datos {
+    min-width: 0;
+}
+
+.mc-menu__fila {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.mc-menu__nombre {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--mc-navy);
+}
+
+.mc-menu__insignia {
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    background: var(--mc-primary);
+    color: var(--mc-lime);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.mc-menu__email {
+    font-size: 11px;
+    color: var(--mc-muted);
+    margin-top: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mc-menu__sep {
+    height: 1px;
+    background: var(--mc-border);
+    margin: 12px 0;
+}
+
+/* Rejilla de accesos del waffle. [2026-08-25] auto-fit en vez de repeat(4,1fr) fijo: el número de
+   tarjetas ya no es 4 y debe poder crecer sin dejar filas cojas. */
+.mc-menu__accesos {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(66px, 1fr));
+    gap: 7px;
+}
+
+.mc-acceso {
+    border: 1px solid var(--mc-border);
+    border-radius: 10px;
+    background: #fff;
+    padding: 11px 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    text-align: center;
+    cursor: pointer;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--mc-navy);
+    line-height: 1.2;
+}
+
+.mc-acceso i {
+    font-size: 20px;
+}
+
+.mc-acceso:hover {
+    border-color: var(--mc-primary);
+    background: var(--mc-lime-soft);
+}
+
+.mc-acceso:focus-visible {
+    outline: 2px solid var(--mc-primary);
+    outline-offset: 1px;
+}
+
+.mc-menu__salir {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    width: 100%;
+    padding: 8px 9px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--mc-neg);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.mc-menu__salir:hover {
+    background: rgb(226 75 74 / 8%);
+}
+
+/* ── Cuerpo del acordeón ────────────────────────────────────────────── */
+
+/* Sin este padding los paneles arrancan pegados al borde inferior del navbar y
+   terminan pegados al borde superior del footer — cero respiro vertical, aunque
+   .mc-acordeon ya separa los paneles ENTRE sí (gap:14px). 16px arriba/abajo iguala
+   ese ritmo de espaciado. Seguro con la cadena flex: .mc-acordeon y .mc-panel ya
+   llevan min-height:0, así que el padding solo resta de su alto disponible, nunca
+   desborda .mc-shell (overflow:hidden). */
+.mc-body {
+    flex: 1;
+    min-height: 0;
+    padding: 16px 0;
+}

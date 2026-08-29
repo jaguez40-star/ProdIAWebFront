@@ -1,0 +1,1233 @@
+# ROBUSTEZ Query Examples
+# Ejemplos de consultas SQL para la base de datos ROBUSTEZ
+# Tabla: RESULTADOSREGRESION (SQLite)
+
+query_examples:
+  - id: "rob_001_pozos_por_vp"
+    question: "Cuantos pozos hay por vicepresidencia?"
+    variants:
+      - "pozos por VP"
+      - "conteo de pozos por vicepresidencia"
+      - "distribucion de pozos por VP"
+    keywords: ["pozos", "vicepresidencia", "conteo", "UWI"]
+    intent: "count_wells_by_hierarchy"
+    complexity: "simple"
+    sql_query: |
+      SELECT
+        VICEPRESIDENCIA,
+        COUNT(DISTINCT UWI) AS total_pozos
+      FROM RESULTADOSREGRESION
+      WHERE "AÑO" = 2025 AND MES = 1
+      GROUP BY VICEPRESIDENCIA
+      ORDER BY total_pozos DESC;
+    explanation: "Cuenta pozos unicos (UWI) por vicepresidencia para un mes especifico"
+    critical_notes:
+      - "Usar COUNT(DISTINCT UWI) porque cada pozo aparece una vez por mes"
+      - "Filtrar por un mes especifico para evitar contar pozos multiples veces"
+    tables_used: ["RESULTADOSREGRESION"]
+    database: "robustez"
+
+  - id: "rob_002_campos_por_gerencia"
+    question: "Cuales campos tiene cada gerencia?"
+    variants:
+      - "campos por gerencia"
+      - "listar campos de cada gerencia"
+    keywords: ["campos", "gerencia", "lista"]
+    intent: "list_fields_by_management"
+    complexity: "simple"
+    sql_query: |
+      SELECT
+        GERENCIA,
+        GROUP_CONCAT(DISTINCT CAMPO) AS campos,
+        COUNT(DISTINCT CAMPO) AS total_campos
+      FROM RESULTADOSREGRESION
+      WHERE "AÑO" = 2025 AND MES = 1
+      GROUP BY GERENCIA
+      ORDER BY total_campos DESC;
+    explanation: "Lista los campos distintos de cada gerencia"
+    critical_notes:
+      - "GROUP_CONCAT agrupa los nombres de campos en una lista separada por comas"
+    tables_used: ["RESULTADOSREGRESION"]
+    database: "robustez"
+
+  - id: "rob_003_breakeven_por_campo"
+    question: "Cual es el breakeven promedio por campo?"
+    variants:
+      - "breakeven por campo"
+      - "costo breakeven promedio"
+      - "precio de equilibrio por campo"
+    keywords: ["breakeven", "campo", "promedio", "costo"]
+    intent: "breakeven_by_field"
+    complexity: "medium"
+    sql_query: |
+      SELECT
+        CAMPO,
+        ROUND(AVG("Breakeven (Activos) USD/Bl"), 2) AS breakeven_promedio,
+        COUNT(DISTINCT UWI) AS total_pozos
+      FROM RESULTADOSREGRESION
+      WHERE "AÑO" = 2025
+        AND "TIPO DE POZO" = 'PRODUCTION'
+        AND "Breakeven (Activos) USD/Bl" IS NOT NULL
+      GROUP BY CAMPO
+      ORDER BY breakeven_promedio ASC
+      LIMIT 20;
+    explanation: "Calcula el breakeven promedio (USD/barril) por campo para pozos de produccion"
+    critical_notes:
+      - "Usar AVG para breakeven (es precio unitario, no se suma)"
+      - "Filtrar solo pozos de PRODUCTION para breakeven relevante"
+      - "Columnas con espacios y parentesis necesitan comillas dobles"
+    tables_used: ["RESULTADOSREGRESION"]
+    database: "robustez"
+
+  - id: "rob_004_ebitda_por_vp"
+    question: "Cual es el EBITDA total por vicepresidencia?"
+    variants:
+      - "EBITDA por VP"
+      - "EBITDA total por vicepresidencia"
+      - "rentabilidad por VP"
+    keywords: ["ebitda", "vicepresidencia", "total", "rentabilidad"]
+    intent: "ebitda_by_vp"
+    complexity: "medium"
+    sql_query: |
+      SELECT
+        VICEPRESIDENCIA,
+        ROUND(SUM("EBITDA (Activo) KUSD"), 2) AS ebitda_total_kusd,
+        COUNT(DISTINCT CAMPO) AS total_campos,
+        COUNT(DISTINCT UWI) AS total_pozos
+      FROM RESULTADOSREGRESION
+      WHERE "AÑO" = 2025
+      GROUP BY VICEPRESIDENCIA
+      ORDER BY ebitda_total_kusd DESC;
+    explanation: "Suma el EBITDA de todos los pozos activos por vicepresidencia para el ano 2025"
+    critical_notes:
+      - "Usar SUM para EBITDA (se agregan los valores de cada pozo)"
+      - "EBITDA esta en KUSD (miles de dolares)"
+    tables_used: ["RESULTADOSREGRESION"]
+    database: "robustez"
+
+  - id: "rob_005_rentabilidad_por_gerencia"
+    question: "Cuantos pozos son rentables vs no rentables por gerencia?"
+    variants:
+      - "pozos rentables por gerencia"
+      - "clasificacion de rentabilidad por gerencia"
+      - "pozos marginales y no rentables"
+    keywords: ["rentable", "no rentable", "marginal", "gerencia", "clasificacion"]
+    intent: "profitability_classification"
+    complexity: "medium"
+    sql_query: |
+      SELECT
+        GERENCIA,
+        "Condición Real (Activos)" AS condicion,
+        COUNT(DISTINCT UWI) AS total_pozos
+      FROM RESULTADOSREGRESION
+      WHERE "AÑO" = 2025 AND MES = 1
+        AND "Condición Real (Activos)" IS NOT NULL
+      GROUP BY GERENCIA, "Condición Real (Activos)"
+      ORDER BY GERENCIA, total_pozos DESC;
+    explanation: "Clasifica pozos por condicion de rentabilidad (RENTABLE, MARGINAL, NO RENTABLE) para cada gerencia"
+    critical_notes:
+      - "Filtrar un mes especifico para evitar contar pozos multiples veces"
+      - "La columna Condición (CON TILDE) tiene valores: RENTABLE, MARGINAL, NO RENTABLE"
+    tables_used: ["RESULTADOSREGRESION"]
+    database: "robustez"
+
+  # =====================================================
+  # RENTABILIDAD + TOP POZOS EBITDA (3 niveles jerarquicos)
+  # Clasificacion RENTABLE/MARGINAL/NO RENTABLE con Top 2
+  # pozos por EBITDA en cada nivel de agrupacion
+  # =====================================================
+
+  # --- Nivel VP: todas las gerencias ---
+  - id: "rob_006_rentabilidad_top_ebitda_vp"
+    question: "Cuantos pozos son rentables vs no rentables por gerencia con los top 2 pozos de mayor EBITDA?"
+    variants:
+      - "pozos rentables por gerencia con top EBITDA"
+      - "clasificacion rentabilidad por gerencia y mejores pozos"
+      - "rentabilidad por gerencia con ranking EBITDA"
+      - "rentables vs no rentables por gerencia top pozos"
+    keywords: ["rentable", "no rentable", "marginal", "gerencia", "EBITDA", "top", "clasificacion", "ranking"]
+    intent: "profitability_with_top_wells"
+    complexity: "advanced"
+    sql_query: |
+      WITH clasificacion AS (
+        SELECT GERENCIA,
+               "Condición Real (Activos)" AS condicion,
+               COUNT(DISTINCT UWI) AS total_pozos
+        FROM RESULTADOSREGRESION
+        WHERE "AÑO" = 2025 AND MES = 1
+          AND "Condición Real (Activos)" IS NOT NULL
+        GROUP BY GERENCIA, "Condición Real (Activos)"
+      ),
+      top_pozos AS (
+        SELECT GERENCIA, UWI,
+               ROUND(SUM("EBITDA (Activo) KUSD"), 2) AS ebitda_kusd,
+               ROW_NUMBER() OVER (
+                 PARTITION BY GERENCIA
+                 ORDER BY SUM("EBITDA (Activo) KUSD") DESC
+               ) AS rn
+        FROM RESULTADOSREGRESION
+        WHERE "AÑO" = 2025
+        GROUP BY GERENCIA, UWI
+      )
+      SELECT c.GERENCIA, c.condicion, c.total_pozos,
+             t.UWI AS top_pozo, t.ebitda_kusd, t.rn AS ranking
+      FROM clasificacion c
+      LEFT JOIN top_pozos t ON c.GERENCIA = t.GERENCIA AND t.rn <= 2
+      ORDER BY c.GERENCIA, c.condicion, t.rn;
+    explanation: "Combina clasificacion de rentabilidad (RENTABLE/MARGINAL/NO RENTABLE) con top 2 pozos por EBITDA para cada gerencia. CTE clasificacion cuenta pozos filtrando un solo mes (MES=1) para evitar duplicados. CTE top_pozos suma EBITDA del año completo sin filtrar mes."
+    critical_notes:
+      - "CTE clasificacion usa MES = 1 para conteo correcto (evitar duplicados)"
+      - "CTE top_pozos NO filtra MES - usa SUM del año completo para EBITDA total"
+      - "ROW_NUMBER() OVER (PARTITION BY GERENCIA) para top 2 POR CADA gerencia"
+      - "LEFT JOIN para no perder clasificaciones sin datos de EBITDA"
+      - "Condición (CON TILDE) tiene valores: RENTABLE, MARGINAL, NO RENTABLE"
+    tables_used: ["RESULTADOSREGRESION"]
+    database: "robustez"
+
+  # --- Nivel Gerencia: campos dentro de una gerencia ---
+  - id: "rob_007_rentabilidad_top_ebitda_gerencia"
+    question: "En la gerencia PPC, cuantos pozos son rentables vs no rentables por campo con los top 2 pozos de mayor EBITDA?"
+    variants:
+      - "pozos rentables por campo en gerencia con top EBITDA"
+      - "clasificacion rentabilidad por campo en una gerencia"
+      - "rentables vs no rentables por campo top pozos gerencia"
+      - "rentabilidad campos gerencia con mejores pozos"
+    keywords: ["rentable", "no rentable", "campo", "gerencia", "EBITDA", "top", "clasificacion"]
+    intent: "profitability_with_top_wells_by_field"
+    complexity: "advanced"
+    sql_query: |
+      WITH clasificacion AS (
+        SELECT CAMPO,
+               "Condición Real (Activos)" AS condicion,
+               COUNT(DISTINCT UWI) AS total_pozos
+        FROM RESULTADOSREGRESION
+        WHERE "AÑO" = 2025 AND MES = 1
+          AND UPPER(GERENCIA) = 'PPC'
+          AND "Condición Real (Activos)" IS NOT NULL
+        GROUP BY CAMPO, "Condición Real (Activos)"
+      ),
+      top_pozos AS (
+        SELECT CAMPO, UWI,
+               ROUND(SUM("EBITDA (Activo) KUSD"), 2) AS ebitda_kusd,
+               ROW_NUMBER() OVER (
+                 PARTITION BY CAMPO
+                 ORDER BY SUM("EBITDA (Activo) KUSD") DESC
+               ) AS rn
+        FROM RESULTADOSREGRESION
+        WHERE "AÑO" = 2025 AND UPPER(GERENCIA) = 'PPC'
+        GROUP BY CAMPO, UWI
+      )
+      SELECT c.CAMPO, c.condicion, c.total_pozos,
+             t.UWI AS top_pozo, t.ebitda_kusd, t.rn AS ranking
+      FROM clasificacion c
+      LEFT JOIN top_pozos t ON c.CAMPO = t.CAMPO AND t.rn <= 2
+      ORDER BY c.CAMPO, c.condicion, t.rn;
+    explanation: "Para una gerencia especifica, combina clasificacion de rentabilidad por campo con top 2 pozos por EBITDA dentro de cada campo. Adaptar 'PPC' al nombre de la gerencia que pregunte el usuario."
+    critical_notes:
+      - "Reemplazar 'PPC' con la gerencia que pregunte el usuario (usar UPPER())"
+      - "CTE clasificacion usa MES = 1 para conteo correcto"
+      - "CTE top_pozos SUM del año completo para EBITDA total"
+      - "PARTITION BY CAMPO para top 2 POR CADA campo"
+      - "Ambas CTEs filtran por la misma gerencia"
+    tables_used: ["RESULTADOSREGRESION"]
+    database: "robustez"
+
+  # --- Nivel Campo: pozos dentro de un campo ---
+  - id: "rob_008_rentabilidad_top_ebitda_campo"
+    question: "En el campo CASTILLA, cuantos pozos son rentables vs no rentables con los top 2 pozos de mayor EBITDA?"
+    variants:
+      - "pozos rentables en campo con top EBITDA"
+      - "clasificacion rentabilidad campo con mejores pozos"
+      - "rentables vs no rentables en un campo top pozos"
+      - "condicion pozos campo con ranking EBITDA"
+    keywords: ["rentable", "no rentable", "campo", "EBITDA", "top", "pozo", "clasificacion"]
+    intent: "profitability_with_top_wells_in_field"
+    complexity: "advanced"
+    sql_query: |
+      WITH clasificacion AS (
+        SELECT "Condición Real (Activos)" AS condicion,
+               COUNT(DISTINCT UWI) AS total_pozos
+        FROM RESULTADOSREGRESION
+        WHERE "AÑO" = 2025 AND MES = 1
+          AND UPPER(CAMPO) = 'CASTILLA'
+          AND "Condición Real (Activos)" IS NOT NULL
+        GROUP BY "Condición Real (Activos)"
+      ),
+      top_pozos AS (
+        SELECT UWI,
+               "Condición Real (Activos)" AS condicion,
+               ROUND(SUM("EBITDA (Activo) KUSD"), 2) AS ebitda_kusd,
+               ROW_NUMBER() OVER (
+                 ORDER BY SUM("EBITDA (Activo) KUSD") DESC
+               ) AS rn
+        FROM RESULTADOSREGRESION
+        WHERE "AÑO" = 2025 AND UPPER(CAMPO) = 'CASTILLA'
+        GROUP BY UWI, "Condición Real (Activos)"
+      )
+      SELECT c.condicion, c.total_pozos,
+             t.UWI AS top_pozo, t.condicion AS top_pozo_condicion,
+             t.ebitda_kusd, t.rn AS ranking
+      FROM clasificacion c
+      LEFT JOIN top_pozos t ON t.rn <= 2
+      ORDER BY c.condicion, t.rn;
+    explanation: "Para un campo especifico, muestra clasificacion de rentabilidad y top 2 pozos por EBITDA total del año. Adaptar 'CASTILLA' al nombre del campo que pregunte el usuario."
+    critical_notes:
+      - "Reemplazar 'CASTILLA' con el campo que pregunte el usuario (usar UPPER())"
+      - "A nivel campo, no hay PARTITION BY en ROW_NUMBER (un solo campo)"
+      - "LEFT JOIN con rn <= 2: cada fila de clasificacion muestra los mismos top 2 pozos del campo"
+      - "top_pozo_condicion indica si el pozo top es RENTABLE, MARGINAL o NO RENTABLE"
+      - "CTE clasificacion usa MES = 1 para conteo correcto"
+    tables_used: ["RESULTADOSREGRESION"]
+    database: "robustez"
+
+  # =====================================================
+  # PLANTILLAS SQL ENTERPRISE (Diccionario LLM v2)
+  # =====================================================
+
+  # --- Plantilla 2.1: Conteo por Jerarquia ---
+  - id: "rob_ent_001_conteo_por_gerencia"
+    question: "Cuantos pozos existen por cada gerencia?"
+    variants:
+      - "total de pozos por gerencia"
+      - "conteo de UWI por gerencia"
+      - "cuantos pozos tiene cada gerencia"
+    keywords: ["pozos", "gerencia", "conteo", "UWI"]
+    intent: "count_wells_by_hierarchy"
+    complexity: "simple"
+    sql_query: |
+      SELECT GERENCIA,
+             COUNT(DISTINCT UWI) AS TOTAL_POZOS
+      FROM RESULTADOSREGRESION
+      WHERE "AÑO" = 2025 AND MES = 1
+      GROUP BY GERENCIA
+      ORDER BY TOTAL_POZOS DESC;
+    explanation: "Cuenta pozos unicos por gerencia filtrando un mes especifico para evitar duplicados"
+    critical_notes:
+      - "Usar COUNT(DISTINCT UWI) porque un pozo aparece una vez por mes"
+      - "Filtrar por un mes especifico (MES = 1) para conteo correcto"
+    tables_used: ["RESULTADOSREGRESION"]
+    database: "robustez"
+
+  # --- Plantilla 2.2: Validacion de duplicados ---
+  - id: "rob_ent_002_validar_duplicados"
+    question: "Existen registros duplicados en la tabla?"
+    variants:
+      - "hay combinaciones UWI-MES-ANO repetidas"
+      - "validar duplicados"
+      - "registros repetidos"
+    keywords: ["duplicados", "repetidos", "validacion", "UWI"]
+    intent: "data_validation"
+    complexity: "medium"
+    sql_query: |
+      SELECT UWI, MES, "AÑO", COUNT(*) AS CNT
+      FROM RESULTADOSREGRESION
+      GROUP BY UWI, MES, "AÑO"
+      HAVING CNT > 1
+      LIMIT 20;
+    explanation: "Detecta combinaciones UWI-MES-ANO que aparecen mas de una vez (posibles duplicados)"
+    critical_notes:
+      - "HAVING CNT > 1 filtra solo los duplicados"
+      - "Usar LIMIT para evitar resultados excesivos"
+    tables_used: ["RESULTADOSREGRESION"]
+    database: "robustez"
+
+  # --- Plantilla 2.3: Distribucion por estado ---
+  - id: "rob_ent_003_distribucion_estado"
+    question: "Cual es la distribucion de estados de pozo por gerencia?"
+    variants:
+      - "pozos activos e inactivos por gerencia"
+      - "estado de pozos por gerencia"
+      - "cuantos pozos activos tiene cada gerencia"
+    keywords: ["estado", "pozo", "gerencia", "activo", "inactivo", "distribucion"]
+    intent: "distribution_by_status"
+    complexity: "medium"
+    sql_query: |
+      SELECT GERENCIA,
+             "ESTADO POZO",
+             COUNT(DISTINCT UWI) AS TOTAL
+      FROM RESULTADOSREGRESION
+      WHERE "AÑO" = 2025 AND MES = 1
+      GROUP BY GERENCIA, "ESTADO POZO"
+      ORDER BY GERENCIA, TOTAL DESC;
+    explanation: "Distribucion de pozos por estado (ACT, INACT, SUS, ABA) para cada gerencia"
+    critical_notes:
+      - "ESTADO POZO requiere comillas dobles (tiene espacio)"
+      - "Filtrar un mes especifico para evitar contar pozos multiples veces"
+      - "Valores posibles: ACT, INACT, SUS, ABA"
+    tables_used: ["RESULTADOSREGRESION"]
+    database: "robustez"
+
+  # --- Plantilla 2.4: Promedio ponderado (CLAVE ENTERPRISE) ---
+  - id: "rob_ent_004_promedio_ponderado"
+    question: "Cual es la tasa de produccion ponderada por campo?"
+    variants:
+      - "produccion ponderada por dias"
+      - "tasa promedio ponderada por campo"
+      - "produccion aceite ponderada"
+    keywords: ["ponderado", "tasa", "produccion", "campo", "promedio"]
+    intent: "weighted_average"
+    complexity: "advanced"
+    sql_query: |
+      SELECT CAMPO,
+             ROUND(SUM("Tasa Producción Aceite" * PROD_DAYS) / SUM(PROD_DAYS), 2) AS TASA_PONDERADA
+      FROM RESULTADOSREGRESION
+      WHERE "AÑO" = 2025
+        AND PROD_DAYS > 0
+      GROUP BY CAMPO
+      ORDER BY TASA_PONDERADA DESC
+      LIMIT 20;
+    explanation: "Calcula promedio ponderado de tasa de produccion por dias efectivos de produccion"
+    critical_notes:
+      - "REGLA ENTERPRISE: Para promedios de tasas usar SUM(tasa * PROD_DAYS) / SUM(PROD_DAYS)"
+      - "NUNCA usar AVG() simple para tasas - distorsiona el resultado"
+      - "Filtrar PROD_DAYS > 0 para evitar division por cero"
+      - "AVG() solo es correcto para breakeven (precio unitario)"
+    tables_used: ["RESULTADOSREGRESION"]
+    database: "robustez"
+
+  # =====================================================
+  # PREGUNTAS DE ENTRENAMIENTO - NIVEL GERENCIA
+  # (Seccion 13.A del Diccionario Enterprise)
+  # =====================================================
+
+  - id: "rob_train_ger_001"
+    question: "Cuantos activos existen por cada gerencia?"
+    variants:
+      - "activos por gerencia"
+      - "numero de activos de cada gerencia"
+    keywords: ["activos", "gerencia", "conteo"]
+    intent: "count_assets_by_management"
+    complexity: "simple"
+    sql_query: |
+      SELECT GERENCIA,
+             COUNT(DISTINCT ACTIVO) AS TOTAL_ACTIVOS
+      FROM RESULTADOSREGRESION
+      WHERE "AÑO" = 2025 AND MES = 1
+      GROUP BY GERENCIA
+      ORDER BY TOTAL_ACTIVOS DESC;
+    explanation: "Cuenta activos distintos por cada gerencia"
+    critical_notes:
+      - "Filtrar un mes especifico para evitar conteo duplicado"
+    tables_used: ["RESULTADOSREGRESION"]
+    database: "robustez"
+
+  - id: "rob_train_ger_002"
+    question: "Cuantos campos distintos tiene cada gerencia?"
+    variants:
+      - "campos por gerencia"
+      - "total campos de cada gerencia"
+    keywords: ["campos", "gerencia", "conteo"]
+    intent: "count_fields_by_management"
+    complexity: "simple"
+    sql_query: |
+      SELECT GERENCIA,
+             COUNT(DISTINCT CAMPO) AS TOTAL_CAMPOS
+      FROM RESULTADOSREGRESION
+      WHERE "AÑO" = 2025 AND MES = 1
+      GROUP BY GERENCIA
+      ORDER BY TOTAL_CAMPOS DESC;
+    explanation: "Cuenta campos distintos por gerencia"
+    tables_used: ["RESULTADOSREGRESION"]
+    database: "robustez"
+
+  - id: "rob_train_ger_003"
+    question: "Que gerencia tiene mayor numero de pozos activos?"
+    variants:
+      - "gerencia con mas pozos activos"
+      - "donde hay mas pozos activos"
+    keywords: ["gerencia", "pozos", "activos", "mayor"]
+    intent: "top_management_active_wells"
+    complexity: "medium"
+    sql_query: |
+      SELECT GERENCIA,
+             COUNT(DISTINCT UWI) AS TOTAL_POZOS_ACTIVOS
+      FROM RESULTADOSREGRESION
+      WHERE "AÑO" = 2025 AND MES = 1
+        AND "ESTADO POZO" = 'ACT'
+      GROUP BY GERENCIA
+      ORDER BY TOTAL_POZOS_ACTIVOS DESC
+      LIMIT 10;
+    explanation: "Ranking de gerencias por numero de pozos con estado activo"
+    critical_notes:
+      - "ESTADO POZO requiere comillas dobles y valor 'ACT'"
+    tables_used: ["RESULTADOSREGRESION"]
+    database: "robustez"
+
+  - id: "rob_train_ger_004"
+    question: "Cual es el promedio de dias de produccion por gerencia?"
+    variants:
+      - "PROD_DAYS promedio por gerencia"
+      - "dias produccion promedio por gerencia"
+    keywords: ["promedio", "PROD_DAYS", "gerencia", "dias"]
+    intent: "avg_prod_days_by_management"
+    complexity: "simple"
+    sql_query: |
+      SELECT GERENCIA,
+             ROUND(AVG(PROD_DAYS), 1) AS PROMEDIO_DIAS_PROD
+      FROM RESULTADOSREGRESION
+      WHERE "AÑO" = 2025
+      GROUP BY GERENCIA
+      ORDER BY PROMEDIO_DIAS_PROD DESC;
+    explanation: "Promedio de dias de produccion efectivos por gerencia"
+    tables_used: ["RESULTADOSREGRESION"]
+    database: "robustez"
+
+  - id: "rob_train_ger_005"
+    question: "Cual es la distribucion de tipo de pozo por gerencia?"
+    variants:
+      - "tipos de pozo por gerencia"
+      - "pozos productores vs inyectores por gerencia"
+    keywords: ["tipo", "pozo", "gerencia", "distribucion"]
+    intent: "well_type_distribution"
+    complexity: "medium"
+    sql_query: |
+      SELECT GERENCIA,
+             "TIPO DE POZO",
+             COUNT(DISTINCT UWI) AS TOTAL
+      FROM RESULTADOSREGRESION
+      WHERE "AÑO" = 2025 AND MES = 1
+      GROUP BY GERENCIA, "TIPO DE POZO"
+      ORDER BY GERENCIA, TOTAL DESC;
+    explanation: "Distribucion de tipos de pozo (PRODUCTION, INJECTION, etc.) por gerencia"
+    critical_notes:
+      - "TIPO DE POZO requiere comillas dobles"
+      - "Valores: PRODUCTION, INJECTION, OBSERVATION, PROD_INJ"
+    tables_used: ["RESULTADOSREGRESION"]
+    database: "robustez"
+
+  # =====================================================
+  # PREGUNTAS DE ENTRENAMIENTO - NIVEL CAMPO
+  # (Seccion 13.B del Diccionario Enterprise)
+  # =====================================================
+
+  - id: "rob_train_cam_001"
+    question: "Cuantos pozos unicos existen por campo?"
+    variants:
+      - "pozos por campo"
+      - "total UWI por campo"
+    keywords: ["pozos", "campo", "UWI", "conteo"]
+    intent: "count_wells_by_field"
+    complexity: "simple"
+    sql_query: |
+      SELECT CAMPO,
+             COUNT(DISTINCT UWI) AS TOTAL_POZOS
+      FROM RESULTADOSREGRESION
+      WHERE "AÑO" = 2025 AND MES = 1
+      GROUP BY CAMPO
+      ORDER BY TOTAL_POZOS DESC
+      LIMIT 20;
+    explanation: "Cuenta pozos unicos por campo"
+    tables_used: ["RESULTADOSREGRESION"]
+    database: "robustez"
+
+  - id: "rob_train_cam_002"
+    question: "Cual es el total de dias de produccion por campo en 2025?"
+    variants:
+      - "PROD_DAYS acumulado por campo"
+      - "dias produccion total por campo"
+    keywords: ["PROD_DAYS", "campo", "total", "acumulado"]
+    intent: "total_prod_days_by_field"
+    complexity: "simple"
+    sql_query: |
+      SELECT CAMPO,
+             SUM(PROD_DAYS) AS TOTAL_DIAS_PROD
+      FROM RESULTADOSREGRESION
+      WHERE "AÑO" = 2025
+      GROUP BY CAMPO
+      ORDER BY TOTAL_DIAS_PROD DESC
+      LIMIT 20;
+    explanation: "Total de dias de produccion acumulados por campo en 2025"
+    tables_used: ["RESULTADOSREGRESION"]
+    database: "robustez"
+
+  - id: "rob_train_cam_003"
+    question: "Cual es la distribucion de estado de pozo por campo?"
+    variants:
+      - "pozos activos por campo"
+      - "estado de pozos por campo"
+    keywords: ["estado", "pozo", "campo", "distribucion"]
+    intent: "well_status_by_field"
+    complexity: "medium"
+    sql_query: |
+      SELECT CAMPO,
+             "ESTADO POZO",
+             COUNT(DISTINCT UWI) AS TOTAL
+      FROM RESULTADOSREGRESION
+      WHERE "AÑO" = 2025 AND MES = 1
+      GROUP BY CAMPO, "ESTADO POZO"
+      ORDER BY CAMPO, TOTAL DESC;
+    explanation: "Distribucion de estados (ACT, INACT, SUS, ABA) por campo"
+    critical_notes:
+      - "ESTADO POZO con comillas dobles"
+    tables_used: ["RESULTADOSREGRESION"]
+    database: "robustez"
+
+  - id: "rob_train_cam_004"
+    question: "Que campo tiene mayor cantidad de pozos productores?"
+    variants:
+      - "campo con mas pozos de produccion"
+      - "campos por pozos productores"
+    keywords: ["campo", "pozos", "productores", "mayor"]
+    intent: "top_field_production_wells"
+    complexity: "medium"
+    sql_query: |
+      SELECT CAMPO,
+             COUNT(DISTINCT UWI) AS TOTAL_PRODUCTORES
+      FROM RESULTADOSREGRESION
+      WHERE "AÑO" = 2025 AND MES = 1
+        AND "TIPO DE POZO" = 'PRODUCTION'
+      GROUP BY CAMPO
+      ORDER BY TOTAL_PRODUCTORES DESC
+      LIMIT 10;
+    explanation: "Ranking de campos por numero de pozos tipo PRODUCTION"
+    critical_notes:
+      - "TIPO DE POZO requiere comillas dobles"
+    tables_used: ["RESULTADOSREGRESION"]
+    database: "robustez"
+
+  - id: "rob_train_cam_005"
+    question: "Cual es el promedio de dias del mes por campo?"
+    variants:
+      - "DIAS_MES promedio por campo"
+    keywords: ["DIAS_MES", "campo", "promedio"]
+    intent: "avg_month_days_by_field"
+    complexity: "simple"
+    sql_query: |
+      SELECT CAMPO,
+             ROUND(AVG(DIAS_MES), 1) AS PROMEDIO_DIAS_MES
+      FROM RESULTADOSREGRESION
+      WHERE "AÑO" = 2025
+      GROUP BY CAMPO
+      ORDER BY PROMEDIO_DIAS_MES DESC;
+    explanation: "Promedio de dias calendario del mes por campo"
+    tables_used: ["RESULTADOSREGRESION"]
+    database: "robustez"
+
+  # =====================================================
+  # PREGUNTAS DE ENTRENAMIENTO - VALIDACION JERARQUICA
+  # (Seccion 13.C del Diccionario Enterprise)
+  # =====================================================
+
+  - id: "rob_train_val_001"
+    question: "Existen UWI asociados a mas de un campo en el mismo ano?"
+    variants:
+      - "pozos en multiples campos"
+      - "UWI duplicados entre campos"
+    keywords: ["UWI", "campo", "duplicados", "validacion"]
+    intent: "hierarchy_validation"
+    complexity: "advanced"
+    sql_query: |
+      SELECT UWI, "AÑO",
+             COUNT(DISTINCT CAMPO) AS NUM_CAMPOS,
+             GROUP_CONCAT(DISTINCT CAMPO) AS CAMPOS
+      FROM RESULTADOSREGRESION
+      GROUP BY UWI, "AÑO"
+      HAVING NUM_CAMPOS > 1
+      LIMIT 20;
+    explanation: "Detecta pozos que aparecen en mas de un campo en el mismo ano (anomalia jerarquica)"
+    critical_notes:
+      - "Si devuelve resultados, indica inconsistencia en la jerarquia"
+    tables_used: ["RESULTADOSREGRESION"]
+    database: "robustez"
+
+  - id: "rob_train_val_002"
+    question: "Existen activos asociados a mas de una gerencia?"
+    variants:
+      - "activos en multiples gerencias"
+      - "validar jerarquia activo-gerencia"
+    keywords: ["activo", "gerencia", "validacion", "jerarquia"]
+    intent: "hierarchy_validation"
+    complexity: "advanced"
+    sql_query: |
+      SELECT ACTIVO,
+             COUNT(DISTINCT GERENCIA) AS NUM_GERENCIAS,
+             GROUP_CONCAT(DISTINCT GERENCIA) AS GERENCIAS
+      FROM RESULTADOSREGRESION
+      GROUP BY ACTIVO
+      HAVING NUM_GERENCIAS > 1;
+    explanation: "Detecta activos asociados a mas de una gerencia (validacion jerarquica)"
+    tables_used: ["RESULTADOSREGRESION"]
+    database: "robustez"
+
+  - id: "rob_train_val_003"
+    question: "Existen registros con MES fuera del rango 1-12?"
+    variants:
+      - "validar rango de meses"
+      - "meses invalidos"
+    keywords: ["MES", "rango", "validacion", "invalido"]
+    intent: "data_quality_validation"
+    complexity: "simple"
+    sql_query: |
+      SELECT MES, COUNT(*) AS TOTAL
+      FROM RESULTADOSREGRESION
+      WHERE MES < 1 OR MES > 12
+      GROUP BY MES;
+    explanation: "Verifica si existen registros con valores de MES fuera del rango valido 1-12"
+    tables_used: ["RESULTADOSREGRESION"]
+    database: "robustez"
+
+  - id: "rob_train_val_004"
+    question: "Existen pozos con mas dias de produccion que dias del mes?"
+    variants:
+      - "PROD_DAYS mayor a DIAS_MES"
+      - "validar dias de produccion"
+    keywords: ["PROD_DAYS", "DIAS_MES", "validacion", "anomalia"]
+    intent: "data_quality_validation"
+    complexity: "medium"
+    sql_query: |
+      SELECT UWI, MES, "AÑO", PROD_DAYS, DIAS_MES
+      FROM RESULTADOSREGRESION
+      WHERE PROD_DAYS > DIAS_MES
+      LIMIT 20;
+    explanation: "Detecta registros donde los dias de produccion superan los dias del mes (anomalia de datos)"
+    critical_notes:
+      - "Si devuelve resultados, indica posible error en los datos"
+    tables_used: ["RESULTADOSREGRESION"]
+    database: "robustez"
+
+  - id: "rob_train_val_005"
+    question: "Existen pozos activos con cero dias de produccion?"
+    variants:
+      - "pozos activos sin produccion"
+      - "PROD_DAYS cero en pozos activos"
+    keywords: ["activo", "PROD_DAYS", "cero", "validacion"]
+    intent: "data_quality_validation"
+    complexity: "medium"
+    sql_query: |
+      SELECT UWI, CAMPO, GERENCIA, MES, "AÑO"
+      FROM RESULTADOSREGRESION
+      WHERE "ESTADO POZO" = 'ACT'
+        AND PROD_DAYS = 0
+        AND "AÑO" = 2025
+      LIMIT 20;
+    explanation: "Detecta pozos con estado activo pero sin dias de produccion (posible anomalia)"
+    critical_notes:
+      - "ESTADO POZO requiere comillas dobles"
+    tables_used: ["RESULTADOSREGRESION"]
+    database: "robustez"
+
+  # =====================================================
+  # TIME INTELLIGENCE - CONSULTAS PUNTUALES (MES/AÑO)
+  # (Sección A del documento rbt_prod.md)
+  # =====================================================
+
+  - id: "rob_time_001_tasa_campo_mes"
+    question: "Para diciembre 2025, cual fue la tasa de produccion de aceite del campo RUBIALES?"
+    variants:
+      - "tasa aceite campo en un mes"
+      - "produccion BOPD campo por mes"
+      - "cuanto produjo el campo en diciembre"
+    keywords: ["tasa", "produccion", "aceite", "campo", "mes"]
+    intent: "point_query_rate"
+    complexity: "medium"
+    sql_query: |
+      SELECT
+        SUM("Tasa Producción Aceite" * PROD_DAYS) / NULLIF(SUM(PROD_DAYS),0) AS tasa_aceite_bpd
+      FROM RESULTADOSREGRESION
+      WHERE "AÑO" = 2025 AND MES = 12 AND CAMPO = 'RUBIALES';
+    explanation: "Tasa de aceite ponderada por dias de produccion para un campo en un mes especifico"
+    critical_notes:
+      - "Usar promedio ponderado SUM(tasa*PROD_DAYS)/SUM(PROD_DAYS), NUNCA AVG()"
+      - "Mapear nombre de mes español a numero: diciembre=12"
+    tables_used: ["RESULTADOSREGRESION"]
+    database: "robustez"
+
+  - id: "rob_time_002_top10_pozos_campo_mes"
+    question: "En enero 2025, cuales fueron los 10 pozos con mayor produccion en el campo CASTILLA?"
+    variants:
+      - "top 10 pozos por produccion en un campo"
+      - "mejores pozos de un campo en un mes"
+      - "ranking pozos por produccion mensual"
+    keywords: ["top", "pozos", "produccion", "campo", "ranking"]
+    intent: "top_n_wells_by_production"
+    complexity: "medium"
+    sql_query: |
+      SELECT
+        UWI,
+        SUM("Producción Aceite Dia_Mes") AS prod_aceite_mes_bls
+      FROM RESULTADOSREGRESION
+      WHERE "AÑO" = 2025 AND MES = 1 AND CAMPO = 'CASTILLA'
+      GROUP BY UWI
+      ORDER BY prod_aceite_mes_bls DESC
+      LIMIT 10;
+    explanation: "Top 10 pozos por produccion mensual de aceite en un campo especifico"
+    critical_notes:
+      - "Usar SUM para volumenes mensuales"
+      - "GROUP BY UWI para agrupar a nivel pozo"
+    tables_used: ["RESULTADOSREGRESION"]
+    database: "robustez"
+
+  - id: "rob_time_003_comparar_activo_vs_ai"
+    question: "En enero 2025, compara produccion de aceite Activo vs Activo+Inactivo del campo APIAY"
+    variants:
+      - "comparar activo vs inactivo"
+      - "diferencia produccion activos e inactivos"
+    keywords: ["comparar", "activo", "inactivo", "produccion", "campo"]
+    intent: "compare_active_vs_ai"
+    complexity: "medium"
+    sql_query: |
+      SELECT
+        SUM("Producción Aceite Dia_Mes") AS prod_activo_bls,
+        SUM("Producción Aceite Dia_Mes AI") AS prod_ai_bls
+      FROM RESULTADOSREGRESION
+      WHERE "AÑO" = 2025 AND MES = 1 AND CAMPO = 'APIAY';
+    explanation: "Compara produccion solo activos vs activos+inactivos para un campo en un mes"
+    critical_notes:
+      - "Producción Aceite Dia_Mes = solo activos"
+      - "Producción Aceite Dia_Mes AI = activos + inactivos"
+    tables_used: ["RESULTADOSREGRESION"]
+    database: "robustez"
+
+  - id: "rob_time_004_prod_solo_activos"
+    question: "En enero 2025, cual fue la produccion del campo CHICHIMENE solo pozos activos?"
+    variants:
+      - "produccion pozos activos"
+      - "produccion solo activos campo"
+    keywords: ["produccion", "activos", "campo", "estado"]
+    intent: "production_active_wells_only"
+    complexity: "medium"
+    sql_query: |
+      SELECT
+        SUM("Producción Aceite Dia_Mes") AS prod_aceite_mes_bls
+      FROM RESULTADOSREGRESION
+      WHERE "AÑO" = 2025 AND MES = 1 AND CAMPO = 'CHICHIMENE'
+        AND "ESTADO POZO" = 'ACT';
+    explanation: "Produccion mensual filtrando solo pozos con estado activo"
+    critical_notes:
+      - "ESTADO POZO requiere comillas dobles"
+      - "Valores posibles: 'ACT' (activo), 'INACT' (inactivo), 'SUS' (suspendido), 'ABA' (abandonado)"
+    tables_used: ["RESULTADOSREGRESION"]
+    database: "robustez"
+
+  # =====================================================
+  # TIME INTELLIGENCE - SERIES MENSUALES
+  # (Sección B del documento rbt_prod.md)
+  # =====================================================
+
+  - id: "rob_time_005_serie_prod_campo_año"
+    question: "En 2025, por mes, cual es la produccion de aceite del campo RUBIALES?"
+    variants:
+      - "serie mensual produccion campo"
+      - "produccion mes a mes de un campo"
+      - "evolucion mensual produccion"
+    keywords: ["por mes", "serie", "mensual", "produccion", "campo"]
+    intent: "monthly_series_production"
+    complexity: "medium"
+    sql_query: |
+      SELECT "AÑO" AS AÑO, MES,
+             SUM("Producción Aceite Dia_Mes") AS prod_aceite_mes_bls
+      FROM RESULTADOSREGRESION
+      WHERE "AÑO" = 2025 AND CAMPO = 'RUBIALES'
+      GROUP BY "AÑO", MES
+      ORDER BY "AÑO", MES;
+    explanation: "Serie mensual de produccion de aceite para un campo en un año"
+    critical_notes:
+      - "GROUP BY AÑO, MES para obtener serie mensual"
+      - "ORDER BY AÑO, MES para secuencia cronologica"
+      - "Usar SUM para volumenes mensuales"
+    tables_used: ["RESULTADOSREGRESION"]
+    database: "robustez"
+
+  - id: "rob_time_006_serie_tasa_gerencia_año"
+    question: "En 2025, por mes, cual es la tasa de aceite ponderada de la gerencia GAN?"
+    variants:
+      - "tasa mensual ponderada gerencia"
+      - "evolucion tasa aceite gerencia"
+    keywords: ["por mes", "tasa", "ponderada", "gerencia"]
+    intent: "monthly_series_weighted_rate"
+    complexity: "advanced"
+    sql_query: |
+      SELECT "AÑO" AS AÑO, MES,
+             SUM("Tasa Producción Aceite" * PROD_DAYS) / NULLIF(SUM(PROD_DAYS),0) AS tasa_aceite_bpd
+      FROM RESULTADOSREGRESION
+      WHERE "AÑO" = 2025 AND GERENCIA = 'GAN'
+      GROUP BY "AÑO", MES
+      ORDER BY "AÑO", MES;
+    explanation: "Serie mensual de tasa ponderada de aceite para una gerencia"
+    critical_notes:
+      - "CLAVE: Usar promedio ponderado para tasas, NUNCA AVG()"
+      - "GROUP BY AÑO, MES para serie mensual"
+    tables_used: ["RESULTADOSREGRESION"]
+    database: "robustez"
+
+  - id: "rob_time_007_pozos_con_prod_por_mes"
+    question: "En 2025, por mes, cuantos pozos con produccion mayor a 0 tuvo el campo CASTILLA?"
+    variants:
+      - "pozos produciendo por mes"
+      - "conteo pozos activos por mes"
+    keywords: ["pozos", "produccion", "mes", "conteo", "campo"]
+    intent: "monthly_well_count"
+    complexity: "medium"
+    sql_query: |
+      SELECT "AÑO" AS AÑO, MES,
+             COUNT(DISTINCT UWI) AS pozos_con_prod
+      FROM RESULTADOSREGRESION
+      WHERE "AÑO" = 2025 AND CAMPO = 'CASTILLA' AND "Producción Aceite Dia_Mes" > 0
+      GROUP BY "AÑO", MES
+      ORDER BY "AÑO", MES;
+    explanation: "Conteo mensual de pozos con produccion positiva en un campo"
+    critical_notes:
+      - "Filtrar Producción Aceite Dia_Mes > 0 para solo contar pozos produciendo"
+      - "COUNT(DISTINCT UWI) para evitar duplicados"
+    tables_used: ["RESULTADOSREGRESION"]
+    database: "robustez"
+
+  - id: "rob_time_008_top5_campos_por_mes"
+    question: "En 2025, por mes, cuales son los top 5 campos por produccion en la gerencia GAN?"
+    variants:
+      - "top campos por mes gerencia"
+      - "mejores campos cada mes"
+      - "ranking mensual campos"
+    keywords: ["top", "campos", "mes", "gerencia", "ranking"]
+    intent: "monthly_top_n_fields"
+    complexity: "advanced"
+    sql_query: |
+      SELECT AÑO, MES, CAMPO, prod_aceite_mes_bls
+      FROM (
+        SELECT "AÑO" AS AÑO, MES, CAMPO,
+               SUM("Producción Aceite Dia_Mes") AS prod_aceite_mes_bls,
+               ROW_NUMBER() OVER (
+                 PARTITION BY "AÑO", MES
+                 ORDER BY SUM("Producción Aceite Dia_Mes") DESC
+               ) AS rn
+        FROM RESULTADOSREGRESION
+        WHERE "AÑO" = 2025 AND GERENCIA = 'GAN'
+        GROUP BY "AÑO", MES, CAMPO
+      )
+      WHERE rn <= 5
+      ORDER BY AÑO, MES, rn;
+    explanation: "Top 5 campos por produccion cada mes usando ventana ROW_NUMBER()"
+    critical_notes:
+      - "ROW_NUMBER() OVER (PARTITION BY AÑO, MES) para ranking por mes"
+      - "Subconsulta con GROUP BY para agregar produccion por campo"
+      - "Filtro rn <= 5 en consulta externa"
+    tables_used: ["RESULTADOSREGRESION"]
+    database: "robustez"
+
+  # =====================================================
+  # TIME INTELLIGENCE - RANKINGS MENSUALES
+  # (Sección C del documento rbt_prod.md)
+  # =====================================================
+
+  - id: "rob_time_009_mayor_pozo_por_mes"
+    question: "En 2025, que pozo tuvo mayor produccion cada mes en el campo RUBIALES?"
+    variants:
+      - "pozo lider por mes"
+      - "mayor productor cada mes"
+    keywords: ["pozo", "mayor", "produccion", "mes", "campo"]
+    intent: "monthly_top_well"
+    complexity: "advanced"
+    sql_query: |
+      SELECT AÑO, MES, UWI, prod_aceite_mes_bls
+      FROM (
+        SELECT "AÑO" AS AÑO, MES, UWI,
+               SUM("Producción Aceite Dia_Mes") AS prod_aceite_mes_bls,
+               ROW_NUMBER() OVER (
+                 PARTITION BY "AÑO", MES
+                 ORDER BY SUM("Producción Aceite Dia_Mes") DESC
+               ) rn
+        FROM RESULTADOSREGRESION
+        WHERE "AÑO" = 2025 AND CAMPO = 'RUBIALES'
+        GROUP BY "AÑO", MES, UWI
+      )
+      WHERE rn = 1
+      ORDER BY AÑO, MES;
+    explanation: "Pozo con mayor produccion mensual usando ventana particionada por mes"
+    critical_notes:
+      - "ROW_NUMBER() con PARTITION BY AÑO, MES para identificar lider de cada mes"
+      - "rn = 1 para quedarse solo con el top 1"
+    tables_used: ["RESULTADOSREGRESION"]
+    database: "robustez"
+
+  - id: "rob_time_010_campo_lider_gerencia"
+    question: "En 2025, que campo lidero la produccion cada mes en la gerencia GAN?"
+    variants:
+      - "campo lider por mes en gerencia"
+      - "mayor campo productor cada mes"
+    keywords: ["campo", "lider", "produccion", "mes", "gerencia"]
+    intent: "monthly_top_field"
+    complexity: "advanced"
+    sql_query: |
+      SELECT AÑO, MES, CAMPO, prod_aceite_mes_bls
+      FROM (
+        SELECT "AÑO" AS AÑO, MES, CAMPO,
+               SUM("Producción Aceite Dia_Mes") AS prod_aceite_mes_bls,
+               ROW_NUMBER() OVER (
+                 PARTITION BY "AÑO", MES
+                 ORDER BY SUM("Producción Aceite Dia_Mes") DESC
+               ) rn
+        FROM RESULTADOSREGRESION
+        WHERE "AÑO" = 2025 AND GERENCIA = 'GAN'
+        GROUP BY "AÑO", MES, CAMPO
+      )
+      WHERE rn = 1
+      ORDER BY AÑO, MES;
+    explanation: "Campo lider en produccion cada mes para una gerencia"
+    tables_used: ["RESULTADOSREGRESION"]
+    database: "robustez"
+
+  - id: "rob_time_011_mes_pico_campo"
+    question: "En 2025, en que mes el campo CASTILLA tuvo su produccion maxima?"
+    variants:
+      - "mes de mayor produccion"
+      - "pico de produccion campo"
+      - "maximo mensual campo"
+    keywords: ["mes", "maximo", "pico", "produccion", "campo"]
+    intent: "peak_month"
+    complexity: "medium"
+    sql_query: |
+      SELECT MES, prod_aceite_mes_bls
+      FROM (
+        SELECT MES,
+               SUM("Producción Aceite Dia_Mes") AS prod_aceite_mes_bls
+        FROM RESULTADOSREGRESION
+        WHERE "AÑO" = 2025 AND CAMPO = 'CASTILLA'
+        GROUP BY MES
+      )
+      ORDER BY prod_aceite_mes_bls DESC
+      LIMIT 1;
+    explanation: "Identifica el mes con produccion maxima para un campo en un año"
+    tables_used: ["RESULTADOSREGRESION"]
+    database: "robustez"
+
+  # =====================================================
+  # TIME INTELLIGENCE - MoM / YoY / YTD / ROLLING
+  # (Sección D del documento rbt_prod.md)
+  # =====================================================
+
+  - id: "rob_time_012_mom_produccion"
+    question: "En 2025, por mes, cual es la variacion MoM de produccion del campo RUBIALES?"
+    variants:
+      - "variacion mes a mes produccion"
+      - "cambio mensual produccion"
+      - "MoM produccion campo"
+      - "muestrame la variacion de la produccion para el campo"
+      - "variacion de la produccion del campo"
+    keywords: ["variacion", "MoM", "mes a mes", "produccion", "campo"]
+    intent: "mom_variation"
+    complexity: "advanced"
+    sql_query: |
+      WITH serie AS (
+        SELECT "AÑO" AS AÑO, MES,
+               SUM("Producción Aceite Dia_Mes") AS prod
+        FROM RESULTADOSREGRESION
+        WHERE "AÑO" = 2025 AND CAMPO = 'RUBIALES'
+        GROUP BY "AÑO", MES
+      )
+      SELECT
+        AÑO, MES, prod,
+        prod - LAG(prod) OVER (ORDER BY AÑO, MES) AS delta_mom,
+        CASE
+          WHEN LAG(prod) OVER (ORDER BY AÑO, MES) IS NULL THEN NULL
+          ELSE (prod * 1.0 / LAG(prod) OVER (ORDER BY AÑO, MES) - 1.0)
+        END AS pct_mom
+      FROM serie
+      ORDER BY AÑO, MES;
+    explanation: "Variacion mes a mes (MoM) de produccion con delta absoluto y porcentual"
+    critical_notes:
+      - "LAG() para obtener valor del mes anterior"
+      - "CTE (WITH) para calcular produccion mensual primero"
+      - "pct_mom: fraccion decimal (multiplicar por 100 para %)"
+    tables_used: ["RESULTADOSREGRESION"]
+    database: "robustez"
+
+  # --- Variacion MoM de produccion a nivel GERENCIA ---
+  - id: "rob_time_012b_mom_produccion_gerencia"
+    question: "Muestrame la variacion de la produccion para la gerencia POE en 2025?"
+    variants:
+      - "variacion de la produccion para la gerencia"
+      - "como vario la produccion de la gerencia"
+      - "produccion mes a mes gerencia"
+      - "variacion mensual produccion gerencia"
+      - "evolucion produccion gerencia por mes"
+      - "produccion por mes de la gerencia"
+    keywords: ["variacion", "produccion", "gerencia", "mes", "mensual", "evolucion"]
+    intent: "mom_variation_gerencia"
+    complexity: "advanced"
+    sql_query: |
+      WITH serie AS (
+        SELECT "AÑO" AS AÑO, MES,
+               SUM("Producción Aceite Dia_Mes") AS total_produccion
+        FROM RESULTADOSREGRESION
+        WHERE "AÑO" = 2025 AND UPPER(GERENCIA) = 'POE'
+        GROUP BY "AÑO", MES
+      )
+      SELECT
+        AÑO, MES, total_produccion,
+        total_produccion - LAG(total_produccion) OVER (ORDER BY AÑO, MES) AS delta_mom,
+        CASE
+          WHEN LAG(total_produccion) OVER (ORDER BY AÑO, MES) IS NULL THEN NULL
+          ELSE ROUND((total_produccion * 1.0 / LAG(total_produccion) OVER (ORDER BY AÑO, MES) - 1.0) * 100, 2)
+        END AS variacion_pct
+      FROM serie
+      ORDER BY AÑO, MES;
+    explanation: "Variacion mes a mes de produccion total para una gerencia. Adaptar 'POE' a la gerencia que pregunte el usuario. Usa LAG() para calcular delta absoluto y variacion porcentual."
+    critical_notes:
+      - "Reemplazar 'POE' con la gerencia que pregunte el usuario (usar UPPER())"
+      - "LAG() obtiene valor del mes anterior para calcular variacion"
+      - "variacion_pct ya esta multiplicado por 100 (es porcentaje directo)"
+      - "CTE serie agrupa produccion mensual antes de calcular variacion"
+      - "Si el usuario solo pide 'produccion por mes' sin variacion, omitir delta_mom y variacion_pct"
+    tables_used: ["RESULTADOSREGRESION"]
+    database: "robustez"
+
+  - id: "rob_time_013_yoy_comparar_meses"
+    question: "Serie mensual YoY del campo RUBIALES comparando 2026 vs 2025"
+    variants:
+      - "comparar produccion año anterior"
+      - "YoY produccion campo"
+      - "año sobre año produccion"
+    keywords: ["YoY", "comparar", "año", "produccion", "campo"]
+    intent: "yoy_comparison"
+    complexity: "advanced"
+    sql_query: |
+      SELECT
+        "AÑO" AS AÑO, MES,
+        SUM("Producción Aceite Dia_Mes") AS prod_mes_bls
+      FROM RESULTADOSREGRESION
+      WHERE CAMPO = 'RUBIALES'
+        AND "AÑO" IN (2026, 2025)
+      GROUP BY "AÑO", MES
+      ORDER BY "AÑO", MES;
+    explanation: "Serie mensual para comparar produccion entre dos años (YoY)"
+    critical_notes:
+      - "AÑO IN (año_actual, año_anterior) para obtener ambos periodos"
+      - "El frontend puede graficar ambas series superpuestas"
+    tables_used: ["RESULTADOSREGRESION"]
+    database: "robustez"
+
+  - id: "rob_time_014_ytd_acumulado"
+    question: "En 2025, por mes, muestrame el acumulado YTD de produccion del campo CASTILLA"
+    variants:
+      - "acumulado year to date"
+      - "produccion acumulada por mes"
+      - "running sum produccion"
+    keywords: ["YTD", "acumulado", "produccion", "mes", "campo"]
+    intent: "ytd_cumulative"
+    complexity: "advanced"
+    sql_query: |
+      WITH serie AS (
+        SELECT "AÑO" AS AÑO, MES, SUM("Producción Aceite Dia_Mes") AS prod
+        FROM RESULTADOSREGRESION
+        WHERE "AÑO" = 2025 AND CAMPO = 'CASTILLA'
+        GROUP BY "AÑO", MES
+      )
+      SELECT
+        AÑO, MES, prod,
+        SUM(prod) OVER (ORDER BY AÑO, MES) AS prod_ytd
+      FROM serie
+      ORDER BY AÑO, MES;
+    explanation: "Acumulado year-to-date (YTD) de produccion por mes usando ventana SUM()"
+    critical_notes:
+      - "SUM() OVER (ORDER BY) para running sum acumulado"
+      - "CTE para calcular produccion mensual base"
+    tables_used: ["RESULTADOSREGRESION"]
+    database: "robustez"
+
+  - id: "rob_time_015_rolling_3m"
+    question: "En 2025, por mes, calcula el promedio movil 3M de produccion del campo RUBIALES"
+    variants:
+      - "promedio movil 3 meses"
+      - "rolling average produccion"
+      - "media movil trimestral"
+    keywords: ["promedio movil", "rolling", "3M", "produccion", "campo"]
+    intent: "rolling_average"
+    complexity: "advanced"
+    sql_query: |
+      WITH serie AS (
+        SELECT "AÑO" AS AÑO, MES, SUM("Producción Aceite Dia_Mes") AS prod
+        FROM RESULTADOSREGRESION
+        WHERE "AÑO" = 2025 AND CAMPO = 'RUBIALES'
+        GROUP BY "AÑO", MES
+      )
+      SELECT
+        AÑO, MES, prod,
+        AVG(prod) OVER (ORDER BY AÑO, MES ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) AS rolling_3m_avg
+      FROM serie
+      ORDER BY AÑO, MES;
+    explanation: "Promedio movil de 3 meses usando ventana ROWS BETWEEN 2 PRECEDING"
+    critical_notes:
+      - "ROWS BETWEEN 2 PRECEDING AND CURRENT ROW = ventana de 3 filas"
+      - "Los primeros 2 meses tendran ventana incompleta"
+    tables_used: ["RESULTADOSREGRESION"]
+    database: "robustez"
+
+  - id: "rob_time_016_comparar_campos"
+    question: "En 2025, por mes, compara produccion entre los campos RUBIALES y CASTILLA"
+    variants:
+      - "comparar dos campos por mes"
+      - "produccion campo A vs campo B"
+    keywords: ["comparar", "campos", "produccion", "mes"]
+    intent: "compare_fields_monthly"
+    complexity: "medium"
+    sql_query: |
+      SELECT
+        "AÑO" AS AÑO, MES, CAMPO,
+        SUM("Producción Aceite Dia_Mes") AS prod_mes_bls
+      FROM RESULTADOSREGRESION
+      WHERE "AÑO" = 2025 AND CAMPO IN ('RUBIALES', 'CASTILLA')
+      GROUP BY "AÑO", MES, CAMPO
+      ORDER BY "AÑO", MES, CAMPO;
+    explanation: "Comparacion mensual de produccion entre dos campos"
+    critical_notes:
+      - "CAMPO IN ('A', 'B') para filtrar ambos campos"
+      - "GROUP BY incluye CAMPO para separar las series"
+    tables_used: ["RESULTADOSREGRESION"]
+    database: "robustez"
+
+  - id: "rob_time_017_participacion_campo_gerencia"
+    question: "En 2025, por mes, que porcentaje de la produccion de la gerencia GAN aporta el campo RUBIALES?"
+    variants:
+      - "participacion campo en gerencia"
+      - "porcentaje produccion campo vs gerencia"
+      - "share mensual campo"
+    keywords: ["porcentaje", "participacion", "campo", "gerencia", "mes"]
+    intent: "monthly_share"
+    complexity: "advanced"
+    sql_query: |
+      WITH g AS (
+        SELECT "AÑO" AS AÑO, MES, SUM("Producción Aceite Dia_Mes") AS prod_g
+        FROM RESULTADOSREGRESION
+        WHERE "AÑO" = 2025 AND GERENCIA = 'GAN'
+        GROUP BY "AÑO", MES
+      ),
+      c AS (
+        SELECT "AÑO" AS AÑO, MES, SUM("Producción Aceite Dia_Mes") AS prod_c
+        FROM RESULTADOSREGRESION
+        WHERE "AÑO" = 2025 AND GERENCIA = 'GAN' AND CAMPO = 'RUBIALES'
+        GROUP BY "AÑO", MES
+      )
+      SELECT
+        g.AÑO, g.MES, c.prod_c, g.prod_g,
+        CASE WHEN g.prod_g = 0 THEN NULL ELSE (c.prod_c * 1.0 / g.prod_g) END AS pct_participacion
+      FROM g
+      LEFT JOIN c ON c.AÑO = g.AÑO AND c.MES = g.MES
+      ORDER BY g.AÑO, g.MES;
+    explanation: "Participacion porcentual mensual de un campo dentro de su gerencia"
+    critical_notes:
+      - "Dos CTEs: una para total gerencia, otra para campo especifico"
+      - "LEFT JOIN para no perder meses donde el campo no tiene datos"
+      - "pct_participacion como fraccion (multiplicar por 100 para %)"
+    tables_used: ["RESULTADOSREGRESION"]
+    database: "robustez"
+
+  - id: "rob_time_018_rango_meses"
+    question: "Entre marzo y agosto de 2025, cual fue la produccion total del campo CASTILLA?"
+    variants:
+      - "produccion en rango de meses"
+      - "produccion entre dos meses"
+      - "acumulado trimestre campo"
+    keywords: ["entre", "rango", "meses", "produccion", "campo"]
+    intent: "range_total"
+    complexity: "simple"
+    sql_query: |
+      SELECT
+        SUM("Producción Aceite Dia_Mes") AS prod_total_bls
+      FROM RESULTADOSREGRESION
+      WHERE "AÑO" = 2025 AND CAMPO = 'CASTILLA' AND MES BETWEEN 3 AND 8;
+    explanation: "Produccion total en un rango de meses usando MES BETWEEN"
+    critical_notes:
+      - "MES BETWEEN 3 AND 8 = marzo a agosto"
+      - "Mapear nombres de mes a numeros segun diccionario"
+    tables_used: ["RESULTADOSREGRESION"]
+    database: "robustez"

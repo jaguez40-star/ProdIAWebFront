@@ -1,0 +1,119 @@
+{% include 'components/nav_modulos.html' %}
+
+<!-- Chat History Section -->
+<div class="sidebar-section">
+    <h6><i class="fas fa-history"></i> Historial</h6>
+    
+    <!-- New Conversation Button -->
+    <button class="btn btn-primary btn-sm w-100 mb-3" id="new-conversation-btn">
+        <i class="fas fa-plus"></i> Nueva Conversación
+    </button>
+    
+    <!-- Conversations List -->
+    <div id="conversations-list">
+        {% if conversations %}
+            {% for conv in conversations %}
+            <div class="conversation-item" data-id="{{ conv.id }}">
+                <div class="d-flex align-items-center">
+                    <button class="btn btn-sm conversation-btn flex-grow-1 text-start
+                           {% if conv.id == current_conversation_id %}btn-secondary{% else %}btn-outline-secondary{% endif %}"
+                            data-id="{{ conv.id }}">
+                        <i class="fas fa-comment me-2"></i>
+                        {{ conv.title[:25] }}{% if conv.title|length > 25 %}...{% endif %}
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger ms-2 delete-conv-btn" 
+                            data-id="{{ conv.id }}" 
+                            data-title="{{ conv.title }}"
+                            title="Eliminar conversación">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p class="text-muted small">No hay conversaciones</p>
+        {% endif %}
+    </div>
+</div>
+
+<hr>
+
+<!-- System Status Section -->
+<div class="sidebar-section">
+    <h6><i class="fas fa-cog"></i> Estado del Sistema</h6>
+    
+    <!-- Connection Status -->
+    <div class="status-item mb-2">
+        <i class="fas fa-wifi" id="connection-status-icon"></i>
+        <small class="ms-1" id="connection-status-text">Conectando...</small>
+    </div>
+    
+    <div class="row g-2">
+        <div class="col-6">
+            <div class="status-item">
+                <i class="fas fa-database text-success"></i>
+                <small class="ms-1">Datos</small>
+            </div>
+        </div>
+        <div class="col-6">
+            <div class="status-item" id="ai-status">
+                {% if ollama_status.running and ollama_status.has_gemma %}
+                    <i class="fas fa-robot text-success"></i>
+                    <small class="ms-1" title="IA Online">IA</small>
+                {% elif ollama_status.running %}
+                    <i class="fas fa-robot text-warning"></i>
+                    <small class="ms-1" title="IA Offline">IA</small>
+                {% else %}
+                    <i class="fas fa-robot text-danger"></i>
+                    <small class="ms-1" title="IA Offline">IA</small>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    {% if not ollama_status.running %}
+    <div class="alert alert-warning alert-sm mt-2 p-2">
+        <small>
+            <i class="fas fa-info-circle"></i>
+            Ejecuta: <code>ollama serve</code>
+        </small>
+    </div>
+    {% elif not ollama_status.has_gemma %}
+    <div class="alert alert-info alert-sm mt-2 p-2">
+        <small>
+            <i class="fas fa-info-circle"></i>
+            Ejecuta: <code>ollama pull gemma4:latest</code>
+        </small>
+    </div>
+    {% endif %}
+</div>
+
+<hr>
+
+<!-- User Section -->
+<div class="sidebar-section">
+    <div class="user-section">
+        <div class="dropdown">
+            <button class="btn btn-outline-secondary dropdown-toggle w-100 d-flex align-items-center justify-content-between"
+                    type="button" id="userMenuButton" data-bs-toggle="dropdown" aria-expanded="false"
+                    style="padding: 0.375rem 0.5rem;">
+                <div class="d-flex align-items-center text-truncate" style="min-width: 0; flex: 1;">
+                    <i class="fas fa-user-circle me-2" style="flex-shrink: 0;"></i>
+                    <span class="text-truncate small"
+                          style="font-size: 0.8rem; line-height: 1.2;"
+                          title="{{ session.get('user', {}).get('full_name', session.get('user_email', 'Usuario')) }}">
+                        {{ session.get('user', {}).get('full_name', session.get('user_email', 'Usuario')) }}
+                    </span>
+                </div>
+            </button>
+            <ul class="dropdown-menu w-100" aria-labelledby="userMenuButton">
+                <li>
+                    <a class="dropdown-item small" href="#" id="logout-btn">
+                        <i class="fas fa-sign-out-alt me-2"></i>
+                        Cerrar Sesión
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>

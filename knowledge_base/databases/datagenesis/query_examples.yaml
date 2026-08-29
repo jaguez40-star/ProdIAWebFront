@@ -1,0 +1,335 @@
+query_examples:
+  - id: "dg_001_field_production_yesterday"
+    question: "¿Cuál fue la producción de petróleo del campo {campo} ayer?"
+    question_variants:
+      - "Producción de crudo del campo {campo} último día"
+      - "Cuánto petróleo produjo el campo {campo} ayer"
+      - "Producción de {campo} ayer"
+      - "Dame la producción del campo {campo} del último día"
+    keywords: ["producción", "campo", "ayer", "petróleo", "diario"]
+    intent: "Obtener producción diaria de un campo específico (parametrizable)"
+    complexity: "simple"
+    database: "datagenesis"
+
+    sql_query: |
+      WITH ultimo_dia AS (
+        SELECT CAST(MAX(OBSERVATION_DATETIME) AS DATE) AS fecha_max
+        FROM VOLUME_PROD_DAILY
+      )
+      SELECT
+        w.FIELD_NAME,
+        ud.fecha_max,
+        SUM(vpd.OIL_VOLUME) AS produccion_petroleo_bbl_day,
+        SUM(vpd.GAS) AS produccion_gas_m3_day,
+        SUM(vpd.WATER) AS produccion_agua_m3_day,
+        AVG(vpd.GOR) AS promedio_gor,
+        AVG(vpd.WATER / NULLIF(vpd.OIL_VOLUME, 0)) AS promedio_wor,
+        COUNT(DISTINCT dmu.DMU_CODE) AS pozos_productores
+      FROM VOLUME_PROD_DAILY vpd
+      INNER JOIN DIM_DMU dmu ON vpd.DMU_KEY = dmu.DMU_KEY
+      INNER JOIN DIM_WELL w ON dmu.WELL_KEY = w.WELL_KEY
+      CROSS JOIN ultimo_dia ud
+      WHERE w.FIELD_NAME = :campo
+        AND CAST(vpd.OBSERVATION_DATETIME AS DATE) = ud.fecha_max
+        AND vpd.STATUS = 'ACT'
+      GROUP BY w.FIELD_NAME, ud.fecha_max;
+
+    parameters:
+      - name: ":campo"
+        type: "VARCHAR(100)"
+        example: "APIAY"
+        extraction: "DYNAMIC - Extract field name from user query. Match against DIM_WELL.FIELD_NAME values (e.g., 'APIAY', 'CHICHIMENE', 'CASTILLA', 'RUBIALES'). The LLM should identify the field name mentioned in the user's query and use it as the parameter value."
+        validation: "Must match existing FIELD_NAME in DIM_WELL table"
+        extraction_hints:
+          - "Look for uppercase field names in user query"
+          - "Common fields: APIAY, CHICHIMENE, CASTILLA, RUBIALES, QUIFA"
+          - "If no field specified, ask user to specify which field"
+
+    expected_output:
+      columns: ["FIELD_NAME", "fecha_max", "produccion_petroleo_bbl_day", "produccion_gas_m3_day", "produccion_agua_m3_day", "promedio_gor", "promedio_wor", "pozos_productores"]
+      sample_rows: 1
+
+    insights:
+      - "Producción total del campo en el último día registrado (oil, gas, water)"
+      - "Incluye métricas clave: GOR (Gas-Oil Ratio) y WOR (Water-Oil Ratio)"
+      - "WOR alto (>5) indica entrada de agua al reservorio (crítico si >10)"
+      - "GOR indica relación gas-petróleo (típico: 100-500 scf/bbl)"
+      - "Incluye solo pozos activos (STATUS = 'ACT')"
+      - "Cuenta pozos productores para contexto operacional"
+
+    critical_notes:
+      - "⚠️⚠️⚠️ WOR MUST BE CALCULATED: AVG(vpd.WATER / NULLIF(vpd.OIL_VOLUME, 0)), NOT AVG(vpd.WOR) - WOR is NOT a column!"
+      - "⚠️⚠️⚠️ FIELD_NAME is in DIM_WELL (w.FIELD_NAME), NOT in DIM_DMU"
+      - "⚠️⚠️⚠️ MANDATORY: ALWAYS use CTE 'WITH ultimo_dia AS (SELECT CAST(MAX(OBSERVATION_DATETIME) AS DATE) AS fecha_max FROM VOLUME_PROD_DAILY)' to get the latest available date"
+      - "⚠️⚠️⚠️ NEVER use DATEADD(day, -1, GETDATE()) or hardcoded dates - ALWAYS use the ultimo_dia CTE for dynamic date"
+      - "⚠️⚠️⚠️ When user asks for 'ayer' (yesterday) or 'hoy' (today), interpret as 'última fecha disponible' and use ultimo_dia CTE"
+      - "⚠️ Include ud.fecha_max in SELECT to show user which date was used"
+      - "⚠️ Filtrar por STATUS = 'ACT' para pozos activos solamente"
+      - "⚠️ CAST OBSERVATION_DATETIME to DATE para comparación exacta"
+      - "⚠️ Filter by field: WHERE w.FIELD_NAME = :campo"
+      - "⚠️ Use CROSS JOIN ultimo_dia ud to make fecha_max available in WHERE clause"
+      - "⚠️ Use NULLIF(vpd.OIL_VOLUME, 0) in WOR calculation to prevent division by zero"
+
+  - id: "dg_002_wells_critical_wor"
+    question: "¿Qué pozos tienen WOR crítico (>3.0) en el último mes?"
+    keywords: ["WOR", "crítico", "pozos", "último mes", "agua"]
+    intent: "Identificar pozos con alta producción de agua (WOR > 3.0)"
+    complexity: "medium"
+    database: "datagenesis"
+
+    sql_query: |
+      SELECT
+        w.WELL_COMMON_NAME,
+        w.FIELD_NAME,
+        dmu.DMU_CODE,
+        AVG(vpd.WATER / NULLIF(vpd.OIL_VOLUME, 0)) AS wor_promedio,
+        AVG(vpd.OIL_VOLUME) AS produccion_promedio_bbl_day,
+        AVG(vpd.WATER) AS agua_promedio_bbl_day,
+        COUNT(*) AS dias_con_datos
+      FROM VOLUME_PROD_DAILY vpd
+      INNER JOIN DIM_DMU dmu ON vpd.DMU_KEY = dmu.DMU_KEY
+      INNER JOIN DIM_WELL w ON dmu.WELL_KEY = w.WELL_KEY
+      WHERE vpd.OBSERVATION_DATETIME >= DATEADD(MONTH, -1, GETDATE())
+        AND vpd.STATUS = 'ACT'
+        AND vpd.OIL_VOLUME > 0
+        AND vpd.WATER > 0
+      GROUP BY w.WELL_COMMON_NAME, w.FIELD_NAME, dmu.DMU_CODE
+      HAVING AVG(vpd.WATER / NULLIF(vpd.OIL_VOLUME, 0)) > 3.0
+      ORDER BY AVG(vpd.WATER / NULLIF(vpd.OIL_VOLUME, 0)) DESC;
+
+    expected_output:
+      columns: ["WELL_COMMON_NAME", "FIELD_NAME", "DMU_CODE", "wor_promedio", "produccion_promedio_bbl_day", "agua_promedio_bbl_day", "dias_con_datos"]
+
+    insights:
+      - "Pozos con WOR > 3.0 requieren atención operacional"
+      - "Alto WOR indica entrada de agua al reservorio"
+      - "Promedio mensual suaviza variaciones diarias"
+
+    critical_notes:
+      - "⚠️⚠️⚠️ WOR = AVG(WATER / NULLIF(OIL_VOLUME, 0)), NOT just AVG(WATER)"
+      - "⚠️⚠️⚠️ FIELD_NAME is in DIM_WELL (w.FIELD_NAME), NOT in DIM_DMU"
+      - "⚠️ Use NULLIF(OIL_VOLUME, 0) para evitar división por cero"
+      - "⚠️ Filtrar OIL_VOLUME > 0 AND WATER > 0 para cálculos válidos"
+      - "⚠️ HAVING con función agregada para filtrar resultados"
+      - "⚠️ SQL Server: DATEADD(MONTH, -1, GETDATE()), NOT INTERVAL syntax"
+
+  - id: "dg_003_field_gor_average"
+    question: "¿Cuál es el promedio de GOR por campo en el último trimestre?"
+    keywords: ["GOR", "promedio", "campo", "trimestre"]
+    intent: "Analizar relación gas-aceite por campo en período reciente"
+    complexity: "simple"
+    database: "datagenesis"
+
+    sql_query: |
+      SELECT
+        w.FIELD_NAME,
+        AVG(vpd.GOR) AS gor_promedio,
+        COUNT(DISTINCT dmu.DMU_CODE) AS pozos_analizados,
+        MIN(vpd.GOR) AS gor_minimo,
+        MAX(vpd.GOR) AS gor_maximo
+      FROM VOLUME_PROD_DAILY vpd
+      INNER JOIN DIM_DMU dmu ON vpd.DMU_KEY = dmu.DMU_KEY
+      INNER JOIN DIM_WELL w ON dmu.WELL_KEY = w.WELL_KEY
+      WHERE vpd.OBSERVATION_DATETIME >= DATEADD(MONTH, -3, GETDATE())
+        AND vpd.STATUS = 'ACT'
+        AND vpd.GOR IS NOT NULL
+        AND vpd.GOR > 0
+      GROUP BY w.FIELD_NAME
+      ORDER BY gor_promedio DESC;
+
+    expected_output:
+      columns: ["FIELD_NAME", "gor_promedio", "pozos_analizados", "gor_minimo", "gor_maximo"]
+
+    insights:
+      - "GOR > 2000 puede indicar conificación de gas"
+      - "GOR < 500 indica reservorio sub-saturado"
+      - "Variación amplia (max - min) indica heterogeneidad"
+
+    critical_notes:
+      - "⚠️ Filtrar GOR IS NOT NULL AND GOR > 0 para valores válidos"
+      - "⚠️ Incluir MIN/MAX para detectar outliers"
+      - "⚠️ Usar DATEADD(MONTH, -3, ...) para trimestre dinámico"
+
+  - id: "dg_004_top_fields_yesterday"
+    question: "¿Cuáles fueron los 5 campos con mayor producción de agua ayer?"
+    keywords: ["top", "campos", "agua", "ayer", "ranking"]
+    intent: "Ranking de campos por producción de agua"
+    complexity: "simple"
+    database: "datagenesis"
+
+    sql_query: |
+      WITH ultimo_dia AS (
+        SELECT CAST(MAX(OBSERVATION_DATETIME) AS DATE) AS fecha_max
+        FROM VOLUME_PROD_DAILY
+      )
+      SELECT TOP 5
+        w.FIELD_NAME,
+        ud.fecha_max,
+        SUM(vpd.WATER) AS agua_bwpd,
+        SUM(vpd.OIL_VOLUME) AS petroleo_bopd,
+        AVG(vpd.WATER / NULLIF(vpd.OIL_VOLUME, 0)) AS wor_promedio
+      FROM VOLUME_PROD_DAILY vpd
+      INNER JOIN DIM_DMU dmu ON vpd.DMU_KEY = dmu.DMU_KEY
+      INNER JOIN DIM_WELL w ON dmu.WELL_KEY = w.WELL_KEY
+      CROSS JOIN ultimo_dia ud
+      WHERE CAST(vpd.OBSERVATION_DATETIME AS DATE) = ud.fecha_max
+        AND vpd.STATUS = 'ACT'
+      GROUP BY w.FIELD_NAME, ud.fecha_max
+      ORDER BY agua_bwpd DESC;
+
+    expected_output:
+      columns: ["FIELD_NAME", "fecha_max", "agua_bwpd", "petroleo_bopd", "wor_promedio"]
+      sample_rows: 5
+
+    insights:
+      - "Alta producción de agua requiere manejo adecuado"
+      - "Comparar con producción de petróleo (WOR) para contexto"
+      - "TOP 5 identifica campos que requieren atención"
+
+    critical_notes:
+      - "⚠️⚠️⚠️ MANDATORY: Use CTE 'ultimo_dia' to get latest available date dynamically"
+      - "⚠️ Include ud.fecha_max in SELECT to show user which date was used"
+      - "⚠️ Use TOP 5 (SQL Server syntax, not LIMIT)"
+      - "⚠️ Incluir producción de petróleo para calcular WOR"
+      - "⚠️ ORDER BY agua_bwpd DESC para ranking descendente"
+      - "⚠️ GROUP BY must include ud.fecha_max when it's in SELECT"
+
+  - id: "dg_005_well_time_series"
+    question: "¿Cómo ha evolucionado la producción del pozo APIAY-1 en el último mes?"
+    keywords: ["evolución", "pozo", "tiempo", "mes", "tendencia"]
+    intent: "Serie temporal de producción de un pozo específico"
+    complexity: "simple"
+    database: "datagenesis"
+
+    sql_query: |
+      SELECT
+        CAST(vpd.OBSERVATION_DATETIME AS DATE) AS fecha,
+        SUM(vpd.OIL_VOLUME) AS petroleo_bopd,
+        SUM(vpd.WATER) AS agua_bwpd,
+        SUM(vpd.GAS) AS gas_mscfd,
+        AVG(vpd.GOR) AS gor_promedio
+      FROM VOLUME_PROD_DAILY vpd
+      INNER JOIN DIM_DMU dmu ON vpd.DMU_KEY = dmu.DMU_KEY
+      INNER JOIN DIM_WELL w ON dmu.WELL_KEY = w.WELL_KEY
+      WHERE w.WELL_COMMON_NAME = :pozo
+        AND vpd.OBSERVATION_DATETIME >= DATEADD(MONTH, -1, GETDATE())
+      GROUP BY CAST(vpd.OBSERVATION_DATETIME AS DATE)
+      ORDER BY fecha;
+
+    parameters:
+      - name: ":pozo"
+        type: "VARCHAR(100)"
+        example: "APIAY-1"
+        extraction: "Extract well name from user query"
+
+    expected_output:
+      columns: ["fecha", "petroleo_bopd", "agua_bwpd", "gas_mscfd", "gor_promedio"]
+      sample_rows: 30
+
+    insights:
+      - "Serie temporal permite identificar tendencias"
+      - "Incluye todas las métricas principales (oil, water, gas, GOR)"
+      - "Útil para gráficos de evolución temporal"
+
+    critical_notes:
+      - "⚠️⚠️⚠️ Filtrar por WELL_COMMON_NAME (w.WELL_COMMON_NAME), NOT DMU_CODE"
+      - "⚠️⚠️⚠️ NO usar CTEs - este query NO necesita WITH/CTE, usa SELECT directo"
+      - "⚠️⚠️⚠️ SELECT fecha en el mismo query principal, no en CTE separado"
+      - "⚠️ GROUP BY CAST(vpd.OBSERVATION_DATETIME AS DATE) para agregación diaria"
+      - "⚠️ ORDER BY fecha para serie temporal ordenada"
+      - "⚠️ No filtrar por STATUS para ver todos los estados del pozo"
+
+    anti_pattern: |
+      ❌ INCORRECTO - NO hacer esto:
+      WITH UltimoMes AS (SELECT fecha FROM ...),
+      DatosPozo AS (SELECT promedio FROM ... GROUP BY dmu.DMU_CODE)
+      SELECT fecha FROM DatosPozo  -- ERROR: fecha no existe en DatosPozo
+
+      ✅ CORRECTO - Hacer esto:
+      SELECT CAST(vpd.OBSERVATION_DATETIME AS DATE) AS fecha, SUM(vpd.OIL_VOLUME)
+      FROM VOLUME_PROD_DAILY vpd
+      JOIN DIM_DMU dmu ON vpd.DMU_KEY = dmu.DMU_KEY
+      JOIN DIM_WELL w ON dmu.WELL_KEY = w.WELL_KEY
+      WHERE w.WELL_COMMON_NAME = 'APIAY-1'
+      GROUP BY CAST(vpd.OBSERVATION_DATETIME AS DATE)
+      ORDER BY fecha
+
+  - id: "dg_006_gas_by_vp_last_month"
+    question: "¿Cuánto gas ha producido cada vicepresidencia en el último mes?"
+    keywords: ["gas", "vicepresidencia", "VP", "último mes"]
+    intent: "Producción de gas agregada por vicepresidencia"
+    complexity: "medium"
+    database: "datagenesis"
+
+    sql_query: |
+      SELECT
+        h.VICEPRESIDENCIA,
+        SUM(vpd.GAS) AS gas_total_mscfd,
+        COUNT(DISTINCT w.FIELD_NAME) AS campos_productores,
+        COUNT(DISTINCT dmu.DMU_CODE) AS pozos_productores,
+        AVG(vpd.GAS) AS gas_promedio_por_pozo
+      FROM VOLUME_PROD_DAILY vpd
+      INNER JOIN DIM_DMU dmu ON vpd.DMU_KEY = dmu.DMU_KEY
+      INNER JOIN DIM_WELL w ON dmu.WELL_KEY = w.WELL_KEY
+      INNER JOIN DIM_HIERARCHY h ON w.FIELD_KEY = h.FIELD_KEY
+      WHERE vpd.OBSERVATION_DATETIME >= DATEADD(MONTH, -1, CAST(GETDATE() AS DATE))
+        AND vpd.STATUS = 'ACT'
+        AND vpd.GAS IS NOT NULL
+      GROUP BY h.VICEPRESIDENCIA
+      ORDER BY gas_total_mscfd DESC;
+
+    expected_output:
+      columns: ["VICEPRESIDENCIA", "gas_total_mscfd", "campos_productores", "pozos_productores", "gas_promedio_por_pozo"]
+
+    insights:
+      - "Producción de gas por VP para reportes ejecutivos"
+      - "Incluye conteo de campos y pozos para contexto"
+      - "Útil para decisiones estratégicas de monetización de gas"
+
+    critical_notes:
+      - "⚠️ JOIN con DIM_HIERARCHY para obtener VICEPRESIDENCIA"
+      - "⚠️ Filtrar GAS IS NOT NULL para valores válidos"
+      - "⚠️ Incluir COUNT DISTINCT para no duplicar conteos"
+
+  - id: "dg_007_active_wells_by_field"
+    question: "¿Cuántos pozos activos hay por campo?"
+    keywords: ["pozos activos", "campo", "count"]
+    intent: "Conteo de pozos en producción por campo"
+    complexity: "simple"
+    database: "datagenesis"
+
+    sql_query: |
+      WITH ultimo_dia AS (
+        SELECT CAST(MAX(OBSERVATION_DATETIME) AS DATE) AS fecha_max
+        FROM VOLUME_PROD_DAILY
+      )
+      SELECT
+        w.FIELD_NAME,
+        ud.fecha_max,
+        COUNT(DISTINCT dmu.DMU_CODE) AS pozos_activos,
+        SUM(vpd.OIL_VOLUME) AS produccion_total_bopd,
+        AVG(vpd.OIL_VOLUME) AS produccion_promedio_por_pozo
+      FROM VOLUME_PROD_DAILY vpd
+      INNER JOIN DIM_DMU dmu ON vpd.DMU_KEY = dmu.DMU_KEY
+      INNER JOIN DIM_WELL w ON dmu.WELL_KEY = w.WELL_KEY
+      CROSS JOIN ultimo_dia ud
+      WHERE vpd.STATUS = 'ACT'
+        AND CAST(vpd.OBSERVATION_DATETIME AS DATE) = ud.fecha_max
+      GROUP BY w.FIELD_NAME, ud.fecha_max
+      ORDER BY pozos_activos DESC;
+
+    expected_output:
+      columns: ["FIELD_NAME", "fecha_max", "pozos_activos", "produccion_total_bopd", "produccion_promedio_por_pozo"]
+
+    insights:
+      - "Inventario de pozos activos por campo"
+      - "Producción promedio indica eficiencia por pozo"
+      - "Útil para planificación operacional"
+
+    critical_notes:
+      - "⚠️⚠️⚠️ MANDATORY: Use CTE 'ultimo_dia' to get latest available date dynamically"
+      - "⚠️ Include ud.fecha_max in SELECT to show user which date was used"
+      - "⚠️ COUNT DISTINCT para evitar duplicados de DMU"
+      - "⚠️ STATUS = 'ACT' filtra solo pozos en producción"
+      - "⚠️ CROSS JOIN ultimo_dia ud para hacer fecha_max disponible"
+      - "⚠️ GROUP BY must include ud.fecha_max when it's in SELECT"

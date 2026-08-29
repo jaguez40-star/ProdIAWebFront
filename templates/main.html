@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block head %}
+    {{ super() }}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/colapsable.css') }}?v=20260824d">
+    <style>
+        /* Oculta el layout de dos paneles desde el primer paint: se monta directo en la
+           vista Consulta (ver DOMContentLoaded al final de esta plantilla) y este flash
+           del layout viejo se ve antes de que corra el JS si no se oculta por CSS. */
+        .two-panel-layout { display: none; }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="two-panel-layout">
+    <!-- Panel 1: Chat Interface -->
+    <div class="panel panel-chat" id="chat-panel">
+        <div class="panel-header">
+            <h5><i class="fas fa-comments"></i>_ProdIA - Asistente virtual</h5>
+            <button class="btn btn-sm btn-outline-secondary collapse-btn" data-panel="chat">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+        </div>
+        <div class="panel-content">
+            {% include 'components/chat.html' %}
+        </div>
+    </div>
+
+    <!-- Panel 2: Analytics -->
+    <div class="panel panel-analytics" id="analytics-panel">
+        <div class="panel-header">
+            <h5><i class="fas fa-chart-bar"></i>_<span id="analytics-panel-title">Análisis de Desempeño</span> </h5>
+        </div>
+        <div class="panel-content">
+            {% include 'components/analytics.html' %}
+        </div>
+    </div>
+</div>
+
+<!-- MultiTab Shell container (hidden until activated) -->
+<div id="multitab-shell-container" style="display:none"></div>
+
+<!-- Footer -->
+<div class="app-footer">
+    <div class="text-caption">
+        <strong>Copyright → Ecopetrol S.A Copyright todos los derechos reservados. INFORMACION CONFIDENCIAL. Prohibido su uso sin la debida autorización.</strong> | All rights reserved.
+    </div>
+</div>
+
+<!-- Modal for conversation deletion confirmation -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title" id="deleteModalLabel">
+                    <i class="fas fa-exclamation-triangle text-warning"></i>
+                    Confirmar Eliminación
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Estás seguro de que quieres eliminar esta conversación?</p>
+                <p class="text-muted small" id="conversation-title-to-delete"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+                <button type="button" class="btn btn-danger btn-sm" id="confirm-delete-btn">
+                    <i class="fas fa-trash"></i> Eliminar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- JSZip: lectura de hojas del .xlsm en el navegador -->
+<script src="{{ url_for('static', filename='js/vendor/jszip-3.10.1.min.js') }}"></script>
+<!-- Report modules (must load before chat.js) -->
+<script src="{{ url_for('static', filename='js/reportTabs.js') }}"></script>
+<script src="{{ url_for('static', filename='js/reportCards.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dailyPerformanceReport.js') }}"></script>
+<script src="{{ url_for('static', filename='js/monthlyBalanceReport.js') }}"></script>
+
+<!-- MultiTab Shell -->
+<script src="{{ url_for('static', filename='js/multitab_shell.js') }}?v=20260826m"></script>
+
+<!-- Chat WebSocket handling -->
+<script src="{{ url_for('static', filename='js/monthlyBalance.js') }}"></script>
+<script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+
+<script>
+    // Variables globales de usuario (extraídas del email corporativo)
+    window.USER_FIRST_NAME = {{ session.get('user', {}).get('first_name', '')|tojson }};
+    window.USER_LAST_NAME  = {{ session.get('user', {}).get('last_name', '')|tojson }};
+    window.USER_FULL_NAME  = {{ session.get('user', {}).get('full_name', '')|tojson }};
+
+    // Monta el shell directo en "Consulta" apenas terminan de cargar sus dependencias reales
+    // (multitab_shell.js + chat.js, ya cargados en este punto del documento), sin esperar a
+    // panels.js/charts.js/auth.js/DOMContentLoaded — reduce al mínimo el hueco en blanco entre
+    // el login y la vista final.
+    if (window.MultiTabShell && typeof window.MultiTabShell.mount === 'function') {
+        window.MultiTabShell.mount('consulta');
+    } else {
+        const twoPanel = document.querySelector('.two-panel-layout');
+        if (twoPanel) twoPanel.style.display = '';
+    }
+</script>
+
+<!-- Panel management -->
+<script src="{{ url_for('static', filename='js/panels.js') }}?v=20250828001"></script>
+
+<!-- Analytics/Charts -->
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+
+<!-- Authentication -->
+<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+
+<script>
+    // Initialize application
+    document.addEventListener('DOMContentLoaded', function() {
+        // Force analytics panel to be always visible
+        console.log('Initializing panels...');
+
+        // Initialize chat with current conversation
+        const currentConvId = {{ current_conversation_id|tojson if current_conversation_id else 'null' }};
+        if (currentConvId) {
+            ChatManager.setCurrentConversation(currentConvId);
+        }
+
+        // Load initial data - only if the managers exist
+        if (window.AnalyticsManager && typeof window.AnalyticsManager.loadStats === 'function') {
+            window.AnalyticsManager.loadStats();
+        }
+
+        // Ensure panel manager is initialized correctly
+        setTimeout(() => {
+            if (window.panelManager) {
+                console.log('Panel manager found, checking analytics panel...');
+                window.panelManager.panels.analytics.visible = true;
+                window.panelManager.updateLayout();
+            }
+        }, 100);
+
+        // Precarga del reporte global "Desempeño del mes" (ECP) apenas carga la página tras el login:
+        // arranca los fetches del panel derecho y calienta Gemma MIENTRAS el usuario navega hacia
+        // "Análisis avanzado" → al abrir Consulta el panel es cache-HIT. Data-only: NO monta el shell.
+        if (window.MultiTabShell && typeof window.MultiTabShell.prewarm === 'function') {
+            window.MultiTabShell.prewarm();
+        }
+    });
+</script>
+{% endblock %}

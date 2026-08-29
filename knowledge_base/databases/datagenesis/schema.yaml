@@ -1,0 +1,315 @@
+database_info:
+  name: "DataGenesis"
+  type: "SQL Server"
+  description: "Datos diarios detallados de producción petrolera por pozo y DMU"
+  timezone: "America/Bogota"
+  granularity: "daily"
+  entity_level: "DMU (well-formation unit)"
+
+tables:
+  DIM_HIERARCHY:
+    description: "Jerarquías organizacionales (VP, Gerencia, Field)"
+    primary_key: HIERARCHY_KEY
+    foreign_keys:
+      - FIELD_KEY
+    columns:
+      - name: HIERARCHY_KEY
+        type: INT
+        nullable: false
+        description: "Primary key for hierarchy"
+      - name: FIELD_KEY
+        type: INT
+        nullable: false
+        description: "Field identifier (links to DIM_WELL)"
+      - name: VICEPRESIDENCIA
+        type: VARCHAR(100)
+        nullable: true
+        description: "VP level (e.g., VP LLANOS, VP SUR)"
+      - name: GERENCIA
+        type: VARCHAR(100)
+        nullable: true
+        description: "Management level"
+      - name: INICIO_VIGENCIA_JERARQUIA
+        type: DATE
+        nullable: true
+        description: "Hierarchy validity start date"
+
+  DIM_WELL:
+    description: "Información de pozos (nombres, ubicaciones, formaciones)"
+    primary_key: WELL_KEY
+    foreign_keys:
+      - field: FIELD_KEY
+        references: DIM_HIERARCHY.FIELD_KEY
+    columns:
+      - name: WELL_KEY
+        type: INT
+        nullable: false
+        description: "Primary key for well"
+      - name: FIELD_KEY
+        type: INT
+        nullable: false
+        description: "Links to DIM_HIERARCHY"
+      - name: WELL_COMMON_NAME
+        type: VARCHAR(100)
+        nullable: true
+        description: "Common well name (e.g., APIAY-1)"
+      - name: WELL_LEGAL_NAME
+        type: VARCHAR(200)
+        nullable: true
+        description: "Legal well name"
+      - name: WELL_UWI
+        type: VARCHAR(50)
+        nullable: true
+        description: "Unique Well Identifier"
+      - name: FIELD_NAME
+        type: VARCHAR(100)
+        nullable: true
+        description: "Field name (e.g., APIAY, CHICHIMENE, RUBIALES)"
+      - name: TARGET_FORMATION
+        type: VARCHAR(100)
+        nullable: true
+        description: "Target geological formation"
+      - name: API_NO
+        type: VARCHAR(50)
+        nullable: true
+        description: "API number"
+      - name: GEO_LATITUDE
+        type: DECIMAL(10,6)
+        nullable: true
+        description: "Geographic latitude"
+      - name: GEO_LONGITUDE
+        type: DECIMAL(10,6)
+        nullable: true
+        description: "Geographic longitude"
+
+  DIM_DMU:
+    description: "DMU (Pozo-formación - unidades de medición)"
+    primary_key: DMU_KEY
+    foreign_keys:
+      - field: WELL_KEY
+        references: DIM_WELL.WELL_KEY
+    notes: "⚠️⚠️⚠️ DIM_DMU does NOT have FIELD_NAME column - use JOIN to DIM_WELL for field info"
+    columns:
+      - name: DMU_KEY
+        type: INT
+        nullable: false
+        description: "Primary key for DMU"
+      - name: WELL_KEY
+        type: INT
+        nullable: false
+        description: "Links to DIM_WELL"
+      - name: DMU_CODE
+        type: VARCHAR(50)
+        nullable: true
+        description: "DMU code identifier"
+      - name: DMU_SHORT_CODE
+        type: VARCHAR(20)
+        nullable: true
+        description: "Short DMU code"
+      - name: FORMATION_NAME
+        type: VARCHAR(100)
+        nullable: true
+        description: "Formation name (e.g., MIRADOR, BARCO, GUADALUPE)"
+    columns_not_present:
+      - FIELD_NAME: "❌ NOT in DIM_DMU - use w.FIELD_NAME from DIM_WELL instead"
+      - WELL_COMMON_NAME: "❌ NOT in DIM_DMU - use w.WELL_COMMON_NAME from DIM_WELL instead"
+
+  VOLUME_PROD_DAILY:
+    description: "Series diarias de producción por DMU"
+    foreign_keys:
+      - field: DMU_KEY
+        references: DIM_DMU.DMU_KEY
+    columns:
+      - name: DMU_KEY
+        type: INT
+        nullable: false
+        description: "Links to DIM_DMU"
+      - name: OBSERVATION_DATETIME
+        type: DATETIME2
+        nullable: false
+        description: "Date and time of observation"
+        indexed: true
+      - name: OIL_VOLUME
+        type: DECIMAL(18,2)
+        nullable: true
+        description: "Oil production volume (bbl/day)"
+        unit: "bbl/day"
+      - name: WATER
+        type: DECIMAL(18,2)
+        nullable: true
+        description: "Water production volume (bbl/day)"
+        unit: "bbl/day"
+      - name: GAS
+        type: DECIMAL(18,2)
+        nullable: true
+        description: "Gas production volume (MSCF/day)"
+        unit: "MSCF/day"
+      - name: GOR
+        type: DECIMAL(18,2)
+        nullable: true
+        description: "Gas-Oil Ratio (scf/bbl)"
+        unit: "scf/bbl"
+      - name: STATUS
+        type: VARCHAR(10)
+        nullable: true
+        description: "Well status (ACT, SHUT, INACT, SUS, MAINT)"
+        domain: ["ACT", "SHUT", "INACT", "SUS", "MAINT"]
+      - name: UWI
+        type: VARCHAR(50)
+        nullable: true
+        description: "Unique Well Identifier (auxiliary)"
+
+relationships:
+  - from_table: DIM_HIERARCHY
+    to_table: DIM_WELL
+    relationship_type: one_to_many
+    join_on: FIELD_KEY
+    description: "One field hierarchy can have multiple wells"
+
+  - from_table: DIM_WELL
+    to_table: DIM_DMU
+    relationship_type: one_to_many
+    join_on: WELL_KEY
+    description: "One well can have multiple DMUs (formations)"
+
+  - from_table: DIM_DMU
+    to_table: VOLUME_PROD_DAILY
+    relationship_type: one_to_many
+    join_on: DMU_KEY
+    description: "One DMU has multiple daily production records"
+
+indices_recommended:
+  - table: VOLUME_PROD_DAILY
+    columns: [DMU_KEY, OBSERVATION_DATETIME]
+    include: [OIL_VOLUME, WATER, GAS, GOR, STATUS]
+    description: "Performance optimization for daily queries"
+
+  - table: DIM_WELL
+    columns: [FIELD_KEY]
+    description: "Fast lookup by field"
+
+  - table: DIM_DMU
+    columns: [WELL_KEY]
+    description: "Fast lookup by well"
+
+sql_syntax:
+  dialect: "T-SQL (SQL Server)"
+  top_clause: "SELECT TOP N ... (NOT LIMIT)"
+  date_functions:
+    current_date: "GETDATE()"
+    current_date_only: "CAST(GETDATE() AS DATE)"
+    yesterday: "DATEADD(day, -1, CAST(GETDATE() AS DATE))"
+    last_month: "DATEADD(month, -1, CAST(GETDATE() AS DATE))"
+  cast_to_date: "CAST(column AS DATE)"
+  parameter_style: ":param_name"
+  notes:
+    - "Use TOP N instead of LIMIT for result limiting"
+    - "Use GETDATE() for current date/time"
+    - "Always CAST OBSERVATION_DATETIME to DATE for daily aggregations"
+    - "Use NULLIF for safe division (e.g., WATER/NULLIF(OIL_VOLUME,0))"
+
+join_patterns:
+  by_field:
+    description: "Query production by field name"
+    joins: "VOLUME_PROD_DAILY → DIM_DMU → DIM_WELL"
+    example: |
+      SELECT w.FIELD_NAME, SUM(vpd.OIL_VOLUME)
+      FROM VOLUME_PROD_DAILY vpd
+      JOIN DIM_DMU dmu ON vpd.DMU_KEY = dmu.DMU_KEY
+      JOIN DIM_WELL w ON dmu.WELL_KEY = w.WELL_KEY
+      WHERE w.FIELD_NAME = :campo
+      GROUP BY w.FIELD_NAME
+
+  by_well:
+    description: "Query production by well name"
+    joins: "VOLUME_PROD_DAILY → DIM_DMU → DIM_WELL"
+    example: |
+      SELECT w.WELL_COMMON_NAME, SUM(vpd.OIL_VOLUME)
+      FROM VOLUME_PROD_DAILY vpd
+      JOIN DIM_DMU dmu ON vpd.DMU_KEY = dmu.DMU_KEY
+      JOIN DIM_WELL w ON dmu.WELL_KEY = w.WELL_KEY
+      WHERE w.WELL_COMMON_NAME = :pozo
+      GROUP BY w.WELL_COMMON_NAME
+
+  by_hierarchy:
+    description: "Query production by VP or Gerencia"
+    joins: "VOLUME_PROD_DAILY → DIM_DMU → DIM_WELL → DIM_HIERARCHY"
+    example: |
+      SELECT h.VICEPRESIDENCIA, SUM(vpd.OIL_VOLUME)
+      FROM VOLUME_PROD_DAILY vpd
+      JOIN DIM_DMU dmu ON vpd.DMU_KEY = dmu.DMU_KEY
+      JOIN DIM_WELL w ON dmu.WELL_KEY = w.WELL_KEY
+      JOIN DIM_HIERARCHY h ON w.FIELD_KEY = h.FIELD_KEY
+      WHERE h.VICEPRESIDENCIA = :vp
+      GROUP BY h.VICEPRESIDENCIA
+
+critical_rules:
+  - "⚠️⚠️⚠️ AVOID CTEs (WITH clauses) - use simple SELECT with GROUP BY instead"
+  - "⚠️⚠️⚠️ If using CTE, ensure all columns in final SELECT exist in the CTE"
+  - "⚠️⚠️⚠️ FIELD_NAME column is ONLY in DIM_WELL table (w.FIELD_NAME), NOT in DIM_DMU"
+  - "⚠️⚠️⚠️ NEVER use dmu.FIELD_NAME - this column does NOT exist in DIM_DMU"
+  - "⚠️⚠️⚠️ WOR calculation: AVG(WATER / NULLIF(OIL_VOLUME, 0)), NOT AVG(WATER)"
+  - "⚠️⚠️⚠️ SQL Server uses DATEADD(day, -1, GETDATE()), NOT INTERVAL '1' DAY"
+  - "⚠️ ALWAYS filter by STATUS = 'ACT' for active production wells"
+  - "⚠️ Use NULLIF for division to avoid divide-by-zero (e.g., WATER/NULLIF(OIL_VOLUME,0))"
+  - "⚠️ CAST OBSERVATION_DATETIME to DATE for daily aggregations"
+  - "⚠️ JOINs must follow order: HIERARCHY → WELL → DMU → VOLUME_PROD_DAILY"
+  - "⚠️ Maximum historical range: 5 years (performance consideration)"
+  - "⚠️ All dates in America/Bogota timezone"
+  - "⚠️ Use parameterized queries (:param) to prevent SQL injection"
+
+metrics:
+  OIL_VOLUME:
+    unit: "bbl/day"
+    description: "Barrels of oil per day"
+    typical_range: [10, 5000]
+
+  WATER:
+    unit: "bbl/day"
+    description: "Barrels of water per day"
+    typical_range: [0, 10000]
+
+  GAS:
+    unit: "MSCF/day"
+    description: "Thousand standard cubic feet per day"
+    typical_range: [0, 10000]
+
+  GOR:
+    unit: "scf/bbl"
+    description: "Standard cubic feet of gas per barrel of oil"
+    calculation: "GAS (scf) / OIL_VOLUME (bbl)"
+    typical_ranges:
+      low: [0, 500]
+      normal: [500, 2000]
+      high: [2000, "+inf"]
+
+  WOR:
+    unit: "ratio"
+    description: "Water-Oil Ratio"
+    calculation: "WATER / NULLIF(OIL_VOLUME, 0)"
+    typical_ranges:
+      excellent: [0, 0.5]
+      good: [0.5, 2.0]
+      concerning: [2.0, 5.0]
+      critical: [5.0, "+inf"]
+
+well_statuses:
+  ACT:
+    description: "Active - producing normally"
+    include_in_production: true
+
+  SHUT:
+    description: "Shut temporarily"
+    include_in_production: false
+
+  INACT:
+    description: "Inactive for extended period"
+    include_in_production: false
+
+  SUS:
+    description: "Suspended for operational reasons"
+    include_in_production: false
+
+  MAINT:
+    description: "In maintenance or workover"
+    include_in_production: false

@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <style>
+    html, body, #map {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+  <script>
+    const points = [[-1.21570580034388, -80.4473327061338, 1.0], [7.31453930386247, -73.4590991882192, 0.6962], [7.34217599988514, -73.937297020347, 0.3797], [6.86377151625276, -70.765134699504, 0.3617], [3.84543534702597, -71.3932749400971, 0.3544], [5.06323506640053, -70.618027202838, 0.3273], [5.4624923846160085, -72.42580336164258, 0.3165], [6.11852908240814, -74.5678617752332, 0.1881], [3.83669612859037, -73.6658495206677, 0.132], [2.1603109420944, -78.2984229533851, 0.038], [5.18247267116816, -72.6495783187015, 0.0]];
+    const map = L.map('map', {
+      center: [7.314539, -73.459099],
+      zoom: 7,
+      preferCanvas: true
+    });
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    const gradient = {
+      0.0: '#0000FF',
+      0.4: '#00FFFF',
+      0.6: '#00FF00',
+      0.8: '#FFFF00',
+      1.0: '#FF0000'
+    };
+
+    L.heatLayer(points, {
+      radius: 32,
+      blur: 6,
+      gradient,
+      max: 1.0,
+      minOpacity: 0.45
+    }).addTo(map);
+  </script>
+</body>
+</html>

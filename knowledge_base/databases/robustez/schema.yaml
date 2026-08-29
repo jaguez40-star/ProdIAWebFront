@@ -1,0 +1,428 @@
+# ROBUSTEZ Database Schema
+# Base de datos de robustez y rentabilidad de pozos petroleros
+# Fuente: data/ROBUSTEZ.db (SQLite)
+
+database_info:
+  name: "ROBUSTEZ"
+  type: "SQLite"
+  description: "Base de datos de analisis de robustez economica y rentabilidad por pozo, campo y gerencia"
+  file_path: "data/ROBUSTEZ.db"
+  total_rows: 224159
+  granularity: "pozo-mes (un registro por pozo/UWI por mes)"
+  time_range: "Enero 2025 - Enero 2026"
+
+tables:
+  RESULTADOSREGRESION:
+    description: "Tabla principal con resultados de regresion economica por pozo y mes"
+    notes: >
+      Cada fila representa UN POZO (UWI) en UN MES (MES/ANO).
+      Contiene produccion de aceite y agua, EBITDA, breakeven, costos variables, transporte y dilucion.
+      Las metricas se calculan bajo dos escenarios: Activos y Activos+Inactivos, cada uno con version Real y Tasa.
+
+    columns:
+      # --- Jerarquia / Llaves de negocio ---
+      - name: VICEPRESIDENCIA
+        type: TEXT
+        description: "Vicepresidencia operativa (CPV, DFL, GAA, GAN, GCH, GCT, GNS, GOR, GPA, GRM, GTA, GXO, PRP)"
+        notes: "Nivel mas alto de la jerarquia organizacional"
+
+      - name: GERENCIA
+        type: TEXT
+        description: "Gerencia operativa (CPI, CPV, CUF, CUP, GAN, GNS, GXO, PCI, PCN, PCS, PDB, PDH, POE, PPA, PPC, PPH, PPU, PTN, PUC, etc.)"
+
+      - name: ACTIVO
+        type: TEXT
+        description: "Nombre del activo petrolero (APIAY, CASTILLA, CHICHIMENE, CUSIANA, CUPIAGUA, RUBIALES, etc.)"
+        notes: "52 activos distintos. Nivel intermedio entre GERENCIA y CAMPO"
+
+      - name: CAMPO
+        type: TEXT
+        description: "Nombre del campo productor (115 campos distintos)"
+
+      - name: PEND_ID_CC
+        type: INTEGER
+        description: "Identificador de centro de costos"
+
+      - name: UWI
+        type: TEXT
+        description: "Identificador unico del pozo (13352 pozos distintos)"
+        notes: "Llave principal a nivel de pozo"
+
+      # --- Tiempo / Calendario ---
+      - name: MES
+        type: INTEGER
+        description: "Mes del registro (1-12)"
+        notes: "Es INTEGER, no TEXT. Usar sin comillas en filtros"
+
+      - name: "AÑO"
+        type: INTEGER
+        description: "Año del registro (2025, 2026)"
+        notes: "Es INTEGER, no TEXT. Usar sin comillas en filtros. TIENE TILDE: usar \"AÑO\" con comillas dobles en SQL"
+
+      - name: DIAS_MES
+        type: INTEGER
+        description: "Dias calendario del mes"
+
+      - name: PROD_DAYS
+        type: INTEGER
+        description: "Dias de produccion efectivos del pozo en el mes"
+
+      # --- Clasificacion de pozo ---
+      - name: "TIPO DE POZO"
+        type: TEXT
+        description: "Tipo de pozo (PRODUCTION, INJECTION, OBSERVATION, PROD_INJ)"
+        notes: "Nombre con ESPACIO - usar comillas dobles en SQL: \"TIPO DE POZO\""
+
+      - name: "ESTADO POZO"
+        type: TEXT
+        description: "Estado del pozo (ACT=activo, INACT=inactivo, SUS=suspendido, ABA=abandonado)"
+        notes: "Nombre con ESPACIO - usar comillas dobles en SQL: \"ESTADO POZO\""
+
+      # --- Producción de aceite ---
+      - name: "Tasa Producción Aceite"
+        type: REAL
+        description: "Tasa de producción de aceite (bbl/dia) - solo pozos activos"
+        notes: "TIENE TILDE en Producción - usar comillas dobles: \"Tasa Producción Aceite\""
+
+      - name: "Tasa Producción Aceite AI"
+        type: REAL
+        description: "Tasa de producción de aceite (bbl/dia) - activos + inactivos"
+
+      - name: "Producción Aceite Dia_Mes"
+        type: REAL
+        description: "Producción de aceite mensual (bbl) - solo pozos activos"
+
+      - name: "Producción Aceite Dia_Mes AI"
+        type: REAL
+        description: "Producción de aceite mensual (bbl) - activos + inactivos"
+
+      # --- Producción de agua ---
+      - name: "Tasa Producción Agua"
+        type: REAL
+        description: "Tasa de producción de agua (bbl/dia) - solo pozos activos"
+
+      - name: "Tasa Producción Agua AI"
+        type: REAL
+        description: "Tasa de producción de agua (bbl/dia) - activos + inactivos"
+
+      - name: "Producción Agua Dia_Mes"
+        type: REAL
+        description: "Producción de agua mensual (bbl) - solo pozos activos"
+
+      - name: "Producción Agua Dia_Mes AI"
+        type: REAL
+        description: "Producción de agua mensual (bbl) - activos + inactivos"
+
+      # --- Precios / Economia ---
+      - name: quality_differential
+        type: REAL
+        description: "Diferencial de calidad del crudo (USD/bbl)"
+
+      - name: blend_price_differential
+        type: REAL
+        description: "Diferencial de precio de mezcla (USD/bbl)"
+
+      - name: projected_trm_dev
+        type: REAL
+        description: "TRM proyectada (COP/USD)"
+
+      # --- Volumenes de mezcla ---
+      - name: "Total Bls Mezcla"
+        type: REAL
+        description: "Total barriles de mezcla - solo activos"
+
+      - name: "Total Bls Mezcla Tasa"
+        type: REAL
+        description: "Total barriles de mezcla a tasa - solo activos"
+
+      - name: "Total Bls Mezcla A+I"
+        type: REAL
+        description: "Total barriles de mezcla - activos + inactivos"
+
+      - name: "Total Bls Mezcla Tasa A+I"
+        type: REAL
+        description: "Total barriles de mezcla a tasa - activos + inactivos"
+
+      # --- EBITDA ---
+      - name: "EBITDA (Activo) KUSD"
+        type: REAL
+        description: "EBITDA solo pozos activos (miles USD)"
+
+      - name: "EBITDA (Activo+Inactivo) KUSD"
+        type: REAL
+        description: "EBITDA activos + inactivos (miles USD)"
+
+      - name: "EBITDA Tasa (Activo) KUSD"
+        type: REAL
+        description: "EBITDA a tasa solo activos (miles USD)"
+
+      - name: "EBITDA Tasa (Activo+Inactivo) KUSD"
+        type: REAL
+        description: "EBITDA a tasa activos + inactivos (miles USD)"
+
+      # --- Breakeven ---
+      - name: "Breakeven (Activos) USD/Bl"
+        type: REAL
+        description: "Breakeven solo pozos activos (USD por barril)"
+
+      - name: "Breakeven (Activos+Inactivos) USD/Bl"
+        type: REAL
+        description: "Breakeven activos + inactivos (USD por barril)"
+
+      - name: "Breakeven (Activos) Tasa USD/Bl"
+        type: REAL
+        description: "Breakeven a tasa solo activos (USD por barril)"
+
+      - name: "Breakeven (Activos+Inactivos) Tasa USD/Bl"
+        type: REAL
+        description: "Breakeven a tasa activos + inactivos (USD por barril)"
+
+      # --- Condición de rentabilidad ---
+      - name: "Condición Real (Activos)"
+        type: TEXT
+        description: "Clasificación de rentabilidad real solo activos (RENTABLE, MARGINAL, NO RENTABLE)"
+        notes: "TIENE TILDE en Condición - usar comillas dobles: \"Condición Real (Activos)\""
+
+      - name: "Condición Tasa (Activos)"
+        type: TEXT
+        description: "Clasificación de rentabilidad a tasa solo activos"
+
+      - name: "Condición Real (Activos+Inactivos)"
+        type: TEXT
+        description: "Clasificación de rentabilidad real activos + inactivos"
+
+      - name: "Condición Tasa (Activos+Inactivos)"
+        type: TEXT
+        description: "Clasificación de rentabilidad a tasa activos + inactivos"
+
+      # --- Costos variables ---
+      - name: "Costos Variables (Activos) KUSD"
+        type: REAL
+        description: "Costos variables solo activos (miles USD)"
+
+      - name: "Costos Variables (Activos+Inactivos) KUSD"
+        type: REAL
+        description: "Costos variables activos + inactivos (miles USD)"
+
+      - name: "Costos Variables (Activos) Tasa KUSD"
+        type: REAL
+        description: "Costos variables a tasa solo activos (miles USD)"
+
+      - name: "Costos Variables (Activos+Inactivos) Tasa KUSD"
+        type: REAL
+        description: "Costos variables a tasa activos + inactivos (miles USD)"
+
+      # --- Transporte ---
+      - name: "Transporte Real (Activo) KUSD"
+        type: REAL
+        description: "Costo de transporte real solo activos (miles USD)"
+
+      - name: "Transporte Real (Activo+Inactivo) KUSD"
+        type: REAL
+        description: "Costo de transporte real activos + inactivos (miles USD)"
+
+      - name: "Transporte Tasa (Activo) KUSD"
+        type: REAL
+        description: "Costo de transporte a tasa solo activos (miles USD)"
+
+      - name: "Transporte Tasa (Activo+Inactivo) KUSD"
+        type: REAL
+        description: "Costo de transporte a tasa activos + inactivos (miles USD)"
+
+      # --- Dilucion ---
+      - name: "Dilucion Real (Activo) KUSD"
+        type: REAL
+        description: "Costo de dilucion real solo activos (miles USD)"
+
+      - name: "Dilucion Real (Activo+Inactivo) KUSD"
+        type: REAL
+        description: "Costo de dilucion real activos + inactivos (miles USD)"
+
+      - name: "Dilucion Tasa (Activo) KUSD"
+        type: REAL
+        description: "Costo de dilucion a tasa solo activos (miles USD)"
+
+      - name: "Dilucion Tasa (Activo+Inactivo) KUSD"
+        type: REAL
+        description: "Costo de dilucion a tasa activos + inactivos (miles USD)"
+
+sql_syntax:
+  dialect: "SQLite"
+  limit_clause: "LIMIT N (NOT TOP)"
+  functions:
+    string_trim: "TRIM(column)"
+    type_cast: "CAST(column AS INTEGER)"
+    round: "ROUND(column, 2)"
+    avg: "AVG(column)"
+    sum: "SUM(column)"
+    count_distinct: "COUNT(DISTINCT column)"
+  parameter_style: ":param_name"
+  quoting: "Columnas con espacios o acentos DEBEN usar comillas dobles: \"TIPO DE POZO\""
+
+critical_rules:
+  - "COLUMNAS CON ESPACIOS Y TILDES: Muchas columnas tienen espacios y/o tildes en el nombre. SIEMPRE usar comillas dobles para ellas"
+  - "CRITICO - TILDES: Las columnas Producción y Condición llevan TILDE (ó). Escribir \"Tasa Producción Aceite\" NO \"Tasa Produccion Aceite\". Lo mismo para \"Condición Real (Activos)\" NO \"Condicion Real (Activos)\". Si se omite la tilde, SQLite NO encuentra la columna y devuelve 0 filas."
+  - "Ejemplos de columnas con comillas: \"TIPO DE POZO\", \"ESTADO POZO\", \"Tasa Producción Aceite\", \"Condición Real (Activos)\", \"EBITDA (Activo) KUSD\", \"Breakeven (Activos) USD/Bl\", \"AÑO\""
+  - "MES y AÑO son INTEGER, NO TEXT. Usar WHERE MES = 1 (sin comillas), NO WHERE MES = '1'"
+  - "La tabla se llama RESULTADOSREGRESION (sin espacios, sin acentos)"
+  - "Granularidad: cada fila = 1 pozo (UWI) x 1 mes. Para totales por campo/gerencia hay que agregar con SUM/AVG"
+  - "Datos disponibles: Enero 2025 a Enero 2026 (13 meses)"
+  - "Escenarios: (Activos) = solo pozos activos; (Activos+Inactivos) = todos los pozos"
+  - "Versiones: Real = datos reales; Tasa = proyeccion a tasa"
+  - "CONDICION valores: 'RENTABLE', 'MARGINAL', 'NO RENTABLE'"
+  - "TIPO DE POZO valores: 'PRODUCTION', 'INJECTION', 'OBSERVATION', 'PROD_INJ'"
+  - "ESTADO POZO valores: 'ACT' (activo), 'INACT' (inactivo), 'SUS' (suspendido), 'ABA' (abandonado)"
+  - "Para breakeven promedio por campo: usar AVG(), NO SUM()"
+  - "Para EBITDA total por gerencia: usar SUM()"
+  - "Columna AÑO en la BD tiene tilde: usar \"AÑO\" con comillas dobles en SQL"
+  - "PROMEDIO PONDERADO: Para tasas de producción usar SUM(tasa * PROD_DAYS) / SUM(PROD_DAYS), NUNCA AVG() simple"
+  - "Jerarquia organizacional: VICEPRESIDENCIA > GERENCIA > ACTIVO > CAMPO > UWI"
+  - "No mezclar niveles jerarquicos sin agrupar correctamente"
+
+# Reglas de validacion pre-ejecucion SQL (Enterprise)
+# El sistema debe verificar estas reglas ANTES de ejecutar cualquier SQL
+pre_execution_validation:
+  - "Solo permitir sentencias SELECT. Bloquear DROP, DELETE, UPDATE, INSERT"
+  - "No permitir subconsultas no controladas"
+  - "No usar funciones no soportadas por SQLite"
+  - "Incluir filtro temporal (AÑO y/o MES) si la pregunta lo requiere"
+  - "Incluir GROUP BY si se usa SUM(), AVG() u otra funcion de agregacion"
+  - "No mezclar columnas agregadas y no agregadas sin agrupar"
+  - "Respetar jerarquia organizacional en agrupaciones"
+  - "No superar limite de filas: usar LIMIT (maximo 1000 filas)"
+  - "No ejecutar FULL TABLE SCAN sin filtro cuando la tabla tiene 224K filas"
+  - "No acceder a tablas externas - solo RESULTADOSREGRESION"
+
+# Reglas de control de costo computacional (Enterprise)
+cost_control_rules:
+  - "Siempre usar LIMIT en consultas exploratorias"
+  - "Siempre filtrar por AÑO cuando se consulte historico"
+  - "Evitar SELECT * en produccion - listar columnas especificas"
+  - "Evitar ORDER BY sin indice en tablas grandes"
+  - "Para conteos de entidades: filtrar un MES especifico para evitar multiplicar resultados"
+
+# Regla de promedio ponderado (Enterprise - seccion 2.4)
+weighted_average_rule:
+  description: "Formula correcta para promedios ponderados de tasas de produccion"
+  correct_formula: "SUM(columna_tasa * PROD_DAYS) / SUM(PROD_DAYS)"
+  incorrect_formula: "AVG(columna_tasa)"
+  reason: "AVG() simple pondera igual un pozo con 1 dia que uno con 30 dias. El promedio ponderado refleja la contribucion real"
+  example: |
+    SELECT CAMPO,
+           ROUND(SUM("Tasa Producción Aceite" * PROD_DAYS) / SUM(PROD_DAYS), 2) AS TASA_PONDERADA
+    FROM RESULTADOSREGRESION
+    WHERE "AÑO" = 2025 AND PROD_DAYS > 0
+    GROUP BY CAMPO;
+
+# Diccionario de meses (español → número)
+# El LLM debe mapear nombres de mes en español a INTEGER
+month_dictionary:
+  enero: 1
+  febrero: 2
+  marzo: 3
+  abril: 4
+  mayo: 5
+  junio: 6
+  julio: 7
+  agosto: 8
+  septiembre: 9
+  octubre: 10
+  noviembre: 11
+  diciembre: 12
+
+# Reglas de parseo temporal
+# El LLM debe interpretar expresiones temporales del usuario y convertirlas a filtros SQL
+temporal_parsing_rules:
+  - pattern: "mes/año específico (ej: 'diciembre 2025')"
+    sql_filter: "MES = 12 AND \"AÑO\" = 2025"
+  - pattern: "por mes en un año (ej: 'por mes en 2025')"
+    sql_filter: "\"AÑO\" = 2025 GROUP BY \"AÑO\", MES"
+  - pattern: "rango de meses (ej: 'entre marzo y agosto 2025')"
+    sql_filter: "\"AÑO\" = 2025 AND MES BETWEEN 3 AND 8"
+  - pattern: "últimos N meses del año (ej: 'últimos 6 meses de 2025')"
+    sql_filter: "\"AÑO\" = 2025 AND MES BETWEEN (12 - N + 1) AND 12"
+  - pattern: "comparar dos años (ej: '2025 vs 2024')"
+    sql_filter: "\"AÑO\" IN (2025, 2024)"
+
+# Reglas de agregación por tipo de métrica
+aggregation_rules:
+  volumenes_mensuales:
+    description: "Para producción mensual (barriles) usar SUM"
+    columns: ["Producción Aceite Dia_Mes", "Producción Aceite Dia_Mes AI", "Producción Agua Dia_Mes", "Producción Agua Dia_Mes AI"]
+    function: "SUM(\"columna\")"
+    example: "SUM(\"Producción Aceite Dia_Mes\") AS prod_aceite_mes_bls"
+
+  tasas_bopd:
+    description: "Para tasas de producción (BOPD) usar promedio ponderado por PROD_DAYS"
+    columns: ["Tasa Producción Aceite", "Tasa Producción Aceite AI", "Tasa Producción Agua", "Tasa Producción Agua AI"]
+    correct_function: "SUM(\"columna\" * PROD_DAYS) / NULLIF(SUM(PROD_DAYS), 0)"
+    incorrect_function: "AVG(\"columna\") -- NUNCA usar AVG simple para tasas"
+    example: "SUM(\"Tasa Producción Aceite\" * PROD_DAYS) / NULLIF(SUM(PROD_DAYS), 0) AS tasa_aceite_bpd"
+
+  precios_unitarios:
+    description: "Para breakeven (USD/barril) usar AVG"
+    columns: ["Breakeven (Activos) USD/Bl", "Breakeven (Activos+Inactivos) USD/Bl"]
+    function: "AVG(\"columna\")"
+
+  valores_monetarios:
+    description: "Para EBITDA y costos (KUSD) usar SUM"
+    columns: ["EBITDA (Activo) KUSD", "EBITDA (Activo+Inactivo) KUSD", "Costos Variables (Activos) KUSD"]
+    function: "SUM(\"columna\")"
+
+  ranking_por_mes:
+    description: "Para 'top/mayor por mes' usar ROW_NUMBER() con ventana"
+    function: "ROW_NUMBER() OVER (PARTITION BY \"AÑO\", MES ORDER BY metric DESC) AS rn"
+    example: |
+      SELECT AÑO, MES, CAMPO, prod
+      FROM (
+        SELECT "AÑO" AS AÑO, MES, CAMPO,
+               SUM("Producción Aceite Dia_Mes") AS prod,
+               ROW_NUMBER() OVER (PARTITION BY "AÑO", MES ORDER BY SUM("Producción Aceite Dia_Mes") DESC) AS rn
+        FROM RESULTADOSREGRESION
+        WHERE "AÑO" = 2025
+        GROUP BY "AÑO", MES, CAMPO
+      ) WHERE rn = 1
+
+# Métricas de aceite (referencia rápida)
+oil_metrics_reference:
+  - metric: "Tasa Producción Aceite"
+    meaning: "BOPD promedio del mes (solo pozos activos)"
+    aggregation: "Promedio ponderado por PROD_DAYS"
+  - metric: "Tasa Producción Aceite AI"
+    meaning: "BOPD incluyendo Activo+Inactivo"
+    aggregation: "Promedio ponderado por PROD_DAYS"
+  - metric: "Producción Aceite Dia_Mes"
+    meaning: "Volumen mensual en barriles (solo activos)"
+    aggregation: "SUM"
+  - metric: "Producción Aceite Dia_Mes AI"
+    meaning: "Volumen mensual en barriles (Activo+Inactivo)"
+    aggregation: "SUM"
+
+common_mistakes:
+  - mistake: "SELECT TIPO DE POZO FROM RESULTADOSREGRESION"
+    correct: "SELECT \"TIPO DE POZO\" FROM RESULTADOSREGRESION"
+    reason: "Columnas con espacios requieren comillas dobles"
+
+  - mistake: "WHERE MES = '1'"
+    correct: "WHERE MES = 1"
+    reason: "MES es INTEGER, no TEXT"
+
+  - mistake: "SUM(Breakeven (Activos) USD/Bl)"
+    correct: "AVG(\"Breakeven (Activos) USD/Bl\")"
+    reason: "Breakeven es un precio unitario - se promedia, no se suma. Y requiere comillas dobles"
+
+  - mistake: "SELECT EBITDA (Activo) KUSD FROM RESULTADOSREGRESION"
+    correct: "SELECT \"EBITDA (Activo) KUSD\" FROM RESULTADOSREGRESION"
+    reason: "Columnas con parentesis y espacios requieren comillas dobles"
+
+  - mistake: "WHERE ANO = 2025"
+    correct: "WHERE \"AÑO\" = 2025"
+    reason: "La columna tiene tilde: AÑO, y requiere comillas dobles"
+
+  - mistake: "\"Condicion Real (Activos)\" = 'RENTABLE'"
+    correct: "\"Condición Real (Activos)\" = 'RENTABLE'"
+    reason: "La columna tiene tilde en Condición (ó). Sin tilde, SQLite la trata como literal de texto y devuelve 0 filas"
+
+  - mistake: "\"Tasa Produccion Aceite\""
+    correct: "\"Tasa Producción Aceite\""
+    reason: "La columna tiene tilde en Producción (ó). Sin tilde, SQLite no encuentra la columna"

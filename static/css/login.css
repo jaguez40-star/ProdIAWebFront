@@ -1,0 +1,508 @@
+/* ============================================================
+   Login — ProdIA 2.0
+   Rediseño cosmético (grid 2 columnas, paleta Ecopetrol) portado
+   desde ProdIA_V02 (React). El pipeline de autenticación (login.js,
+   routes/auth.py) no se toca — este archivo es exclusivo del login,
+   ninguna otra plantilla lo enlaza.
+   ============================================================ */
+
+:root {
+  --pv-primary: #004236;
+  --pv-primary-hover: #005a49;
+  --pv-lime: #ccd32a;
+  --pv-panel: #fafaf6;
+  --pv-border: #ddddd5;
+  --pv-muted: #6b6f63;
+  --pv-pos: #2a7a50;
+  --pv-neg: #e24b4a;
+  --pv-neg-hover: #b91c1c;
+  --pv-text: #111827;
+  --pv-text-soft: #374151;
+  --pv-icon: #9ca3af;
+  --pv-radius-sm: 6px;
+  --pv-radius-md: 10px;
+  --pv-transition: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --pv-font-sans: 'Inter', -apple-system, 'Segoe UI', system-ui, arial, sans-serif;
+  --pv-font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', menlo, consolas, monospace;
+}
+
+/* ── Reset de página ─────────────────────────────────────────── */
+
+html, body {
+  height: 100%;
+  margin: 0;
+}
+
+body.login-page {
+  min-height: 100vh;
+  overflow: hidden;
+  background: var(--pv-panel);
+  color: var(--pv-text);
+  font-family: var(--pv-font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+body.login-page *,
+body.login-page *::before,
+body.login-page *::after {
+  box-sizing: border-box;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.login-page *,
+  body.login-page *::before,
+  body.login-page *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Grid 2 columnas ──────────────────────────────────────────── */
+
+.login-grid {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 460px;
+}
+
+@media (max-width: 1023.98px) {
+  .login-grid { grid-template-columns: 1fr 400px; }
+}
+
+@media (max-width: 767.98px) {
+  .login-grid { grid-template-columns: 1fr; }
+  .brand-panel { display: none; }
+}
+
+/* ── Panel de marca ───────────────────────────────────────────── */
+/* [2026-08-26] Constelación neuronal (log_in.md) — reemplaza el degradado verde sólido.
+   Fondo blanco; la divisoria la sigue dando .form-panel { border-left }, ya existente. */
+
+.brand-panel {
+  position: relative;
+  background: #fff;
+  overflow: hidden;
+  /* [2026-08-26] Centrado real (petición del usuario): antes el SVG se posicionaba
+     con top:44px fijo (solo centrado horizontal). flex lo centra en las DOS direcciones
+     dentro de todo el alto del panel. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lg-constellation {
+  /* position:static a propósito: ya no se ancla por top/transform — es quien reparte
+     el centrado flex de .brand-panel el que lo ubica, en vertical y horizontal. */
+  width: 100%;
+  max-width: 560px;
+  height: auto;
+  pointer-events: none;
+}
+
+.lg-caption {
+  position: absolute;
+  left: 34px;
+  right: 34px;
+  bottom: 28px;
+}
+
+.lg-caption__t {
+  font-size: 15.5px;
+  font-weight: 800;
+  color: #1A2A24;
+  letter-spacing: -0.2px;
+}
+
+.lg-caption__s {
+  font-size: 12px;
+  color: #3C4A44;
+  margin-top: 4px;
+  line-height: 1.5;
+}
+
+/* SMIL, no CSS animation/transition: el bloqueo genérico de arriba (líneas 51-58) no lo
+   toca. display:none en <animate> congela el elemento en su valor inicial sin desaparecer
+   nodos ni aristas — quedan legibles y estáticos. */
+@media (prefers-reduced-motion: reduce) {
+  .lg-constellation animate { display: none; }
+}
+
+@media (max-width: 1023.98px) {
+  .lg-constellation { max-width: 320px; }
+  .lg-caption { left: 24px; right: 24px; bottom: 20px; }
+  .lg-caption__s { display: none; }
+}
+
+/* ── Panel de formulario ──────────────────────────────────────── */
+
+.form-panel {
+  background: #fff;
+  border-left: 1px solid var(--pv-border);
+  padding: 48px 40px;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+@media (max-width: 767.98px) {
+  .form-panel { border-left: none; padding: 32px 20px; }
+}
+
+.form-content {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  margin: auto 0;
+}
+
+/* Cabecera de logo */
+.logo-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Logo de Prod-IA directamente sobre el blanco del panel — sin caja
+   ni fondo: el PNG ya trae su propia identidad visual. */
+.logo-prodia {
+  height: 64px;
+  width: auto;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.logo-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.logo-name {
+  font: 700 28px/1 var(--pv-font-sans);
+  color: var(--pv-text);
+  letter-spacing: 1px;
+}
+
+.logo-sub {
+  font: 500 13px/1 var(--pv-font-sans);
+  color: var(--pv-muted);
+  letter-spacing: 0.5px;
+}
+
+/* Cabecera del formulario */
+.form-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-title {
+  font: 700 24px/1.2 var(--pv-font-sans);
+  color: var(--pv-text);
+  margin: 0;
+}
+
+@media (max-width: 767.98px) {
+  .form-title { font-size: 20px; }
+}
+
+.form-subtitle {
+  font: 400 13px/1.4 var(--pv-font-sans);
+  color: var(--pv-muted);
+  margin: 0;
+}
+
+/* ── Campos ───────────────────────────────────────────────────── */
+
+#login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--pv-text);
+}
+
+/* Wrapper en COLUMNA a propósito: el div .invalid-feedback debe ser
+   hermano del input (Bootstrap solo lo revela con `.is-invalid ~
+   .invalid-feedback`), pero tiene que caer DEBAJO, no al lado. Con
+   `display:flex` en fila el mensaje de error comprimiría el input.
+   El input ocupa la primera fila; los iconos van en absoluto sobre él. */
+.field-input-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Iconos anclados a la ALTURA DEL INPUT (41px), no centrados sobre el
+   wrapper: cuando aparece el mensaje de error el wrapper crece y un
+   `top:50%` arrastraría el icono hacia abajo, desalineándolo. */
+.field-icon {
+  position: absolute;
+  left: 12px;
+  top: 13px;
+  color: var(--pv-icon);
+  pointer-events: none;
+  font-size: 14px;
+}
+
+.field-input-wrap .form-control {
+  width: 100%;
+  padding: 10px 14px 10px 36px;
+  border: 1px solid var(--pv-border);
+  border-radius: var(--pv-radius-sm);
+  font-family: inherit;
+  font-size: 16px;
+  color: var(--pv-text);
+  background-color: #fff;
+  transition: border-color 200ms ease, box-shadow 200ms ease;
+}
+
+/* Password lleva además el botón del ojo a la derecha.
+   Clase explícita en vez de :has() — sin soporte garantizado en todo
+   el parque corporativo. */
+.field-input-wrap.has-toggle .form-control {
+  padding-right: 40px;
+}
+
+.field-input-wrap .form-control:focus {
+  outline: none;
+  border-color: var(--pv-primary);
+  box-shadow: 0 0 0 3px rgb(0 66 54 / 12%);
+}
+
+.field-input-wrap .form-control.is-invalid {
+  border-color: var(--pv-neg);
+  background-image: none; /* el icono SVG de Bootstrap choca con el ojo */
+}
+
+.field-input-wrap .form-control.is-invalid:focus {
+  box-shadow: 0 0 0 3px rgb(226 75 74 / 12%);
+}
+
+.field-input-wrap .form-control:disabled {
+  background-color: #f8f9fa;
+  color: var(--pv-icon);
+  cursor: not-allowed;
+}
+
+/* Mismo anclaje que .field-icon: fijo a la fila del input, para que no
+   se desplace cuando aparezca el mensaje de error debajo. */
+.field-eye-toggle {
+  position: absolute;
+  right: 8px;
+  top: 7px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--pv-muted);
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: color var(--pv-transition);
+}
+
+.field-eye-toggle:hover {
+  color: var(--pv-text-soft);
+}
+
+.field-eye-toggle:focus-visible {
+  outline: 2px solid var(--pv-primary);
+  outline-offset: 2px;
+}
+
+/* Bootstrap pinta .invalid-feedback oculto salvo que un .is-invalid
+   anterior sea hermano — el input SIEMPRE debe preceder a este div.
+   Verificado en bootstrap@5.3.0: `.is-invalid~.invalid-feedback{display:block}`.
+   El `margin-left:.5em` que Bootstrap le añade se anula: con el wrapper
+   en columna desalinearía el mensaje respecto al borde del input. */
+.field .invalid-feedback {
+  color: var(--pv-neg);
+  font-size: 12px;
+  margin-left: 0;
+  margin-top: 0;
+}
+
+/* ── Botón de acceso ──────────────────────────────────────────── */
+
+.login-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  border: none;
+  border-radius: var(--pv-radius-sm);
+  background-color: var(--pv-primary);
+  color: #fff;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 18px;
+  padding: 14px 28px;
+  cursor: pointer;
+  transition: background-color var(--pv-transition), opacity var(--pv-transition);
+}
+
+.login-button:hover:not(:disabled) {
+  background-color: var(--pv-primary-hover);
+}
+
+.login-button:focus-visible {
+  outline: 2px solid var(--pv-primary);
+  outline-offset: 2px;
+}
+
+.login-button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* ── Pasos LDAP (animación decorativa, ver login-steps.js) ──────── */
+
+.ldap-steps {
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  animation: ldapRiseIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ldap-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  opacity: 0.45;
+}
+
+.ldap-row.is-active,
+.ldap-row.is-done {
+  opacity: 1;
+}
+
+.ldap-circle {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1.5px solid var(--pv-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #fff;
+}
+
+.ldap-row.is-active .ldap-circle {
+  border-color: var(--pv-pos);
+}
+
+.ldap-row.is-done .ldap-circle {
+  border-color: var(--pv-pos);
+  background: var(--pv-pos);
+}
+
+.ldap-circle .fa-check {
+  font-size: 8px;
+}
+
+.ldap-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--pv-pos);
+  animation: ldapDotPulse 1s ease-in-out infinite;
+}
+
+.ldap-label {
+  font: 500 10.5px/1 var(--pv-font-mono);
+  color: var(--pv-muted);
+}
+
+.ldap-row.is-active .ldap-label,
+.ldap-row.is-done .ldap-label {
+  color: #333;
+}
+
+@keyframes ldapDotPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(0.55); opacity: 0.5; }
+}
+
+@keyframes ldapRiseIn {
+  from { opacity: 0; transform: translateY(7px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ldap-steps { animation: none; }
+  .ldap-dot { animation: none; }
+}
+
+/* ── Mensajes (alert de Bootstrap, className reescrito por login.js) ── */
+
+#message-container .alert {
+  border-radius: var(--pv-radius-sm);
+  font-size: 14px;
+  border: none;
+}
+
+#message-container .alert-danger {
+  background-color: #fee2e2;
+  color: var(--pv-neg-hover);
+}
+
+#message-container .alert-success {
+  background-color: #d1fae5;
+  color: var(--pv-pos);
+}
+
+/* ── Aviso "¿Sin acceso?" ─────────────────────────────────────── */
+
+.notice {
+  font-size: 12px;
+  color: var(--pv-text-soft);
+  margin: 0;
+}
+
+.notice strong {
+  color: var(--pv-primary);
+}
+
+/* ── Pie del panel ────────────────────────────────────────────── */
+
+.form-footer {
+  display: flex;
+  justify-content: space-between;
+  font: 400 11px/1 var(--pv-font-mono);
+  color: var(--pv-muted);
+  margin: 20px 0 0;
+  padding-top: 8px;
+}
+
+/* ── Autofill de Chrome ───────────────────────────────────────── */
+
+.field-input-wrap .form-control:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 30px #fff inset;
+  -webkit-text-fill-color: var(--pv-text);
+}
+
+/* ── Modal "Solicitar acceso" — ajuste mínimo de color ──────────── */
+
+#accessRequestModal .modal-content {
+  border-radius: var(--pv-radius-md);
+}
+
+#accessRequestModal .modal-header {
+  border-bottom: 1px solid var(--pv-border);
+}

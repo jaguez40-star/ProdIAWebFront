@@ -1,0 +1,5 @@
+<div class="text-center text-muted p-3">
+    <i class="fas fa-lightbulb fa-2x mb-2"></i>
+    <p>Las sugerencias aparecerán aquí después de hacer una consulta</p>
+    <p class="small">Este panel mostrará botones dinámicos para análisis estadísticos y consultas relacionadas basadas en los resultados de tu consulta.</p>
+</div>

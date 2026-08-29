@@ -1,0 +1,455 @@
+database_info:
+  name: "ECP_PROD"
+  type: "SQLite"
+  description: "Datos anuales y mensuales de producción de hidrocarburos por gerencia y campo"
+  granularity: "annual_and_monthly"
+  entity_level: "gerencia y campo"
+  coverage: "Historical data (2023-2025)"
+
+tables:
+  PROD_2023:
+    description: "Producción de hidrocarburos para el año 2023 con valores mensuales y acumulados"
+    notes: "⚠️ NO existe columna AÑO - todos los datos son de 2023. Usar literal '2023' en queries."
+
+    columns:
+      - name: id_row
+        type: INT
+        nullable: false
+        description: "Identificador único de fila"
+
+      - name: PRODUCTO
+        type: VARCHAR(20)
+        nullable: false
+        description: "Tipo de producto (CRUDO, GAS, BLANCOS)"
+        domain: ["CRUDO", "GAS", "BLANCOS"]
+        notes: "⚠️ SIEMPRE usar TRIM(PRODUCTO) en WHERE para evitar espacios"
+
+      - name: VICE
+        type: VARCHAR(10)
+        nullable: false
+        description: "Siglas de la gerencia operativa"
+        examples: ["GAN", "GCT", "GRM", "GGS", "GOR", "GAA", "GNS"]
+        indexed: true
+
+      - name: GERENCIA
+        type: VARCHAR(50)
+        nullable: true
+        description: "Nombre completo de la gerencia"
+
+      - name: CAMPO
+        type: VARCHAR(100)
+        nullable: false
+        description: "Nombre del campo productor (ubicación geográfica)"
+        indexed: true
+        examples: ["APIAY", "RUBIALES", "CASTILLA", "CHICHIMENE"]
+        notes: "⚠️ CAMPO es ubicación geográfica, NO tipo de producto"
+
+      - name: ENERO
+        type: DECIMAL(18,2)
+        nullable: true
+        description: "Producción en enero 2023"
+
+      - name: FEBRERO
+        type: DECIMAL(18,2)
+        nullable: true
+        description: "Producción en febrero 2023"
+
+      - name: MARZO
+        type: DECIMAL(18,2)
+        nullable: true
+        description: "Producción en marzo 2023"
+
+      - name: ABRIL
+        type: DECIMAL(18,2)
+        nullable: true
+        description: "Producción en abril 2023"
+
+      - name: MAYO
+        type: DECIMAL(18,2)
+        nullable: true
+        description: "Producción en mayo 2023"
+
+      - name: JUNIO
+        type: DECIMAL(18,2)
+        nullable: true
+        description: "Producción en junio 2023"
+
+      - name: JULIO
+        type: DECIMAL(18,2)
+        nullable: true
+        description: "Producción en julio 2023"
+
+      - name: AGOSTO
+        type: DECIMAL(18,2)
+        nullable: true
+        description: "Producción en agosto 2023"
+
+      - name: SEPTIEMBRE
+        type: DECIMAL(18,2)
+        nullable: true
+        description: "Producción en septiembre 2023"
+
+      - name: OCTUBRE
+        type: DECIMAL(18,2)
+        nullable: true
+        description: "Producción en octubre 2023"
+
+      - name: NOVIEMBRE
+        type: DECIMAL(18,2)
+        nullable: true
+        description: "Producción en noviembre 2023"
+
+      - name: DICIEMBRE
+        type: DECIMAL(18,2)
+        nullable: true
+        description: "Producción en diciembre 2023"
+
+      - name: P50_Acum
+        type: DECIMAL(18,2)
+        nullable: true
+        description: "Producción acumulada P50 (proyección)"
+
+      - name: Real_Acum
+        type: DECIMAL(18,2)
+        nullable: false
+        description: "Producción acumulada real del año 2023"
+        notes: "⚠️ Usar Real_Acum para obtener producción total anual por campo/producto"
+
+  PROD_2024:
+    description: "Producción de hidrocarburos para el año 2024 con valores mensuales y acumulados"
+    notes: "⚠️ NO existe columna AÑO - todos los datos son de 2024. Usar literal '2024' en queries."
+    columns:
+      - name: id_row
+        type: INT
+        description: "Identificador único de fila"
+      - name: PRODUCTO
+        type: VARCHAR(20)
+        description: "Tipo de producto (CRUDO, GAS, BLANCOS)"
+      - name: VICE
+        type: VARCHAR(10)
+        description: "Siglas de la gerencia operativa"
+      - name: GERENCIA
+        type: VARCHAR(50)
+        description: "Nombre completo de la gerencia"
+      - name: CAMPO
+        type: VARCHAR(100)
+        description: "Nombre del campo productor"
+      - name: ENERO
+        type: DECIMAL(18,2)
+        description: "Producción en enero 2024"
+      - name: FEBRERO
+        type: DECIMAL(18,2)
+        description: "Producción en febrero 2024"
+      - name: MARZO
+        type: DECIMAL(18,2)
+        description: "Producción en marzo 2024"
+      - name: ABRIL
+        type: DECIMAL(18,2)
+        description: "Producción en abril 2024"
+      - name: MAYO
+        type: DECIMAL(18,2)
+        description: "Producción en mayo 2024"
+      - name: JUNIO
+        type: DECIMAL(18,2)
+        description: "Producción en junio 2024"
+      - name: JULIO
+        type: DECIMAL(18,2)
+        description: "Producción en julio 2024"
+      - name: AGOSTO
+        type: DECIMAL(18,2)
+        description: "Producción en agosto 2024"
+      - name: SEPTIEMBRE
+        type: DECIMAL(18,2)
+        description: "Producción en septiembre 2024"
+      - name: OCTUBRE
+        type: DECIMAL(18,2)
+        description: "Producción en octubre 2024"
+      - name: NOVIEMBRE
+        type: DECIMAL(18,2)
+        description: "Producción en noviembre 2024"
+      - name: DICIEMBRE
+        type: DECIMAL(18,2)
+        description: "Producción en diciembre 2024"
+      - name: P50_Acum
+        type: DECIMAL(18,2)
+        description: "Producción acumulada P50 (proyección)"
+      - name: Real_Acum
+        type: DECIMAL(18,2)
+        description: "Producción acumulada real del año 2024"
+
+  PROD_2025:
+    description: "Producción de hidrocarburos para el año 2025 con valores mensuales y acumulados"
+    notes: "⚠️ NO existe columna AÑO - todos los datos son de 2025. Usar literal '2025' en queries."
+    columns:
+      - name: id_row
+        type: INT
+        description: "Identificador único de fila"
+      - name: PRODUCTO
+        type: VARCHAR(20)
+        description: "Tipo de producto (CRUDO, GAS, BLANCOS)"
+      - name: VICE
+        type: VARCHAR(10)
+        description: "Siglas de la gerencia operativa"
+      - name: GERENCIA
+        type: VARCHAR(50)
+        description: "Nombre completo de la gerencia"
+      - name: CAMPO
+        type: VARCHAR(100)
+        description: "Nombre del campo productor"
+      - name: ENERO
+        type: DECIMAL(18,2)
+        description: "Producción en enero 2025"
+      - name: FEBRERO
+        type: DECIMAL(18,2)
+        description: "Producción en febrero 2025"
+      - name: MARZO
+        type: DECIMAL(18,2)
+        description: "Producción en marzo 2025"
+      - name: ABRIL
+        type: DECIMAL(18,2)
+        description: "Producción en abril 2025"
+      - name: MAYO
+        type: DECIMAL(18,2)
+        description: "Producción en mayo 2025"
+      - name: JUNIO
+        type: DECIMAL(18,2)
+        description: "Producción en junio 2025"
+      - name: JULIO
+        type: DECIMAL(18,2)
+        description: "Producción en julio 2025"
+      - name: AGOSTO
+        type: DECIMAL(18,2)
+        description: "Producción en agosto 2025"
+      - name: SEPTIEMBRE
+        type: DECIMAL(18,2)
+        description: "Producción en septiembre 2025"
+      - name: OCTUBRE
+        type: DECIMAL(18,2)
+        description: "Producción en octubre 2025"
+      - name: NOVIEMBRE
+        type: DECIMAL(18,2)
+        description: "Producción en noviembre 2025"
+      - name: DICIEMBRE
+        type: DECIMAL(18,2)
+        description: "Producción en diciembre 2025"
+      - name: P50_Acum
+        type: DECIMAL(18,2)
+        description: "Producción acumulada P50 (proyección)"
+      - name: Real_Acum
+        type: DECIMAL(18,2)
+        description: "Producción acumulada real del año 2025"
+
+  DATA_HOM:
+    description: "Tabla de homologación entre campos y gerencias con nomenclatura VP"
+    usage: "JOIN con PROD_* cuando se necesite VICE_HOM (nombre homologado de VP)"
+
+    columns:
+      - name: CAMPO
+        type: VARCHAR(100)
+        nullable: false
+        description: "Nombre del campo productor"
+        indexed: true
+
+      - name: VICE_HOM
+        type: VARCHAR(50)
+        nullable: false
+        description: "Nombre homologado de Vicepresidencia"
+        examples: ["GCT", "GRM", "GGS"]
+
+  TT_GERENCIA_AÑO_PROD:
+    type: "VIEW"
+    description: "Vista consolidada de producción nacional anual (BOPD promedio) por año"
+    notes: "⚠️ VISTA (no tabla) - Agrega datos de PROD_2023, PROD_2024 y PROD_2025_BACK. Solo 3 filas."
+    source_tables: ["PRODUCCION_ECP_2023", "PROD_2024", "PROD_2025_BACK"]
+
+    columns:
+      - name: idex
+        type: VARCHAR
+        description: "Identificador interno de la vista (-1, 0, 1)"
+
+      - name: AÑO
+        type: VARCHAR
+        description: "Año de producción ('2023', '2024', 'Agosto-2025')"
+        notes: "⚠️ Almacenado como TEXT, no INT. Valor 2025 dice 'Agosto-2025'"
+
+      - name: BOPD
+        type: NUMERIC
+        description: "Producción nacional total (BOPD promedio del año)"
+        unit: "bbl/day"
+        notes: "Ya está agregado - NO necesita SUM() adicional"
+
+  REPORTE_SEMANAL:
+    description: "Producción diaria y metas del reporte diario"
+    notes: "Fuente principal del Reporte Diario"
+    columns:
+      - name: FECHA
+        type: TEXT
+        nullable: false
+        description: "Fecha del reporte (DD/MM/YYYY)"
+      - name: ECP_VOL_ESTIMADO_DIA
+        type: DOUBLE
+        nullable: true
+        description: "Producción real diaria (Q_Real)"
+      - name: ECP_VOL_PROG
+        type: DOUBLE
+        nullable: true
+        description: "Producción programada (Q_POP)"
+      - name: ECP_META_741
+        type: DOUBLE
+        nullable: true
+        description: "Meta 741"
+      - name: ECP_META_747
+        type: DOUBLE
+        nullable: true
+        description: "Meta 747"
+      - name: ECP_META_755
+        type: DOUBLE
+        nullable: true
+        description: "Meta 755"
+
+  V_DIFERIDAS_RESUMEN:
+    description: "Vista de diferidas agregadas por día y campo"
+    notes: "Se construye a partir de DIFERIDAS_MES"
+    columns:
+      - name: EVENT_DATE
+        type: TEXT
+        nullable: false
+        description: "Fecha del evento"
+      - name: CAMPO
+        type: TEXT
+        nullable: true
+        description: "Campo del evento"
+      - name: COMENTARIO
+        type: TEXT
+        nullable: true
+        description: "Comentario operativo"
+      - name: TOTAL_ACEITE_PERDIDO
+        type: DOUBLE
+        nullable: true
+        description: "Aceite perdido agregado"
+
+  RESUMEN_DIFERIDAS_MES_OLLAMA:
+    description: "Resumen diario de diferidas generado por LLM"
+    columns:
+      - name: EVENT_DATE
+        type: TEXT
+        nullable: false
+        description: "Fecha del evento"
+      - name: POZO_COMMENT
+        type: TEXT
+        nullable: true
+        description: "Resumen del día"
+
+sql_syntax:
+  dialect: "SQLite"
+  limit_clause: "LIMIT N (NOT TOP)"
+  functions:
+    string_trim: "TRIM(column)"
+    type_cast: "CAST(column AS INTEGER)"
+    current_year: "strftime('%Y', 'now')"
+  parameter_style: ":param_name"
+  notes:
+    - "SQLite no soporta TOP, usar LIMIT"
+    - "Usar strftime para funciones de fecha"
+    - "CAST para conversión de tipos"
+    - "COALESCE para manejar NULLs"
+
+critical_rules:
+  - "⚠️⚠️⚠️ TABLAS REALES: PROD_2023, PROD_2024, PROD_2025, DATA_HOM"
+  - "⚠️⚠️⚠️ NO EXISTE tabla TT_GERENCIA_AÑO_PROD - usar UNION ALL entre PROD_*"
+  - "⚠️⚠️⚠️ PRODUCTO values: 'CRUDO', 'GAS', 'BLANCOS' (ALWAYS use TRIM)"
+  - "⚠️⚠️⚠️ CAMPO es ubicación geográfica (APIAY, RUBIALES), NO tipo de producto"
+  - "⚠️⚠️⚠️ NUNCA usar WHERE CAMPO='CRUDO' (error común)"
+  - "⚠️ Para producción de crudo: WHERE TRIM(PRODUCTO) = 'CRUDO'"
+  - "⚠️ Real_Acum = producción acumulada real del año"
+  - "⚠️ PROD_* tables: NO tienen columna AÑO - usar literal '2023', '2024', '2025'"
+  - "⚠️⚠️⚠️ Columnas mensuales son PALABRAS COMPLETAS en mayúsculas: ENERO, FEBRERO, MARZO, ABRIL, MAYO, JUNIO, JULIO, AGOSTO, SEPTIEMBRE, OCTUBRE, NOVIEMBRE, DICIEMBRE"
+  - "⚠️⚠️⚠️ NUNCA abreviar nombres de meses: usar ENERO (NO 'ENE'), FEBRERO (NO 'FEB'), MARZO (NO 'MAR'), SEPTIEMBRE (NO 'SEP'), etc."
+  - "⚠️ VICE column contiene siglas de gerencia (GAN, GCT, GRM, etc.)"
+  - "⚠️ Para VICE_HOM (nombres homologados): JOIN con tabla DATA_HOM"
+  - "✅ Para consultas anuales históricas: UNION ALL entre PROD_2023, PROD_2024, PROD_2025"
+  - "✅ Para consultas mensuales 2025: usar PROD_2025 directamente"
+
+query_patterns:
+  national_production_by_year:
+    description: "Producción nacional total por año (usando UNION ALL)"
+    tables: ["PROD_2023", "PROD_2024", "PROD_2025"]
+    pattern: |
+      SELECT '2023' AS AÑO, SUM(Real_Acum) as TOTAL
+      FROM PROD_2023 WHERE TRIM(PRODUCTO) = 'CRUDO'
+      UNION ALL
+      SELECT '2024', SUM(Real_Acum)
+      FROM PROD_2024 WHERE TRIM(PRODUCTO) = 'CRUDO'
+      UNION ALL
+      SELECT '2025', SUM(Real_Acum)
+      FROM PROD_2025 WHERE TRIM(PRODUCTO) = 'CRUDO'
+
+  production_by_gerencia:
+    description: "Producción por gerencia en un año específico"
+    tables: ["PROD_2025"]
+    pattern: |
+      SELECT VICE, SUM(Real_Acum)
+      FROM PROD_2025
+      WHERE TRIM(PRODUCTO) = 'CRUDO'
+      GROUP BY VICE
+
+  monthly_distribution_2025:
+    description: "Distribución mensual de producción en 2025"
+    table: "PROD_2025"
+    pattern: |
+      SELECT '2025' AS Anio, TRIM(PRODUCTO) AS Producto,
+             SUM(ENERO), SUM(FEBRERO), SUM(MARZO), ...
+      FROM PROD_2025
+      WHERE TRIM(PRODUCTO) IN ('CRUDO','GAS','BLANCOS')
+      GROUP BY TRIM(PRODUCTO)
+
+  yoy_growth:
+    description: "Crecimiento año a año (YoY) usando UNION ALL + JOIN"
+    tables: ["PROD_2023", "PROD_2024", "PROD_2025"]
+    requires_cte: true
+    pattern: |
+      WITH ProductionByYear AS (
+        SELECT '2023' AS AÑO, SUM(Real_Acum) as TOTAL
+        FROM PROD_2023 WHERE TRIM(PRODUCTO) = 'CRUDO'
+        UNION ALL ...
+      )
+      SELECT p1.AÑO, p1.TOTAL, p2.TOTAL as ANTERIOR,
+             (p1.TOTAL - p2.TOTAL) * 100.0 / p2.TOTAL as VAR_PCT
+      FROM ProductionByYear p1
+      LEFT JOIN ProductionByYear p2
+        ON CAST(p1.AÑO AS INTEGER) = CAST(p2.AÑO AS INTEGER) + 1
+
+metrics:
+  Real_Acum:
+    full_name: "Producción Acumulada Real"
+    unit: "bbl (total year)"
+    description: "Producción total acumulada real del año"
+    usage: "SUM(Real_Acum) para obtener totales anuales por gerencia/campo/producto"
+
+  PRODUCTO:
+    values:
+      CRUDO: "Crude oil (petróleo)"
+      GAS: "Natural gas"
+      BLANCOS: "Refined products (productos blancos)"
+
+common_mistakes:
+  - mistake: "WHERE CAMPO = 'CRUDO'"
+    correct: "WHERE TRIM(PRODUCTO) = 'CRUDO'"
+    reason: "CAMPO es ubicación geográfica, no tipo de producto"
+
+  - mistake: "FROM TT_GERENCIA_AÑO_PROD"
+    correct: "FROM PROD_2023 UNION ALL FROM PROD_2024 UNION ALL FROM PROD_2025"
+    reason: "TT_GERENCIA_AÑO_PROD no existe en la BD real"
+
+  - mistake: "WHERE AÑO = 2023"
+    correct: "FROM PROD_2023 (sin WHERE AÑO)"
+    reason: "No hay columna AÑO en PROD_* tables"
+
+  - mistake: "WHERE PRODUCTO = 'CRUDO'"
+    correct: "WHERE TRIM(PRODUCTO) = 'CRUDO'"
+    reason: "PRODUCTO puede tener espacios en blanco"
+
+  - mistake: "SUM(ENE), SUM(FEB), SUM(MAR), SUM(ABR), SUM(SEP), SUM(OCT), SUM(NOV), SUM(DIC)"
+    correct: "SUM(ENERO), SUM(FEBRERO), SUM(MARZO), SUM(ABRIL), SUM(SEPTIEMBRE), SUM(OCTUBRE), SUM(NOVIEMBRE), SUM(DICIEMBRE)"
+    reason: "Las columnas de meses usan nombres COMPLETOS en español, NUNCA abreviados"
+

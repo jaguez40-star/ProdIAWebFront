@@ -1,0 +1,220 @@
+petroleum_glossary:
+  production_metrics:
+    OIL_VOLUME:
+      definition: Volumen de petróleo crudo producido
+      unit: bbl/day (barriles por día)
+      synonyms:
+      - producción de petróleo
+      - crudo
+      - aceite
+      typical_ranges:
+        onshore_colombia:
+          min: 10
+          max: 5000
+          avg: 800
+      related_metrics:
+      - BOPD
+      - TOTAL_LIQUIDS
+      calculation_notes: Medido a condiciones estándar (60°F, 14.7 psia)
+    WATER:
+      definition: Volumen de agua coproducida con el petróleo
+      unit: bbl/day (barriles por día)
+      synonyms:
+      - agua producida
+      - agua de formación
+      significance: Indicador de madurez del reservorio
+      related_metrics:
+      - WOR
+      - WATER_CUT
+      operational_impact: Alto contenido indica necesidad de manejo de agua
+    GAS:
+      definition: Volumen de gas natural asociado producido
+      unit: MSCF/day (miles de pies cúbicos estándar por día)
+      synonyms:
+      - gas asociado
+      - gas natural
+      related_metrics:
+      - GOR
+      commercial_value: Monetizable si hay infraestructura de transporte
+    GOR:
+      definition: Gas-Oil Ratio - Relación de gas producido por barril de petróleo
+      unit: scf/bbl (pies cúbicos estándar por barril)
+      calculation: GAS_VOLUME_SCF / OIL_VOLUME_BBL
+      interpretation:
+        low:
+          range: <500
+          meaning: Reservorio sub-saturado
+        normal:
+          range: 500-2000
+          meaning: Producción típica
+        high:
+          range: '>2000'
+          meaning: Posible conificación de gas
+      operational_significance: Alto GOR puede indicar problemas operacionales
+    WOR:
+      definition: Water-Oil Ratio - Relación de agua producida por barril de petróleo
+      unit: adimensional (ratio)
+      calculation: WATER_VOLUME_BBL / OIL_VOLUME_BBL
+      interpretation:
+        excellent:
+          range: <0.5
+          meaning: Muy buen desempeño
+        good:
+          range: 0.5-2.0
+          meaning: Desempeño aceptable
+        concerning:
+          range: 2.0-5.0
+          meaning: Requiere atención
+        critical:
+          range: '>5.0'
+          meaning: Intervención necesaria
+      operational_significance: WOR >3.0 generalmente requiere optimización
+    BOPD:
+      definition: Barrels of Oil Per Day - Tasa promedio de producción diaria
+      unit: bbl/day
+      context: Usado en reportes anuales como promedio
+      relationship_to_daily: BOPD = AVG(OIL_VOLUME) sobre período específico
+    WATER_CUT:
+      definition: Porcentaje de agua en el total de líquidos producidos
+      unit: porcentaje (%)
+      calculation: WATER / (OIL + WATER) * 100
+      operational_thresholds:
+        low:
+          range: <20%
+          status: Excelente
+        moderate:
+          range: 20-50%
+          status: Aceptable
+        high:
+          range: 50-80%
+          status: Requiere manejo
+        critical:
+          range: '>80%'
+          status: Intervención urgente
+  operational_statuses:
+    ACT:
+      definition: Activo - Pozo produciendo normalmente
+      operational_meaning: En producción comercial
+      reporting: Incluir en cálculos de producción
+    SHUT:
+      definition: Cerrado temporalmente
+      reasons:
+      - Mantenimiento programado
+      - Problemas menores
+      - Condiciones de mercado
+      duration: Típicamente días a semanas
+      reporting: Excluir de cálculos de capacidad activa
+    INACT:
+      definition: Inactivo por período extendido
+      reasons:
+      - Problemas técnicos
+      - Económicamente no viable
+      - Esperando workover
+      duration: Meses a años
+      reporting: No contribuye a producción
+    SUS:
+      definition: Suspendido por razones operacionales
+      reasons:
+      - Falta de facilidades
+      - Restricciones ambientales
+      - Permisos
+      status: Temporal pero indeterminado
+      reporting: Monitor para reactivación
+    MAINT:
+      definition: En mantenimiento o workover
+      activities:
+      - Reparación
+      - Completamiento
+      - Estimulación
+      duration: Semanas a meses
+      expectation: Retorno a producción esperado
+  geological_formations:
+    MIRADOR:
+      age: Cretácico Superior
+      characteristics: Areniscas de alta permeabilidad
+      typical_production: Petróleo liviano a medio
+      fields:
+      - APIAY
+      - CHICHIMENE
+      - SURIA
+    BARCO:
+      age: Cretácico Superior
+      characteristics: Areniscas con intercalaciones de lutitas
+      typical_production: Petróleo medio a pesado
+      fields:
+      - RUBIALES
+      - QUIFA
+      - PIRIRI
+    GUADALUPE:
+      age: Cretácico Superior
+      characteristics: Calizas y areniscas calcáreas
+      typical_production: Variable según facies
+      fields:
+      - GUANDO
+      - REFORMA
+    CABALLOS:
+      age: Paleógeno
+      characteristics: Areniscas conglomeráticas
+      typical_production: Petróleo pesado
+      fields:
+      - CASTILLA
+      - CHICHIMENE
+    UNE:
+      age: Paleógeno
+      characteristics: Areniscas y conglomerados
+      typical_production: Petróleo medio
+      fields:
+      - LA CIRA
+      - INFANTAS
+  organizational_hierarchy:
+    VICEPRESIDENCIA:
+      definition: Máximo nivel de agregación operacional
+      responsibility: Múltiples gerencias por región geográfica
+      examples:
+      - VP LLANOS
+      - VP SUR
+      - VP NORTE
+      reporting_level: Ejecutivo/Junta Directiva
+    GERENCIA:
+      definition: Unidad operacional regional
+      responsibility: Múltiples campos en área geográfica
+      examples:
+      - GERENCIA LLANOS NORTE
+      - GERENCIA MAGDALENA
+      reporting_level: Vicepresidencia
+    CAMPO:
+      definition: Área geográfica con reservorio(s) comunes
+      responsibility: Múltiples pozos en estructura geológica
+      examples:
+      - APIAY
+      - CHICHIMENE
+      - RUBIALES
+      reporting_level: Gerencia
+    POZO:
+      definition: Unidad mínima de producción
+      responsibility: Punto específico de extracción
+      naming_convention: '[CAMPO]-[NÚMERO][SUFIJO]'
+      reporting_level: Campo
+query_interpretation_guides:
+  temporal_keywords:
+    diario: Use VOLUME_PROD_DAILY, filtrar por OBSERVATION_DATETIME
+    anual: Use PROD_2023/PROD_2024/PROD_2025 con UNION ALL, filtrar WHERE TRIM(PRODUCTO)='CRUDO'
+    mensual: Agregar VOLUME_PROD_DAILY por mes
+    histórico: Rango amplio de fechas, mostrar tendencias
+    últimos: Ordenar por fecha DESC, LIMIT/TOP N
+  aggregation_keywords:
+    total: SUM() de métricas de producción
+    promedio: AVG() de métricas de producción
+    máximo: MAX() con identificación de entidad
+    mínimo: MIN() con identificación de entidad
+    ranking: ORDER BY métrica DESC con ROW_NUMBER()
+  entity_keywords:
+    pozo: JOIN hasta DIM_WELL, filtrar por WELL_COMMON_NAME
+    campo: Filtrar por FIELD_NAME o CAMPO
+    gerencia: JOIN DIM_HIERARCHY o filtrar VICE_HOM
+    vicepresidencia: Agregar por VICEPRESIDENCIA o VICE_HOM
+  metric_keywords:
+    producción: Referencia a OIL_VOLUME o BOPD
+    agua: Referencia a WATER, posiblemente WOR
+    gas: Referencia a GAS, posiblemente GOR
+    eficiencia: Ratios como WOR, GOR, o producción por pozo activo

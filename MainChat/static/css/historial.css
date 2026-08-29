@@ -1,0 +1,324 @@
+/* Panel «Historial» de MainChat.
+   Prefijo mc-hist- para no colisionar con .rb-*/.cn-* del shell ni con las mc-*
+   del acordeón. La paleta sale de las variables que mainchat.css declara en :root. */
+
+#mc-historial-body {
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow: hidden;
+}
+
+/* Envuelve la lista (o el aviso de vacío): es la ÚNICA zona que scrollea. "Nueva
+   conversación" arriba y el mock de "Estado del sistema" abajo quedan fijos, igual
+   que en el sidebar clásico — si el body entero scrolleara, el bloque de estado se
+   perdería con listas largas de conversaciones.
+
+   flex-grow DEBE quedar en 0 (aquí, `flex:0 1 auto`) para que .mc-hist__usuario
+   pueda anclarse al fondo con margin-top:auto. Flexbox resuelve flex-grow ANTES
+   que los márgenes auto: con flex:1 esta caja absorbía todo el espacio libre y el
+   margin-top:auto del pie se resolvía a 0px, dejándolo pegado al contenido. Con
+   grow en 0 la lista mide su contenido, el espacio libre queda sin repartir y el
+   margen auto se lo lleva entero. El scroll no se pierde: flex-shrink:1 +
+   min-height:0 dejan que se encoja y desborde cuando la lista crece. */
+.mc-hist__scroll {
+    flex: 0 1 auto;
+    min-height: 0;
+    overflow: auto;
+}
+
+.mc-hist__nueva {
+    all: unset;
+    box-sizing: border-box;
+    flex: 0 0 auto;
+    width: 100%;
+    cursor: pointer;
+    text-align: center;
+    background: var(--mc-primary);
+    color: #fff;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-family: 'Inter', -apple-system, 'Segoe UI', system-ui, arial, sans-serif;
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    transition: background 0.18s;
+}
+
+.mc-hist__nueva:hover { background: #00584a; }
+.mc-hist__nueva:focus-visible { outline: 2px solid var(--mc-lime); outline-offset: 2px; }
+
+/* Aviso de conversación restaurada (H1). Ámbar, no rojo: no es un error, es una
+   condición que el usuario debe tener presente al preguntar. */
+.mc-hist__aviso {
+    margin: 0;
+    flex: 0 0 auto;
+    background: #fdf6e3;
+    border: 1px solid #e8d9a8;
+    border-radius: 8px;
+    padding: 8px 10px;
+    color: #6b5518;
+    font-family: 'Inter', -apple-system, 'Segoe UI', system-ui, arial, sans-serif;
+    font-size: 11.5px;
+    line-height: 1.45;
+}
+
+.mc-hist__aviso i { color: #b8860b; margin-right: 4px; }
+
+.mc-hist__lista {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 0;
+}
+
+.mc-hist__item { display: flex; align-items: stretch; gap: 8px; }
+
+.mc-hist__abrir {
+    all: unset;
+    box-sizing: border-box;
+    flex: 1;
+    min-width: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    border: 1px solid var(--mc-border);
+    border-radius: 8px;
+    padding: 9px 11px;
+    background: #fff;
+    color: var(--mc-navy);
+    font-family: 'Inter', -apple-system, 'Segoe UI', system-ui, arial, sans-serif;
+    font-size: 12.5px;
+    transition: border-color 0.18s, background 0.18s;
+}
+
+.mc-hist__abrir:hover { border-color: var(--mc-primary); background: var(--mc-lime-soft); }
+.mc-hist__abrir:focus-visible { outline: 2px solid var(--mc-primary); outline-offset: -2px; }
+.mc-hist__abrir i { color: var(--mc-primary); flex-shrink: 0; font-size: 13px; }
+
+/* Título de largo libre: una sola línea con elipsis, texto completo en el tooltip.
+   min-width:0 es obligatorio para que el truncado funcione dentro del flex. */
+.mc-hist__txt {
+    min-width: 0;
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mc-hist__item.is-activa .mc-hist__abrir {
+    border-color: var(--mc-primary);
+    background: var(--mc-lime-soft);
+    font-weight: 600;
+}
+
+.mc-hist__borrar {
+    all: unset;
+    box-sizing: border-box;
+    flex: 0 0 auto;
+    width: 36px;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--mc-border);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--mc-muted);
+    font-size: 13px;
+    transition: background 0.18s, color 0.18s, border-color 0.18s;
+}
+
+.mc-hist__borrar:hover {
+    background: var(--mc-neg);
+    border-color: var(--mc-neg);
+    color: #fff;
+}
+
+.mc-hist__borrar:focus-visible { outline: 2px solid var(--mc-neg); outline-offset: 2px; }
+
+.mc-hist__vacio {
+    margin: 0;
+    color: var(--mc-muted);
+    font-family: 'Inter', -apple-system, 'Segoe UI', system-ui, arial, sans-serif;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .mc-hist__nueva, .mc-hist__abrir, .mc-hist__borrar { transition: none; }
+}
+
+/* ── MOCK "Estado del sistema" ──────────────────────────────────────────────
+   Puramente visual — ver el comentario en historial.js. Prefijo propio
+   (mc-hist__sistema*) para poder borrar el bloque entero sin arrastrar nada
+   del historial real cuando se decida qué va aquí en definitiva. */
+
+.mc-hist__sistema {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;   /* [2026-08-26] centra horizontalmente el bloque (título/línea/grid) */
+    gap: 8px;
+}
+
+.mc-hist__sistema-titulo {
+    display: flex;
+    align-items: center;
+    justify-content: center;   /* [2026-08-26] centra icono+texto dentro de la fila */
+    gap: 6px;
+    font-family: 'Inter', -apple-system, 'Segoe UI', system-ui, arial, sans-serif;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--mc-muted);
+}
+
+.mc-hist__sistema-titulo i { color: var(--mc-primary); font-size: 12px; }
+
+.mc-hist__sistema-linea {
+    display: flex;
+    align-items: center;
+    justify-content: center;   /* [2026-08-26] centra icono+texto dentro de la fila */
+    gap: 6px;
+    font-family: 'Inter', -apple-system, 'Segoe UI', system-ui, arial, sans-serif;
+    font-size: 11.5px;
+    color: var(--mc-navy);
+}
+
+.mc-hist__sistema-linea i { color: #1e9e5a; font-size: 11px; }
+
+.mc-hist__sistema-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.mc-hist__sistema-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid var(--mc-border);
+    border-radius: 8px;
+    padding: 6px 8px;
+    background: #fff;
+    font-family: 'Inter', -apple-system, 'Segoe UI', system-ui, arial, sans-serif;
+    font-size: 11px;
+    color: var(--mc-navy);
+}
+
+.mc-hist__sistema-chip i { font-size: 12px; }
+.mc-hist__sistema-chip--ok i { color: #1e9e5a; }
+
+/* ── Disparador del menú de usuario ─────────────────────────────────────
+   Sección de pie ANCLADA al fondo real de #mc-historial-body, no solo el
+   último elemento del flujo: margin-top:auto consume el espacio libre que
+   quede por encima dentro de la columna flex. Con lista vacía o corta, sin
+   este margin quedaba pegado justo debajo de "Estado del sistema", con una
+   franja en blanco sin usar hasta el borde del panel.
+
+   DEPENDE de que ningún hermano tenga flex-grow>0 — ver el comentario de
+   .mc-hist__scroll. Los márgenes auto solo reparten el espacio libre que
+   sobra DESPUÉS de flex-grow, así que un solo `flex:1` entre los hermanos
+   deja este margen en 0px y rompe el anclaje sin previo aviso. */
+
+/* [2026-08-26] GRUPO de pie: envuelve Estado del sistema + el disparador de usuario y es
+   ÉL quien se ancla al fondo del panel (antes lo hacía .mc-hist__pie solo, con "Estado"
+   fijo aparte justo debajo de la lista — quedaba una franja vacía entre los dos bloques).
+   `margin-top:auto` reparte TODO el espacio libre de la columna; el margen negativo del
+   padding lateral hace que el separador llegue de borde a borde del panel.
+   DEPENDE de que ningún hermano en #mc-historial-body tenga flex-grow>0 — ver el
+   comentario de .mc-hist__scroll: un solo flex:1 entre hermanos deja este margen en 0px
+   y rompe el anclaje sin previo aviso. */
+.mc-hist__pie-grupo {
+    flex: 0 0 auto;
+    margin-top: auto;
+    margin-left: -12px;         /* compensa el padding:12px de #mc-historial-body … */
+    margin-right: -12px;        /* … para que el borde superior cruce todo el panel */
+    padding: 10px 12px 4px;
+    border-top: 1px solid var(--mc-border);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Ya NO ancla nada (eso lo hace .mc-hist__pie-grupo, su padre): solo envuelve el botón. */
+.mc-hist__pie {
+    flex: 0 0 auto;
+}
+
+.mc-hist__usuario {
+    all: unset;
+    box-sizing: border-box;
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;   /* [2026-08-26] centra avatar+nombre+chevron en el botón */
+    gap: 9px;
+    width: 100%;
+    padding: 8px;
+    /* El separador lo pinta ahora .mc-hist__pie-grupo, de borde a borde del panel: aquí
+       duplicaba la línea y además se recortaba al ancho del contenido. */
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mc-hist__usuario:hover {
+    background: rgb(0 66 54 / 6%);
+}
+
+.mc-hist__usuario:focus-visible {
+    outline: 2px solid var(--mc-primary);
+    outline-offset: 2px;
+}
+
+.mc-hist__usuario-avatar {
+    flex: 0 0 auto;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--mc-primary);
+    border: 2px solid var(--mc-lime);
+    color: #fff;
+    font: 800 13px/1 'Inter', -apple-system, 'Segoe UI', system-ui, arial, sans-serif;
+    display: grid;
+    place-items: center;
+}
+
+/* min-width:0 + ellipsis: el panel Historial ocupa el 25% del ancho
+   (acordeon.js:167-169), así que un nombre largo debe recortarse, no ensanchar. */
+.mc-hist__usuario-nombre {
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: left;
+    font: 600 13px/1.3 'Inter', -apple-system, 'Segoe UI', system-ui, arial, sans-serif;
+    color: #1f2937;
+}
+
+.mc-hist__usuario-chevron {
+    flex: 0 0 auto;
+    font-size: 12px;
+    color: var(--mc-muted);
+    transition: transform 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mc-hist__usuario[aria-expanded="true"] .mc-hist__usuario-chevron {
+    transform: rotate(180deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .mc-hist__usuario,
+    .mc-hist__usuario-chevron {
+        transition: none;
+    }
+}

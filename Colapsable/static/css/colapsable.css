@@ -1,0 +1,778 @@
+.colapsable-layout {
+    position: relative;
+    height: calc(100vh - 2rem);
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: stretch;
+    overflow: hidden;
+}
+
+.colapsable-panel {
+    position: relative;
+    flex: 1 1 auto;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    background: #ffffff;
+    border-radius: 12px;
+    border: 1px solid rgba(0, 66, 54, 0.15);
+    box-shadow: 0 18px 36px -28px rgba(0, 0, 0, 0.4);
+    overflow: auto;
+    transition: box-shadow 0.2s ease-in-out;
+}
+
+.colapsable-panel:focus,
+.colapsable-panel:focus-within {
+    outline: none;
+    box-shadow: 0 18px 36px -20px rgba(0, 0, 0, 0.45), 0 0 0 2px var(--primary-lime, #ccd32a);
+}
+
+.colapsable-panel__header {
+    padding: 1.25rem 1.5rem 0.75rem;
+    border-bottom: 1px solid rgba(0, 66, 54, 0.08);
+}
+
+.colapsable-panel__title {
+    margin: 0;
+    font-size: 1.25rem;
+    color: #004236;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.colapsable-panel__subtitle {
+    margin: 0.5rem 0 0;
+    font-size: 0.9rem;
+    color: #535347;
+}
+
+.colapsable-panel__body {
+    padding: 1.5rem;
+    display: grid;
+    gap: 1.5rem;
+}
+
+.colapsable-panel__section h3 {
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+    color: #004236;
+}
+
+.colapsable-panel__section ul {
+    margin: 0;
+    padding-left: 1.25rem;
+    color: #535347;
+}
+
+/* ==================================================================
+   Shell MultiTab · pestañas verticales (variante A · pastillas rotadas)
+   Prototipo aislado — solo vive en /layout/colapsable.
+   Prefijo rb-cp (verificado sin colisiones en el proyecto).
+   ================================================================== */
+
+/* Override del contenedor exterior: el .app-footer global de style.css es
+   position:fixed; bottom:0 (~30px de alto) y tapaba la base del shell
+   (riel verde + fila .rb-cp-vfoot + scrollbar horizontal del visor).
+   Esta regla va DESPUÉS de la original en el mismo archivo → gana en cascada. */
+.colapsable-layout {
+  height: calc(100vh - 2rem - 32px);
+}
+
+.rb-cp {
+  /* Paleta verde PRODIA (del documento de diseño multitap.md §4) */
+  --rb-green: #0e5c3a;
+  --rb-green-mid: #15794c;
+  --rb-green-ok: #1e9e5a;
+  --rb-green-soft: #e6f4ec;
+  --rb-green-softer: #f1f9f4;
+  --rb-gold: #f2c94c;
+  --rb-amber-text: #c77f00; /* ámbar legible sobre fondo claro (eyebrows) */
+  --rb-ink: #1b2a33;
+  --rb-body: #3d4d58;
+  --rb-muted: #74838e;
+  --rb-faint: #9aa8b0;
+  --rb-line: #e2e8ec;
+  --rb-line-soft: #eef2f5;
+  --rb-off: #f6f9fb;
+  --rb-white: #ffffff;
+  --rb-font-sans: 'Inter', -apple-system, 'Segoe UI', system-ui, Arial, sans-serif;
+  --rb-font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
+
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  background: var(--rb-white);
+  border-radius: 12px;
+  border: 1px solid rgba(0, 66, 54, 0.15);
+  box-shadow: 0 18px 36px -28px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+  font-family: var(--rb-font-sans);
+}
+
+/* ---------- Zona 1 · Riel vertical ---------- */
+.rb-cp__rail {
+  width: 60px;
+  flex: 0 0 auto;
+  background: var(--rb-green);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding-top: 8px;
+}
+
+.rb-cp__rail-logo {
+  height: 44px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 6px;
+}
+
+.rb-cp__rail-logo span {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.12);
+  display: grid;
+  place-items: center;
+}
+
+.rb-cp__rail-logo i {
+  font-size: 15px;
+  color: var(--rb-gold);
+}
+
+.rb-cp__tab {
+  position: relative;
+  height: 118px;
+  margin-bottom: 4px;
+  border: 0;
+  cursor: pointer;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  transition: background 0.18s ease, color 0.18s ease, margin 0.18s ease;
+}
+
+.rb-cp__tab-icon {
+  font-size: 17px;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.rb-cp__tab-label {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-family: var(--rb-font-sans);
+  font-weight: 800;
+  font-size: 12px;
+  line-height: 1;
+  letter-spacing: 0.4px;
+}
+
+.rb-cp__tab.is-active {
+  background: var(--rb-white);
+  color: var(--rb-green);
+  border-radius: 10px 0 0 10px;
+  margin-left: 8px;
+}
+
+.rb-cp__tab.is-active .rb-cp__tab-icon {
+  color: var(--rb-green-mid);
+}
+
+.rb-cp__tab.is-active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 12px;
+  bottom: 12px;
+  width: 3px;
+  border-radius: 3px;
+  background: var(--rb-gold);
+}
+
+.rb-cp__tab:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px rgba(242, 201, 76, 0.8);
+}
+
+/* ---------- Zona 2 · Panel de contenido ---------- */
+.rb-cp__panel {
+  width: 372px;
+  flex: 0 0 auto;
+  border-right: 1px solid var(--rb-line);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--rb-white);
+}
+
+.rb-cp.is-collapsed .rb-cp__panel {
+  display: none;
+}
+
+.rb-cp__panel-head {
+  height: 48px;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  background: var(--rb-off);
+  border-bottom: 1px solid var(--rb-line);
+}
+
+.rb-cp__panel-head-icon {
+  font-size: 15px;
+  color: var(--rb-green-mid);
+}
+
+.rb-cp__panel-head-title {
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 0.3px;
+  color: var(--rb-green);
+}
+
+.rb-cp__panel-head-brand {
+  font-size: 11px;
+  color: var(--rb-muted);
+  padding-left: 8px;
+  border-left: 1px solid var(--rb-line);
+}
+
+.rb-cp__panel-head-collapse {
+  margin-left: auto;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: 1px solid var(--rb-line);
+  background: var(--rb-white);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  color: var(--rb-muted);
+}
+
+.rb-cp__panel-head-collapse:hover {
+  background: var(--rb-off);
+}
+
+.rb-cp__panel-body {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  padding: 12px;
+}
+
+/* ---------- Zona 3 · Visualizador ---------- */
+.rb-cp__viewer {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--rb-off);
+}
+
+/* Cabecera verde del visualizador */
+.rb-cp-vhead {
+  height: 44px;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 14px;
+  background: var(--rb-green);
+  color: var(--rb-white);
+}
+
+.rb-cp-vhead i {
+  color: var(--rb-gold);
+  font-size: 14px;
+}
+
+.rb-cp-vhead__title {
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.rb-cp-vhead__title.is-gold {
+  color: var(--rb-gold);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.rb-cp-vhead__meta {
+  margin-left: auto;
+  font-family: var(--rb-font-mono);
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* Estado vacío del visualizador */
+.rb-cp-vempty {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.rb-cp-vempty__inner {
+  text-align: center;
+  max-width: 420px;
+}
+
+.rb-cp-vempty__chip {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background: var(--rb-green-softer);
+  display: grid;
+  place-items: center;
+  margin: 0 auto 12px;
+}
+
+.rb-cp-vempty__chip i {
+  font-size: 28px;
+  color: var(--rb-green-ok);
+}
+
+.rb-cp-vempty__eyebrow {
+  font-family: var(--rb-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--rb-amber-text);
+  margin-bottom: 4px;
+}
+
+.rb-cp-vempty__hint {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--rb-ink);
+  margin: 0;
+}
+
+/* Tabla mock del visualizador */
+.rb-cp-vtable {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px 14px;
+}
+
+.rb-cp-vtable table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: max-content;
+  min-width: 100%;
+  background: var(--rb-white);
+  border: 1px solid var(--rb-line);
+  border-radius: 8px;
+  font-size: 12.5px;
+}
+
+.rb-cp-vtable th,
+.rb-cp-vtable td {
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--rb-line-soft);
+  white-space: nowrap;
+}
+
+.rb-cp-vtable thead th {
+  position: sticky;
+  top: 0;
+  background: var(--rb-green);
+  color: var(--rb-white);
+  font-weight: 700;
+  z-index: 2;
+  text-align: right;
+}
+
+.rb-cp-vtable thead th:first-child,
+.rb-cp-vtable thead th:nth-child(2) {
+  text-align: left;
+}
+
+.rb-cp-vtable tbody th {
+  position: sticky;
+  left: 0;
+  background: var(--rb-white);
+  font-weight: 600;
+  color: var(--rb-ink);
+  z-index: 1;
+  text-align: left;
+}
+
+.rb-cp-vtable thead th:first-child {
+  left: 0;
+  z-index: 3;
+}
+
+.rb-cp-vtable td {
+  font-family: var(--rb-font-mono);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--rb-body);
+}
+
+.rb-cp-vtable td.is-dim {
+  font-family: var(--rb-font-sans);
+  text-align: left;
+  color: var(--rb-ink);
+  font-weight: 600;
+}
+
+.rb-cp-vfoot {
+  flex: 0 0 auto;
+  padding: 8px 14px;
+  border-top: 1px solid var(--rb-line);
+  font-family: var(--rb-font-mono);
+  font-size: 10.5px;
+  color: var(--rb-muted);
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* ---------- Contenido pestaña Ingesta (mock) ---------- */
+.rb-cp-upcard {
+  border: 1px solid var(--rb-line);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 14px;
+  background: var(--rb-white);
+}
+
+.rb-cp-upcard__head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 12px;
+  background: var(--rb-green);
+  color: var(--rb-white);
+}
+
+.rb-cp-upcard__head i {
+  color: var(--rb-gold);
+  font-size: 15px;
+}
+
+.rb-cp-upcard__head strong {
+  font-size: 12.5px;
+  display: block;
+  line-height: 1.2;
+}
+
+.rb-cp-upcard__head small {
+  font-family: var(--rb-font-mono);
+  font-size: 9.5px;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.rb-cp-upcard__new {
+  margin-left: auto;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  background: var(--rb-gold);
+  color: var(--rb-ink);
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+
+.rb-cp-upcard__file {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 12px;
+  background: var(--rb-off);
+}
+
+.rb-cp-upcard__file > i {
+  font-size: 20px;
+  color: var(--rb-green-ok);
+}
+
+.rb-cp-upcard__file strong {
+  font-size: 12px;
+  color: var(--rb-ink);
+  display: block;
+  line-height: 1.25;
+}
+
+.rb-cp-upcard__file small {
+  font-size: 10.5px;
+  color: var(--rb-green-ok);
+}
+
+.rb-cp-upcard__change {
+  margin-left: auto;
+  border: 1px solid var(--rb-line);
+  background: var(--rb-white);
+  border-radius: 6px;
+  font-size: 11px;
+  padding: 4px 10px;
+  color: var(--rb-body);
+}
+
+.rb-cp-upcard__submit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: calc(100% - 24px);
+  margin: 10px 12px 12px;
+  padding: 9px 0;
+  border: 0;
+  border-radius: 8px;
+  background: var(--rb-green);
+  color: var(--rb-white);
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.4px;
+}
+
+.rb-cp-upcard__submit:disabled,
+.rb-cp-upcard__change:disabled {
+  opacity: 0.75;
+  cursor: not-allowed;
+}
+
+.rb-cp-treehd {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 2px 2px 8px;
+  font-size: 12.5px;
+  color: var(--rb-ink);
+}
+
+.rb-cp-badge {
+  font-family: var(--rb-font-mono);
+  font-size: 10px;
+  background: var(--rb-green-soft);
+  color: var(--rb-green-mid);
+  border-radius: 5px;
+  padding: 2px 7px;
+}
+
+.rb-cp-badge--blue {
+  background: #eaf1fe;
+  color: #2563eb;
+}
+
+.rb-cp-tree {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rb-cp-tree__sheet {
+  border: 1px solid var(--rb-line);
+  border-radius: 9px;
+  background: var(--rb-white);
+  overflow: hidden;
+}
+
+.rb-cp-tree__sheethd {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 9px 10px;
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--rb-ink);
+  text-align: left;
+}
+
+.rb-cp-tree__sheethd .rb-cp-chev {
+  font-size: 11px;
+  color: var(--rb-faint);
+  transition: transform 0.15s ease;
+}
+
+.rb-cp-tree__sheet.is-open .rb-cp-chev {
+  transform: rotate(90deg);
+}
+
+.rb-cp-tree__sheethd .rb-cp-ok {
+  color: var(--rb-green-ok);
+  font-size: 13px;
+}
+
+.rb-cp-tree__sheethd .rb-cp-badge {
+  margin-left: auto;
+}
+
+.rb-cp-tree__kids {
+  display: none;
+  padding: 2px 10px 10px 26px;
+}
+
+.rb-cp-tree__sheet.is-open .rb-cp-tree__kids {
+  display: block;
+}
+
+.rb-cp-tree__meta {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11.5px;
+  color: var(--rb-muted);
+  padding: 4px 2px;
+}
+
+.rb-cp-tree__meta i {
+  font-size: 12px;
+  color: var(--rb-faint);
+}
+
+.rb-cp-tree__meta code {
+  font-family: var(--rb-font-mono);
+  font-size: 10.5px;
+  background: var(--rb-green-soft);
+  color: var(--rb-green-mid);
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+
+.rb-cp-tree__grouphd {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--rb-body);
+  padding: 6px 2px 4px;
+}
+
+.rb-cp-tree__grouphd i {
+  color: var(--rb-faint);
+}
+
+.rb-cp-tree__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: 0;
+  border-left: 3px solid transparent;
+  background: transparent;
+  border-radius: 7px;
+  padding: 6px 8px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--rb-body);
+  text-align: left;
+}
+
+.rb-cp-tree__row i {
+  font-size: 12px;
+  color: var(--rb-faint);
+}
+
+.rb-cp-tree__row .rb-cp-badge {
+  margin-left: auto;
+}
+
+.rb-cp-tree__row:hover {
+  background: var(--rb-off);
+}
+
+.rb-cp-tree__row.is-active {
+  background: var(--rb-green-soft);
+  border-left-color: var(--rb-green-ok);
+  color: var(--rb-ink);
+  font-weight: 700;
+}
+
+.rb-cp-tree__row.is-active i {
+  color: var(--rb-green-mid);
+}
+
+.rb-cp-tree__rowtag {
+  font-family: var(--rb-font-mono);
+  font-size: 10px;
+  color: var(--rb-faint);
+}
+
+/* ---------- Placeholders Control / Análisis ---------- */
+.rb-cp-empty {
+  padding: 10px 6px;
+}
+
+.rb-cp-empty__eyebrow {
+  font-family: var(--rb-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--rb-amber-text);
+  margin-bottom: 6px;
+}
+
+.rb-cp-empty__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--rb-ink);
+  margin: 0 0 4px;
+}
+
+.rb-cp-empty__title i {
+  color: var(--rb-green-mid);
+}
+
+.rb-cp-empty__sub {
+  font-size: 12px;
+  color: var(--rb-muted);
+  margin: 0 0 14px;
+}
+
+.rb-cp-empty__drop {
+  min-height: 200px;
+  border: 1.5px dashed var(--rb-line);
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  color: var(--rb-faint);
+  padding: 18px;
+}
+
+.rb-cp-empty__drop i {
+  font-size: 26px;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.rb-cp-empty__drop span {
+  font-family: var(--rb-font-mono);
+  font-size: 11px;
+  display: block;
+}
+
+/* ---------- Accesibilidad · movimiento ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .rb-cp,
+  .rb-cp * {
+    transition: none !important;
+    animation: none !important;
+  }
+}

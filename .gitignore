@@ -1,0 +1,270 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[codz]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+#  Usually these files are written by a python script from a template
+#  before PyInstaller builds the exe, so as to inject date/other infos into it.
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py.cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Scrapy stuff:
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+.pybuilder/
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+#   For a library or package, you might want to ignore these files since the code is
+#   intended to run in multiple environments; otherwise, check them in:
+# .python-version
+
+# pipenv
+#   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
+#   However, in case of collaboration, if having platform-specific dependencies or dependencies
+#   having no cross-platform support, pipenv may install dependencies that don't work, or not
+#   install all needed dependencies.
+#Pipfile.lock
+
+# UV
+#   Similar to Pipfile.lock, it is generally recommended to include uv.lock in version control.
+#   This is especially recommended for binary packages to ensure reproducibility, and is more
+#   commonly ignored for libraries.
+#uv.lock
+
+# poetry
+#   Similar to Pipfile.lock, it is generally recommended to include poetry.lock in version control.
+#   This is especially recommended for binary packages to ensure reproducibility, and is more
+#   commonly ignored for libraries.
+#   https://python-poetry.org/docs/basic-usage/#commit-your-poetrylock-file-to-version-control
+#poetry.lock
+#poetry.toml
+
+# pdm
+#   Similar to Pipfile.lock, it is generally recommended to include pdm.lock in version control.
+#   pdm recommends including project-wide configuration in pdm.toml, but excluding .pdm-python.
+#   https://pdm-project.org/en/latest/usage/project/#working-with-version-control
+#pdm.lock
+#pdm.toml
+.pdm-python
+.pdm-build/
+
+# pixi
+#   Similar to Pipfile.lock, it is generally recommended to include pixi.lock in version control.
+#pixi.lock
+#   Pixi creates a virtual environment in the .pixi directory, just like venv module creates one
+#   in the .venv directory. It is recommended not to include this directory in version control.
+.pixi
+
+# PEP 582; used by e.g. github.com/David-OConnor/pyflow and github.com/pdm-project/pdm
+__pypackages__/
+
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.envrc
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# PyCharm
+#  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
+#  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
+#  and can be added to the global gitignore or merged into this file.  For a more nuclear
+#  option (not recommended) you can uncomment the following to ignore the entire idea folder.
+#.idea/
+
+# Abstra
+# Abstra is an AI-powered process automation framework.
+# Ignore directories containing user credentials, local state, and settings.
+# Learn more at https://abstra.io/docs
+.abstra/
+
+# Visual Studio Code
+#  Visual Studio Code specific template is maintained in a separate VisualStudioCode.gitignore 
+#  that can be found at https://github.com/github/gitignore/blob/main/Global/VisualStudioCode.gitignore
+#  and can be added to the global gitignore or merged into this file. However, if you prefer, 
+#  you could uncomment the following to ignore the entire vscode folder
+# .vscode/
+
+# Ruff stuff:
+.ruff_cache/
+
+# PyPI configuration file
+.pypirc
+
+# Cursor
+#  Cursor is an AI-powered code editor. `.cursorignore` specifies files/directories to
+#  exclude from AI features like autocomplete and code analysis. Recommended for sensitive data
+#  refer to https://docs.cursor.com/context/ignore-files
+.cursorignore
+.cursorindexingignore
+
+# Marimo
+marimo/_static/
+marimo/_lsp/
+__marimo__/
+# CLAUDE.md SI se versiona: es la guia de trabajo del proyecto.
+
+# === ProdIA — exclusiones específicas del proyecto ===
+
+# Bases de datos (fuentes de verdad — no versionar)
+data/*.db
+data/*.zip
+data/*.sql
+data/DB dump/
+# ...también en subcarpetas (data/*.db NO cubre data/<carpeta>/x.db).
+# Caso real: data/ECP_DIFERIDAS/ECP_DIFERIDAS.db pesa 954 MB.
+data/**/*.db
+# Journals/WAL de SQLite (transitorios; pueden pesar cientos de MB — p.ej. ECP_DIFERIDAS_slim.db-journal 192 MB).
+data/**/*.db-journal
+data/**/*.db-wal
+data/**/*.db-shm
+# Las migraciones SQL de esas BD SÍ se versionan (son el "cómo se arregló").
+!data/**/migrations/*.sql
+
+# Corpus de reportes diarios (.xlsm de ~34 MB c/u; una tanda = ~1,5 GB).
+# GitHub rechaza >100 MB por archivo y el historial es permanente: una vez
+# dentro, sacarlos exige reescribir la historia. Los .xlsm se mueven al
+# servidor por copia directa, no por git (a diferencia de Eventos_OW.xlsx,
+# 259 KB, que SÍ se versiona a propósito).
+data/**/*.xlsm
+
+# Directorios de datos generados/cargados
+data/exports/
+data/uploads/
+data/logs/
+
+# Base vectorial ChromaDB (regenerable con scripts/refresh_vector_db.py)
+vector_db/
+
+# Sesiones Flask
+flask_session/
+
+# Archivos temporales y backups
+temp_*.txt
+temp_*.py
+*.bak
+*[- ]Copy.py
+*[- ]Copy.db
+*[- ]Copy.zip
+
+# Sub-proyecto INGESTA: datos pesados (.xlsm ~464 MB) y entornos
+INGESTA/Rep_Prod/data/
+# Backups de la BD (dumps .sql/.dump multi-GB — NUNCA versionar)
+INGESTA/Rep_Prod/db/backups/
+INGESTA/Rep_Prod/backend/.venv/
+INGESTA/Rep_Prod/frontend/node_modules/
+INGESTA/Rep_Prod/frontend/dist/
+INGESTA/Rep_Prod/.env
+
+# Herramientas IA locales (no relevantes para el repo)
+.claude/
+.codex/
+
+# Imágenes ad-hoc en raíz
+image.png
+
+# Archivo de diferidas (dato operacional, no código)
+DIFERIDAS_MES.csv

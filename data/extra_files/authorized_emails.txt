@@ -1,0 +1,25 @@
+# Lista de correos electrónicos autorizados para acceder al sistema
+# Un correo por línea
+# Líneas que comienzan con # son comentarios y serán ignoradas
+
+
+juan.rincon@ecopetrol.com.co
+juan.palacio@ecopetrol.com.co
+giovanny.jurado@ecopetrol.com.co
+julian.forero@ecopetrol.com.co
+jorgefe.alarcon@ecopetrol.com.co
+diego.barragan@ecopetrol.com.co
+yeison.romero@ecopetrol.com.co
+Ivan.Plata@ecopetrol.com.co
+enrique.gallardo@ecopetrol.com.co
+john.pintoca@ecopetrol.com.co
+jose.angarita@ecopetrol.com.co
+John.Polania@ecopetrol.com.co
+johnatan.pernet@ecopetrol.com.co
+carlos.arce@ecopetrol.com.co
+Henrysn.Guevara@ecopetrol.com.co
+laura.salguero@ecopetrol.com.co
+Ruby.Duran@ecopetrol.com.co
+javier.guerrero@ecopetrol.com.co
+francisco.gonzalez.ext@ecopetrol.com.co
+sebastian.gomezqu.ext@ecopetrol.com.co

@@ -1,0 +1,174 @@
+# Vector Database Configuration for ECP Insights
+# ChromaDB configuration for semantic search and context retrieval
+
+vector_database:
+  provider: "chromadb"  # chromadb, pinecone, weaviate
+  
+  # ChromaDB specific settings
+  chromadb:
+    persist_directory: "./vector_db/chroma_storage"
+    collection_name: "ecp_insights_knowledge"
+    
+    # Embedding configuration
+    embedding:
+      model: "all-MiniLM-L6-v2"  # sentence-transformers model
+      dimension: 384
+      normalize: true
+      
+    # Distance metric for similarity search
+    distance_metric: "cosine"  # cosine, euclidean, manhattan
+    
+    # Performance settings
+    max_batch_size: 1000
+    query_timeout: 30
+
+# Knowledge base collections
+collections:
+  # Database schemas and table structures
+  database_schemas:
+    name: "db_schemas"
+    description: "Database table schemas, relationships, and column definitions"
+    metadata_fields: ["table_name", "schema_type", "domain"]
+    
+  # SQL query examples and patterns
+  sql_examples:
+    name: "sql_patterns"
+    description: "Successful SQL queries with context and explanations"
+    metadata_fields: ["query_type", "agent", "complexity", "tables_used"]
+    
+  # Domain knowledge and petroleum concepts
+  domain_knowledge:
+    name: "petroleum_knowledge"
+    description: "Petroleum industry concepts, metrics, and relationships"
+    metadata_fields: ["concept_type", "category", "related_metrics"]
+    
+  # Successful query-response pairs
+  query_responses:
+    name: "historical_responses"
+    description: "Historical user queries and successful responses"
+    metadata_fields: ["query_category", "response_type", "success_score"]
+
+# Embedding strategies for different content types
+embedding_strategies:
+  # For SQL queries
+  sql_queries:
+    preprocessing:
+      - "normalize_whitespace"
+      - "extract_table_names"
+      - "identify_join_patterns"
+      - "extract_where_conditions"
+    
+    augmentation:
+      - "add_table_context"
+      - "include_column_names"
+      - "add_relationship_info"
+  
+  # For natural language queries
+  user_queries:
+    preprocessing:
+      - "normalize_text"
+      - "extract_petroleum_terms"
+      - "identify_time_references"
+      - "extract_entity_names"
+    
+    augmentation:
+      - "add_domain_synonyms"
+      - "include_metric_definitions"
+
+# Search configuration
+search_settings:
+  # Default search parameters
+  default_top_k: 5
+  similarity_threshold: 0.7
+  
+  # Query type specific settings
+  query_types:
+    sql_generation:
+      top_k: 3
+      similarity_threshold: 0.75
+      metadata_filters: ["query_type", "tables_used"]
+      
+    domain_explanation:
+      top_k: 5
+      similarity_threshold: 0.6
+      metadata_filters: ["concept_type", "category"]
+      
+    routing_decision:
+      top_k: 10
+      similarity_threshold: 0.5
+      metadata_filters: ["query_category", "agent"]
+
+# Content to be embedded in the knowledge base
+knowledge_base_content:
+  # Database schema information
+  schemas:
+    - source: "config/database_schemas/"
+      content_type: "yaml"
+      collection: "database_schemas"
+      
+  # SQL example patterns
+  sql_patterns:
+    - source: "vector_db/sql_examples/"
+      content_type: "sql"
+      collection: "sql_examples"
+      
+  # Petroleum domain knowledge
+  domain_docs:
+    - source: "vector_db/domain_knowledge/"
+      content_type: "text"
+      collection: "domain_knowledge"
+
+# Indexing and maintenance
+indexing:
+  # Automatic re-indexing settings
+  auto_reindex: true
+  reindex_interval_hours: 24
+  
+  # Content update triggers
+  triggers:
+    - "schema_file_changes"
+    - "successful_query_completion"
+    - "new_domain_content"
+  
+  # Index optimization
+  optimization:
+    enable_compression: true
+    prune_low_quality_embeddings: true
+    quality_threshold: 0.3
+
+# Query enhancement and context building
+context_building:
+  # Maximum context size for prompts
+  max_context_tokens: 2000
+  
+  # Context prioritization
+  priority_weights:
+    exact_matches: 1.0
+    high_similarity: 0.8
+    domain_context: 0.6
+    historical_success: 0.9
+    
+  # Context mixing strategies
+  mixing_strategy: "weighted_concatenation"  # simple, weighted_concatenation, hierarchical
+  
+  # Dynamic context adjustment
+  adaptive_context:
+    enabled: true
+    min_similarity_threshold: 0.5
+    context_expansion_factor: 1.2
+
+# Performance monitoring
+monitoring:
+  # Search performance metrics
+  track_query_latency: true
+  track_similarity_scores: true
+  track_context_quality: true
+  
+  # Quality metrics
+  success_correlation_threshold: 0.7
+  context_utilization_threshold: 0.6
+  
+  # Logging
+  log_level: "INFO"
+  log_searches: true
+  log_context_building: true

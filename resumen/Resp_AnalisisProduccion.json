@@ -1,0 +1,176 @@
+{
+  "analysis_crudo": "RESUMEN:\nLa producción de crudo para septiembre muestra un incremento general del 1.01% en comparación con la meta, impulsado principalmente por la gerencia GOR con un aumento del 3.07%. Sin embargo, se observa una ligera desaceleración en otras gerencias, evidenciando una tendencia a la estabilidad en la producción.\n\nSe identifican señales de alerta en la gerencia GTA, que experimentó una caída del 1.68%, y en CPV con una disminución del 1.9%. La gerencia GCT también mostró una ligera reducción en su producción.\n\nKPIS:\nETIQUETA=Producción GOR,VALOR=151286.12,COMENTARIO=Mayor incremento (+3.07%).\nETIQUETA=Producción GRM,VALOR=33542.5,COMENTARIO=Incremento moderado (+2.34%).\nETIQUETA=Producción GNS,VALOR=38454.84,COMENTARIO=Crecimiento estable (+1.01%).\nETIQUETA=Producción GTA,VALOR=16461.06,COMENTARIO=Disminución significativa (-1.68%).\nETIQUETA=Producción CPV,VALOR=3359.49,COMENTARIO=Caída notable (-1.9%).",
+  "analysis_blancos": "RESUMEN:\nLa producción programada de productos blancos para el mes en curso presenta una tendencia general positiva, con un incremento promedio de variación del 15.84%. La gerencia GAN lidera el crecimiento con un aumento del 36.3%, mientras que la gerencia GNS experimenta la mayor caída en la producción, registrando una disminución del 14.42%. Se observa una volatilidad significativa en los resultados entre las diferentes gerencias.\n\nLa gerencia CPV presenta una caída notable del 60.82%, lo que requiere un análisis más profundo. La gerencia GRM, aunque con una ligera disminución, muestra una recuperación relevante en comparación con las caídas más pronunciadas. La situación demanda un monitoreo continuo para identificar factores subyacentes.\n\nKPIS:\nETIQUETA=Gerencia con Mayor Incremento,VALOR=332.72,COMENTARIO=Gerencia GAN lidera el crecimiento.\nETIQUETA=Variación Promedio,VALOR=15.84,COMENTARIO=Incremento promedio de la producción.\nETIQUETA=Gerencia con Mayor Caída,VALOR=-14.42,COMENTARIO=Gerencia GNS registra la mayor disminución.\nETIQUETA=Gerencia con Recuperación Relevante,VALOR=-2.39,COMENTARIO=Gerencia GRM muestra una recuperación notable.",
+  "analysis_pop": "RESUMEN:\nLa producción de crudo en septiembre mostró un desempeño general positivo, con la mayoría de las gerencias superando sus objetivos de producción POP. Destacó un sobrecumplimiento significativo en las gerencias GCT y GTA, alcanzando un 3.98% y 3.8% respectivamente. Sin embargo, se identificaron brechas importantes en gerencias como DFL y GRM, que no lograron cumplir con sus objetivos, presentando una desviación de -4.06% y -4.12% respectivamente.\n\nKPIS:\nETIQUETA=Gerencia, VALOR=%, COMENTARIO=Sobrecumplimiento significativo.\nETIQUETA=GCT, VALOR=3.98%, COMENTARIO=Mayor sobrecumplimiento respecto a otras gerencias.\nETIQUETA=GTA, VALOR=3.8%, COMENTARIO=Segundo mayor sobrecumplimiento.\nETIQUETA=DFL, VALOR=-4.06%, COMENTARIO=Mayor déficit respecto a POP.\nETIQUETA=GRM, VALOR=-4.12%, COMENTARIO=Segundo mayor déficit.\nETIQUETA=GAA, VALOR=-6.23%, COMENTARIO=Desempeño significativamente inferior.",
+  "analysis_pop_blancos": "RESUMEN:\nLa producción de productos blancos en septiembre mostró un desempeño general positivo, con un sobrecumplimiento significativo en comparación con el Plan de Operaciones Programadas (POP). La gerencia GAN lideró el sobrecumplimiento, alcanzando un 130.66% de la producción POP, mientras que PRP también exhibió un desempeño superior. Sin embargo, se identificaron brechas importantes en algunas gerencias, particularmente en GNS, que experimentó un déficit de -19.74% respecto al POP, y CPV, con un -40.28%.\n\nKPIS:\nETIQUETA=Gerencia, VALOR=130.66, COMENTARIO=Sobrecumplimiento máximo vs. POP.\nETIQUETA=Gerencia, VALOR=-19.74, COMENTARIO=Mayor déficit vs. POP.\nETIQUETA=Promedio, VALOR=32.54, COMENTARIO=Variación promedio respecto al POP.\nETIQUETA=Gerencia, VALOR=14.11, COMENTARIO=Segundo mejor desempeño en variación.",
+  "panorama_general_crudo": {
+    "titulo": "Crudo: Producción vs Meta Panorama General",
+    "descripcion": "El comportamiento programado de crudo muestra un predominio de incrementos, con 7 gerencias al alza y 5 con caídas. La variación promedio se ubica en +0.0%. RESUMEN: La producción de crudo para septiembre muestra un incremento general del 1.01% en comparación con la meta, impulsado principalmente por la gerencia GOR con un aumento del 3.07%. Sin embargo, se observa una ligera desaceleración en otras gerencias, evidenciando una tendencia a la estabilidad en la producción.",
+    "insights": [
+      {
+        "etiqueta": "GOR",
+        "mensaje": "Mayor incremento mensual dentro del programa",
+        "valor": "+3.1%"
+      },
+      {
+        "etiqueta": "PRP",
+        "mensaje": "Mayor caída mensual registrada",
+        "valor": "-4.3%"
+      },
+      {
+        "etiqueta": "Promedio mensual",
+        "mensaje": "Variación promedio del conjunto de gerencias",
+        "valor": "+0.0%"
+      },
+      {
+        "etiqueta": "Producción Gor",
+        "mensaje": "Mayor incremento (+3.07%).",
+        "valor": "151286.12"
+      },
+      {
+        "etiqueta": "GRM",
+        "mensaje": "Incremento moderado (+2.34%).",
+        "valor": "+2.3%"
+      },
+      {
+        "etiqueta": "GNS",
+        "mensaje": "Crecimiento estable (+1.01%).",
+        "valor": "+1.0%"
+      },
+      {
+        "etiqueta": "GTA",
+        "mensaje": "Disminución significativa (-1.68%).",
+        "valor": "-1.7%"
+      },
+      {
+        "etiqueta": "CPV",
+        "mensaje": "Caída notable (-1.9%).",
+        "valor": "-1.9%"
+      }
+    ]
+  },
+  "panorama_general_blancos": {
+    "titulo": "Productos Blancos: Producción vs Meta Panorama General",
+    "descripcion": "El comportamiento programado de blancos muestra un balance mixto, con 4 gerencias al alza y 4 con caídas. La variación promedio se ubica en +0.9%. RESUMEN: La producción programada de productos blancos para el mes en curso presenta una tendencia general positiva, con un incremento promedio de variación del 15.84%. La gerencia GAN lidera el crecimiento con un aumento del 36.3%, mientras que la gerencia GNS experimenta la mayor caída en la producción, registrando una disminución del 14.42%.",
+    "insights": [
+      {
+        "etiqueta": "GAN",
+        "mensaje": "Mayor incremento mensual dentro del programa",
+        "valor": "+36.3%"
+      },
+      {
+        "etiqueta": "CPV",
+        "mensaje": "Mayor caída mensual registrada",
+        "valor": "-60.8%"
+      },
+      {
+        "etiqueta": "Promedio mensual",
+        "mensaje": "Variación promedio del conjunto de gerencias",
+        "valor": "+0.9%"
+      },
+      {
+        "etiqueta": "Gerencia Con Mayor Incremento",
+        "mensaje": "Gerencia GAN lidera el crecimiento.",
+        "valor": "332.72"
+      },
+      {
+        "etiqueta": "Variación Promedio",
+        "mensaje": "Incremento promedio de la producción.",
+        "valor": "15.84"
+      },
+      {
+        "etiqueta": "Gerencia Con Mayor Caída",
+        "mensaje": "Gerencia GNS registra la mayor disminución.",
+        "valor": "-14.42"
+      },
+      {
+        "etiqueta": "Gerencia Con Recuperación Relevante",
+        "mensaje": "Gerencia GRM muestra una recuperación notable.",
+        "valor": "-2.39"
+      }
+    ]
+  },
+  "panorama_general_pop": {
+    "titulo": "Crudo: Producción vs POP Panorama General",
+    "descripcion": "El comportamiento programado de pop muestra un presión por caídas, con 5 gerencias al alza y 7 con caídas. La variación promedio se ubica en -2.0%. RESUMEN: La producción de crudo en septiembre mostró un desempeño general positivo, con la mayoría de las gerencias superando sus objetivos de producción POP. Destacó un sobrecumplimiento significativo en las gerencias GCT y GTA, alcanzando un 3.98% y 3.8% respectivamente.",
+    "insights": [
+      {
+        "etiqueta": "GAN",
+        "mensaje": "Mayor incremento mensual dentro del programa",
+        "valor": "+4.9%"
+      },
+      {
+        "etiqueta": "GLH",
+        "mensaje": "Mayor caída mensual registrada",
+        "valor": "-14.7%"
+      },
+      {
+        "etiqueta": "Promedio mensual",
+        "mensaje": "Variación promedio del conjunto de gerencias",
+        "valor": "-2.0%"
+      },
+      {
+        "etiqueta": "Gerencia",
+        "mensaje": "Sobrecumplimiento significativo.",
+        "valor": "%"
+      },
+      {
+        "etiqueta": "GCT",
+        "mensaje": "Mayor sobrecumplimiento respecto a otras gerencias.",
+        "valor": "+4.0%"
+      },
+      {
+        "etiqueta": "GTA",
+        "mensaje": "Segundo mayor sobrecumplimiento.",
+        "valor": "+3.8%"
+      },
+      {
+        "etiqueta": "DFL",
+        "mensaje": "Mayor déficit respecto a POP.",
+        "valor": "-4.1%"
+      },
+      {
+        "etiqueta": "GRM",
+        "mensaje": "Segundo mayor déficit.",
+        "valor": "-4.1%"
+      },
+      {
+        "etiqueta": "GAA",
+        "mensaje": "Desempeño significativamente inferior.",
+        "valor": "-6.2%"
+      }
+    ]
+  },
+  "panorama_general_pop_blancos": {
+    "titulo": "Productos Blancos: Producción vs POP Panorama General",
+    "descripcion": "El comportamiento programado de pop blancos muestra un predominio de incrementos, con 6 gerencias al alza y 2 con caídas. La variación promedio se ubica en +19.5%. RESUMEN: La producción de productos blancos en septiembre mostró un desempeño general positivo, con un sobrecumplimiento significativo en comparación con el Plan de Operaciones Programadas (POP). La gerencia GAN lideró el sobrecumplimiento, alcanzando un 130.66% de la producción POP, mientras que PRP también exhibió un desempeño superior.",
+    "insights": [
+      {
+        "etiqueta": "GAN",
+        "mensaje": "Mayor incremento mensual dentro del programa",
+        "valor": "+130.7%"
+      },
+      {
+        "etiqueta": "CPV",
+        "mensaje": "Mayor caída mensual registrada",
+        "valor": "-40.3%"
+      },
+      {
+        "etiqueta": "Promedio mensual",
+        "mensaje": "Variación promedio del conjunto de gerencias",
+        "valor": "+19.5%"
+      },
+      {
+        "etiqueta": "Gerencia",
+        "mensaje": "Sobrecumplimiento máximo vs. POP.",
+        "valor": "130.66"
+      },
+      {
+        "etiqueta": "Promedio",
+        "mensaje": "Variación promedio respecto al POP.",
+        "valor": "32.54"
+      }
+    ]
+  },
+  "generated_at": "2025-11-05T22:28:47.826198+00:00"
+}

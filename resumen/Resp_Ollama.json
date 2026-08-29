@@ -1,0 +1,30 @@
+[
+  {
+    "analysis": "## 🧭 Panorama General y Análisis por Vicepresidencia\n\nDurante el mes, la producción registró **comportamientos diferenciados** entre segmentos.  \nLas **Filiales** mantuvieron incrementos sostenidos en los niveles de producción, mientras que las **vicepresidencias GAA y GOR** concentraron los **mayores volúmenes de aceite perdido**.  \nLa información consolida la **distribución de pérdidas por vicepresidencia y campo**, destacando los activos con mayor impacto en el total nacional.\n\n---\n\n### 🏢 Análisis por Vicepresidencia\n\n| Vicepresidencia | Campos con mayor aporte a las pérdidas | Aceite perdido (bbl) |\n|------------------|---------------------------------------|----------------------|\n| GAA – Operaciones Llanos (Castilla) | CASTILLA (149.075) – CASTILLA NORTE (51.614) | ≈213.000 |\n| GOR – Operaciones Llanos (Rubiales / Caño Sur) | RUBIALES (123.851) – CAÑO SUR ESTE (59.470) | ≈183.000 |\n| GCH – Operaciones Meta | AKACIAS (89.696) – CHICHIMENE (39.671) | ≈90.000 |\n| GCT – Oriente (La Cira / Infantas) | LA CIRA (62.086) | ≈71.000 |\n| Otras (GRM, GTA, GPA, DFL) | Campos con pérdidas distribuidas sin un aporte dominante | ≈145.000 |\n| Filiales | Campos con crecimiento sostenido en producción | — |\n\n---\n\n### 🛡️ ECP SA (Consolidado Nacional)\n\nEl consolidado nacional de ECP SA muestra **niveles estables de producción**, con variaciones limitadas respecto al periodo anterior.  \nLas pérdidas acumuladas se concentran principalmente en las vicepresidencias **GAA** y **GOR**, que en conjunto representan más de la mitad del total nacional.\n\n---\n\n### 📊 Conclusión Integrada\n\nEl total de pérdidas de aceite se encuentra **concentrado en cuatro campos principales:**  \n**CASTILLA, CASTILLA NORTE, RUBIALES y CAÑO SUR ESTE**, distribuidos entre las vicepresidencias **GAA** y **GOR**.  \nEstos activos explican más del **55 % del volumen total de aceite perdido** en el periodo analizado.  \nEl resto de las pérdidas se encuentra distribuido entre las vicepresidencias **GCH, GCT, GRM, GTA, GPA y DFL**, con contribuciones menores en términos relativos.  \nLas **Filiales** presentan resultados de producción superiores al promedio, sin registro de pérdidas significativas.",
+    "panorama_general": {
+      "descripcion": "El desempeño mensual combina segmentos con crecimientos sostenidos y otros con desviaciones relevantes frente a las metas operativas. Las vicepresidencias GAA y GOR concentran la mayor parte de las pérdidas de aceite registradas, mientras que Filiales mantiene tendencia positiva.",
+      "insights": [
+        {
+          "etiqueta": "ECP SA",
+          "mensaje": "Consolidado nacional estable con desviaciones acotadas vs. meta del mes",
+          "valor": "Meta 747 / 755 / 761"
+        },
+        {
+          "etiqueta": "Filiales",
+          "mensaje": "Segmento con mayor aporte al crecimiento reportado durante el periodo",
+          "valor": "Tendencia positiva"
+        },
+        {
+          "etiqueta": "GAA y GOR",
+          "mensaje": "Vicepresidencias que concentran la mayor parte del aceite perdido",
+          "valor": ">55% del total"
+        }
+      ]
+    },
+    "conclusion_items": [
+      "Las pérdidas operativas se concentran en los campos CASTILLA, CASTILLA NORTE, RUBIALES y CAÑO SUR ESTE, pertenecientes a las vicepresidencias GAA y GOR.",
+      "El resto de las vicepresidencias (GCH, GCT, GRM, GTA, GPA y DFL) muestran participaciones menores y distribuidas sin un foco dominante.",
+      "El segmento de Filiales mantiene un desempeño superior al promedio con crecimientos sostenidos y sin registros de pérdidas significativas en el periodo."
+    ]
+  }
+]

@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block head %}
+    {{ super() }}
+    <link rel="stylesheet" href="{{ url_for('colapsable.static', filename='css/colapsable.css') }}?v=20260701">
+{% endblock %}
+
+{% block sidebar %}{% include 'components/nav_modulos.html' %}{% endblock %}
+
+{% block content %}
+<div class="colapsable-layout">
+    <!-- Shell MultiTab · variante A (pastillas rotadas) · prototipo aislado -->
+    <div class="rb-cp" id="rb-cp">
+
+        <!-- Zona 1 · Riel de pestañas vertical -->
+        <div class="rb-cp__rail" role="tablist" aria-orientation="vertical" aria-label="Secciones del panel">
+            <div class="rb-cp__rail-logo" aria-hidden="true">
+                <span><i class="bi bi-hexagon-fill"></i></span>
+            </div>
+            <button type="button" role="tab" id="cp-tab-ingesta" data-tab="ingesta"
+                    class="rb-cp__tab is-active" aria-selected="true"
+                    aria-controls="rb-cp-panel-body" tabindex="0" title="Ingesta">
+                <i class="bi bi-cloud-arrow-up-fill rb-cp__tab-icon" aria-hidden="true"></i>
+                <span class="rb-cp__tab-label">Ingesta</span>
+            </button>
+            <button type="button" role="tab" id="cp-tab-control" data-tab="control"
+                    class="rb-cp__tab" aria-selected="false"
+                    aria-controls="rb-cp-panel-body" tabindex="-1" title="Control">
+                <i class="bi bi-sliders2 rb-cp__tab-icon" aria-hidden="true"></i>
+                <span class="rb-cp__tab-label">Control</span>
+            </button>
+            <button type="button" role="tab" id="cp-tab-analisis" data-tab="analisis"
+                    class="rb-cp__tab" aria-selected="false"
+                    aria-controls="rb-cp-panel-body" tabindex="-1" title="Análisis">
+                <i class="bi bi-graph-up-arrow rb-cp__tab-icon" aria-hidden="true"></i>
+                <span class="rb-cp__tab-label">Análisis</span>
+            </button>
+        </div>
+
+        <!-- Zona 2 · Panel de contenido -->
+        <section class="rb-cp__panel" id="rb-cp-panel" aria-label="Panel Ingesta">
+            <header class="rb-cp__panel-head">
+                <i class="bi bi-cloud-arrow-up-fill rb-cp__panel-head-icon" id="rb-cp-head-icon" aria-hidden="true"></i>
+                <span class="rb-cp__panel-head-title" id="rb-cp-head-title">INGESTA</span>
+                <span class="rb-cp__panel-head-brand">PRODIA</span>
+                <button type="button" class="rb-cp__panel-head-collapse" id="rb-cp-collapse" aria-label="Colapsar panel">
+                    <i class="bi bi-dash-lg" aria-hidden="true"></i>
+                </button>
+            </header>
+            <div class="rb-cp__panel-body" role="tabpanel" id="rb-cp-panel-body" aria-labelledby="cp-tab-ingesta">
+                <!-- Contenido inyectado por colapsable.js según la pestaña activa -->
+            </div>
+        </section>
+
+        <!-- Zona 3 · Visualizador.
+             NOTA: <section>, NO <main> — base.html ya envuelve el bloque content
+             en <main class="main-content"> y anidar dos <main> es HTML inválido
+             (landmark duplicado para lectores de pantalla). -->
+        <section class="rb-cp__viewer" id="rb-cp-viewer" aria-label="Visualizador">
+            <!-- Contenido inyectado por colapsable.js -->
+        </section>
+
+    </div>
+</div>
+
+<!-- Footer reutilizado -->
+<div class="app-footer">
+    <div class="text-caption">
+        <strong>Copyright - Ecopetrol S.A Copyright todos los derechos reservados. INFORMACION CONFIDENCIAL. Prohibido su uso sin la debida autorizacion.</strong> | All rights reserved.
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+    <script src="{{ url_for('colapsable.static', filename='js/colapsable.js') }}?v=20260701"></script>
+{% endblock %}
