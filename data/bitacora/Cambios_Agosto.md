@@ -505,15 +505,30 @@ las tres y **0 errores JS** en las 4 cargas encadenadas.
 ## Estructura actual del proyecto
 
 *Sección de estado — se REEMPLAZA en cada actualización (a diferencia de las secciones
-fechadas de arriba, que son histórico y no se tocan). Última actualización: 2026-08-26 (3ª parte).*
+fechadas de arriba, que son histórico y no se tocan). Última actualización: 2026-08-27.*
 
 Tras los cambios de agosto, así queda ProdIA 2.0:
 
 ```
 ProdIA-2.0/
-├── app.py                      Flask factory · SocketIO · puerto 8020
+├── app.py                      Flask factory · SocketIO · puerto 5029 [26-ago 4ª: antes 8020]
 ├── install.bat                 prepara el entorno desde cero
 ├── run.bat / iniciar_backends.bat / desplegar_version.bat
+│                                 lanzador de 2 ventanas (abre una consola nueva por backend)
+├── iniciar_frontend.bat        [NUEVO 27-ago] arranca SOLO Flask :5029, en la misma consola
+├── iniciar_backend.bat         [NUEVO 27-ago] arranca SOLO INGESTA :5030, en la misma consola
+├── migra.py / deploy_zip.py    [26-ago 4ª] par de deploy por zip: migra.py empaqueta código +
+│                                 BD SQLite ligeras + vector_db/ (excluye .git, venv, node_modules,
+│                                 BD pesadas); deploy_zip.py descomprime + instala (uv, Python 3.13
+│                                 fijo) + arranca los 2 backends. Uso sin argumentos si ya se está
+│                                 parado dentro de la carpeta descomprimida
+├── exportar_azure.ps1          [NUEVO 26-ago 4ª] exporta con `git archive` (solo lo versionado,
+│                                 nunca .env/venv/node_modules) hacia una carpeta limpia sin git
+├── verificar_deploy.ps1        [NUEVO 26-ago 4ª] verifica que un checkout desplegado tenga la
+│                                 versión actual (puerto, login rediseñado, TODOS los estáticos
+│                                 que login.html referencia) — correr antes de dar un deploy por bueno
+├── POSTMORTEM_migracion_puertos_azure_20260826.md   [NUEVO 26-ago 4ª] causas raíz de las ~8h
+│                                 de la migración de puertos; pedido explícito de un pipeline real
 ├── requirements-windows.txt
 ├── SETUP_LOCAL.md               [NUEVO 24-ago] entorno de desarrollo local + procedimiento
 │                                 de depuración con Edge headless (medir DOM real, no suponer)
@@ -634,7 +649,9 @@ ProdIA-2.0/
 │                                          "Nuevo chat" dejaba Focos de atención pegado) ·
 │                                          pieGrupo() envuelve Estado del sistema + usuario
 │
-├── INGESTA/Rep_Prod/           sub-proyecto FastAPI (puerto 8088, gestionado con uv)
+├── INGESTA/Rep_Prod/           sub-proyecto FastAPI (puerto 5030 [26-ago 4ª: antes 8088],
+│                                 gestionado con uv) · [26-ago 4ª] repo git INDEPENDIENTE
+│                                 (Azure DevOps `ProdIABack`), anidado en disco aquí mismo
 │   ├── backend/app/features/
 │   │   ├── consulta_v2/        Motor Q v2 — los 4 grupos de intención
 │   │   │   ├── maquina_q.py            drills de continuación (memoria conversacional)
@@ -789,13 +806,19 @@ ajustado `#E8912B`, actuar `#C5311E`). Que gas salga rojo por ambas vías es coi
 
 | Servicio | Puerto | Stack | Base de datos |
 |---|---|---|---|
-| ProdIA (Flask) | 8020 | Flask + SocketIO + Jinja | SQL Server / Azure Synapse (`pyodbc`) · SQLite `ECP_PROD.db` |
-| INGESTA | 8088 | FastAPI + SQLAlchemy | PostgreSQL `daily_report_prod` (`psycopg`) |
+| ProdIA (Flask) | **5029** [26-ago 4ª: antes 8020] | Flask + SocketIO + Jinja | SQL Server / Azure Synapse (`pyodbc`) · SQLite `ECP_PROD.db` |
+| INGESTA | **5030** [26-ago 4ª: antes 8088] | FastAPI + SQLAlchemy | PostgreSQL `daily_report_prod` (`psycopg`) |
 
 Cada uno tiene su propio `.env` y su propio gestor de dependencias (`pip` con `venv\`
 para Flask; `uv` con `.venv\` para INGESTA). No se mezclan. Entorno de desarrollo local
 completo (ambos backends + Postgres local, sin depender del servidor de pruebas) en
 `SETUP_LOCAL.md`.
+
+**[26-ago 4ª] El código vive en 3 repos, no 1**: GitHub `ProdIA-2.0` (monorepo, fuente de
+verdad) → Azure DevOps `ProdIAWebFront` (solo Flask) + `ProdIABack` (solo
+`INGESTA/Rep_Prod/`), desplegados **anidados en disco** para que los `.bat` no cambien.
+Detalle completo en `POSTMORTEM_migracion_puertos_azure_20260826.md` y en
+`projecto.md` § "Despliegue y control de versiones".
 
 ### Ingesta de reportes diarios — cómo se carga y dónde (25-ago)
 
@@ -1250,4 +1273,51 @@ cargado en la BD, para el badge "Act:" del header de Insights.
 
 ---
 
-*Documento de estado — actualizado 2026-08-26 (3ª parte). Ver `Cambios_Julio.md` para el mes anterior.*
+## Sesión del 26 de agosto (4ª parte) — Migración de puertos y primer despliegue a Azure DevOps
+
+Sesión de infraestructura, no de producto: lo que arrancó como "cambiar 2 puertos" (8020/8088
+→ 5029/5030, la asignación oficial) escaló a separar el monorepo en los dos repos que exige la
+convención de Azure DevOps (`ProdIAWebFront` / `ProdIABack`) y al primer despliegue verificado
+en el servidor 139, con su propia ronda de hallazgos (Python sin pin de versión, `.env` con BOM
+de PowerShell, contenido desincronizado en el checkout de Azure). Postmortem completo en
+`POSTMORTEM_migracion_puertos_azure_20260826.md` (raíz del repo) — ahí está el detalle de cada
+causa raíz y el pedido explícito de construir un pipeline de despliegue real.
+
+| Fecha | Cambio | Archivos afectados |
+|---|---|---|
+| 2026-08-26 | Puertos reasignados: Flask 8020→**5029**, INGESTA FastAPI 8088→**5030** | `app.py`, `config/windows_config.py`, `routes/api.py`, `INGESTA/Rep_Prod/frontend/vite.config.ts`, `.env.example`, `install.bat`, `run.bat`, `iniciar_backends.bat`, `desplegar_version.bat`, `deploy_zip.py`, `SETUP_LOCAL.md`, `INGESTA/Rep_Prod/backend/smoke_*.py` |
+| 2026-08-26 | Monorepo separado en 2 repos para Azure DevOps (convención Back/WebFront), desplegados **anidados en disco** (`ProdIABack` dentro de `ProdIAWebFront\INGESTA\Rep_Prod`) para no romper las rutas relativas de los `.bat` | Repos nuevos: GitHub `ProdIAWebFront`/`ProdIABack` (staging) → Azure DevOps `ProdIAWebFront`/`ProdIABack`, rama `dev` |
+| 2026-08-26 | Script de export limpio (usa `git archive`, nunca copia `.env`/`venv`/`node_modules`) para preparar el código que sube a Azure | `exportar_azure.ps1` (nuevo) |
+| 2026-08-26 | Script de verificación de integridad de un despliegue: puerto correcto, rediseño del login presente, y **todos** los estáticos que `login.html` referencia realmente existen | `verificar_deploy.ps1` (nuevo) |
+| 2026-08-26 | Primer despliegue verificado en el servidor 139: instalación con Python 3.12.10 (pin manual, evita el `onnxruntime` sin wheels de 3.14), corrección de contenido desincronizado detectado en el checkout de Azure (puerto 5007 espurio, `login.html`/`login.css` desactualizados, `login-steps.js` ausente → 404) | `app.py`, `templates/login.html`, `static/css/login.css`, `static/js/login-steps.js` (en el checkout del servidor 139; sincronizado de vuelta a Azure DevOps `dev` en ambos repos) |
+| 2026-08-26 | `.git` retirado de la carpeta de producción en la 139 por política de seguridad (post-verificación de que ambos push a Azure quedaron guardados) | Carpeta de despliegue en servidor 139 (sin archivo de repo afectado) |
+| 2026-08-26 | Postmortem de la sesión — causas raíz confirmadas, lo que quedó sin resolver, y pedido explícito de un pipeline de despliegue real | `POSTMORTEM_migracion_puertos_azure_20260826.md` (nuevo) |
+
+---
+
+---
+
+## Sesión del 27 de agosto — Lanzadores separados sin consola nueva
+
+**0 commits de código de producto.** Continuación de la migración de puertos del día
+anterior: se aclara el procedimiento de deploy fresco en el servidor 139 (evitando la
+carpeta `ProdIA_Front` con el ACL roto de `data\logs`) y se añaden dos lanzadores
+independientes por servicio, a pedido explícito tras ver el patrón usado en otro proyecto
+del servidor (`RobustezOperativo`): un `.bat` por servicio que corre **en la misma
+consola** que lo invoca, sin abrir una ventana nueva con `start`.
+
+| Fecha | Cambio | Archivos afectados |
+|---|---|---|
+| 2026-08-27 | Confirmado el procedimiento de deploy fresco vía `migra.py` + `deploy_zip.py` hacia una carpeta nueva en el servidor 139 (`E:\APLICACIONES\ProdIA\migra_20260826_145601`), evitando la carpeta `ProdIA_Front` cuyo `data\logs` quedó con permisos NTFS bloqueados para el usuario del servicio incluso tras reinicio completo de la máquina | *(sin cambios de código — despliegue en 139)* |
+| 2026-08-27 | **Dos lanzadores nuevos, uno por backend**, que arrancan el proceso **directo en la consola que los invoca** (sin `start`, sin ventana nueva) — a diferencia de `iniciar_backends.bat`, que sigue abriendo 2 ventanas y queda intacto para ese uso. Reutilizan la lógica de `iniciar_backends.bat` para evitar el trampoline de `venv\Scripts\python.exe` bloqueado por WDAC en 139 | `iniciar_frontend.bat` (nuevo, Flask :5029), `iniciar_backend.bat` (nuevo, INGESTA :5030) |
+
+⚠️ **Diferencia pendiente de confirmar con el usuario**: `iniciar_backend.bat` levanta
+uvicorn en `--host 0.0.0.0` (igual que el patrón de referencia mostrado), mientras que
+`iniciar_backends.bat` (el lanzador de 2 ventanas, sin tocar) usa `127.0.0.1` para el
+mismo servicio. Flask le habla a INGESTA por `localhost` en cualquier caso
+(`routes/api.py`), así que no afecta el proxy interno; solo cambia si el puerto 5030
+queda expuesto a la red o solo a la propia máquina.
+
+---
+
+*Documento de estado — actualizado 2026-08-27. Ver `Cambios_Julio.md` para el mes anterior.*

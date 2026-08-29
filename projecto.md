@@ -20,6 +20,11 @@ ECP Insights es una aplicacion web de analitica y chat orientada a datos de prod
 - `static/` y `templates/`: frontend (JS, CSS, HTML, layout 3 paneles).
 - `scripts/`: automatizacion para pipelines de reportes fijos.
 - `data/`: almacenamiento local (chat history, exports, uploads).
+- El segundo backend (FastAPI, puerto 5030) + su propio frontend React, para el Reporte
+  Diario de Produccion (ingesta, tablas, Motor Q v2, EBITDA/Analizar), vive en el **repo
+  hermano `backend\`** (ProdIABack), no dentro de este checkout. Flask lo consume via
+  proxy interno en `routes/api.py` (`INGESTA_API_URL`); el navegador nunca le habla
+  directo. Ver "Despliegue y control de versiones" mas abajo.
 
 ## Funcionalidades clave
 - Chat con persistencia de conversaciones y mensajes (panel principal).
@@ -93,8 +98,40 @@ Automatiza:
 
 ## Entrypoints y ejecucion
 - Backend principal: `app.py` (puerto 5029).
-- Script de ejecucion: `run.bat` (Windows).
-- Dependencias: `requirements-windows.txt`.
+- Backend INGESTA: `backend\backend\app\main.py` en el repo hermano (FastAPI, puerto 5030).
+- Arranque: `iniciar_frontend.bat` (Flask :5029) y `iniciar_backend.bat` (INGESTA :5030),
+  cada uno en su repo. Corren en la misma consola que los invoca y resuelven el interprete
+  base via `pyvenv.cfg`, evitando el trampolin `venv\Scripts\python.exe` que WDAC bloquea
+  en el servidor 139.
+- Script de instalacion: `install.bat` (crea `venv/`, instala `requirements-windows.txt`).
+  Requiere Python **3.12.x** exacto (`onnxruntime==1.22.1` aun no tiene wheels para 3.14;
+  ver postmortem del 2026-08-26). En el layout separado omite la parte de INGESTA y avisa:
+  es normal. El backend se instala aparte con `uv sync`.
+- Dependencias: `requirements-windows.txt` (Flask) + `backend\backend\pyproject.toml` (uv).
+
+## Despliegue y control de versiones (actualizado 2026-08-29)
+El codigo vive en **2 repos**, carpetas hermanas y no anidadas:
+- **`frontend\`** — ProdIAWebFront: solo Flask (puerto 5029).
+- **`backend\`** — ProdIABack: solo INGESTA (puerto 5030), FastAPI + su frontend React.
+
+El **origen de trabajo es GitHub `jaguez40-star`** (`ProdIAWebFront` y `ProdIABack`), porque
+la maquina local no tiene VPN y no alcanza Azure DevOps. El flujo es: editar en local →
+push a GitHub → pull en el servidor de pruebas → verificar → publicar en Azure DevOps `dev`
+(rama con politicas: no admite push directo) → servidor 139.
+
+El monorepo `ProdIA-2.0` queda como **archivo historico**, no como fuente de verdad.
+
+Scripts de apoyo (ambos comiteados en `frontend\`):
+- `exportar_azure.ps1`: exporta con `git archive` (solo lo versionado, nunca `.env`,
+  `venv/`, `node_modules/`) hacia una carpeta limpia sin git.
+- `verificar_deploy.ps1`: chequea que un checkout desplegado tenga la version actual
+  (puerto correcto, rediseno del login, y **todos** los estaticos que `templates/login.html`
+  referencia realmente presentes) — correr siempre antes de dar un despliegue por bueno.
+- `.claude\skills\migrar-a-azure\migrar_a_azure.ps1`: puente hacia el checkout de Azure,
+  con verificacion de fidelidad hash por hash.
+
+Detalle completo de la migracion de puertos (y por que hizo falta) en
+`POSTMORTEM_migracion_puertos_azure_20260826.md`.
 
 ## Observaciones relevantes
 - Se conserva compatibilidad de pipelines viejos, pero hay un flujo nuevo de 3 paneles.
