@@ -259,8 +259,13 @@ INGESTA/Rep_Prod/frontend/node_modules/
 INGESTA/Rep_Prod/frontend/dist/
 INGESTA/Rep_Prod/.env
 
-# Herramientas IA locales (no relevantes para el repo)
-.claude/
+# Herramientas IA locales (no relevantes para el repo).
+# Excepcion: .claude/skills/ SI se versiona — son procedimientos del proyecto
+# (p.ej. migrar-a-azure), no preferencias de una maquina.
+# Nota: hay que ignorar ".claude/*" y no ".claude/", porque git no entra en un
+# directorio ignorado y la negacion de mas abajo nunca se evaluaria.
+.claude/*
+!.claude/skills/
 .codex/
 
 # Imágenes ad-hoc en raíz
