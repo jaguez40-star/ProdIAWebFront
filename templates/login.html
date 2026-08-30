@@ -38,13 +38,64 @@
     <!-- Login layout -->
     <div class="login-grid">
         <!-- [2026-08-30] Capa de la app de fondo (anime_log.md §5.3), adaptada a Flask.
-             Imagen1.png viene A COLOR (sustituye a PanelLEft.png, que era gris quemado):
-             el "encendido" es ahora el grayscale→color real del documento de diseño.
+             MAQUETA en HTML/CSS, no una captura: una imagen de 860x715 había que
+             ampliarla un 182% para llenar este hueco y salía borrosa. Esto se
+             renderiza nítido a cualquier tamaño y pesa unas pocas líneas.
+             NO carga el CSS ni el JS reales del shell (3.400 líneas de CSS con
+             reglas globales, y el markup lo genera multitab_shell.js): replica
+             sólo el aspecto, con namespace propio 'ltm-' que no colisiona.
+             Contrapartida: si el diseño de MainChat cambia, hay que actualizar
+             esto a mano. Los valores salen de MainChat/static/css/acordeon.css
+             e historial.css.
              Decorativa: aria-hidden.
              MARCADOR DE VERSIÓN: verificar_deploy.ps1 busca la cadena 'lt-app__img'
-             para detectar un deploy que se quedó sin la transición (plan §1 H-14). -->
-        <img src="{{ url_for('static', filename='img/Imagen1.png') }}"
-             class="lt-app__img" alt="" aria-hidden="true">
+             para detectar un deploy que se quedó sin la transición. -->
+        <div class="lt-app__img" aria-hidden="true">
+            <section class="ltm-panel ltm-panel--hist">
+                <header class="ltm-cab">
+                    <span class="ltm-num">1</span>
+                    <span class="ltm-titulos">
+                        <span class="ltm-titulo"><i class="fas fa-comments ltm-ico"></i>Historial</span>
+                        <span class="ltm-sub">Conversaciones anteriores</span>
+                    </span>
+                    <span class="ltm-colapsar"><i class="fas fa-table-columns"></i></span>
+                </header>
+                <div class="ltm-cuerpo">
+                    <span class="ltm-nueva">+ NUEVA CONVERSACIÓN</span>
+                    <p class="ltm-vacio">Todavía no hay conversaciones. Las del panel Chat aparecerán aquí.</p>
+                </div>
+                <footer class="ltm-pie">
+                    <span class="ltm-pie__t"><i class="fas fa-gear"></i> ESTADO DEL SISTEMA</span>
+                    <span class="ltm-pie__c"><i class="fas fa-wifi"></i> Conectado</span>
+                    <span class="ltm-chips">
+                        <span class="ltm-chip"><i class="fas fa-database"></i> Datos</span>
+                        <span class="ltm-chip"><i class="fas fa-robot"></i> IA</span>
+                    </span>
+                </footer>
+            </section>
+
+            <section class="ltm-panel ltm-panel--chat">
+                <header class="ltm-cab">
+                    <span class="ltm-num">2</span>
+                    <span class="ltm-titulos">
+                        <span class="ltm-titulo"><i class="fas fa-comment-dots ltm-ico"></i>Chat</span>
+                        <span class="ltm-sub">Consulta en lenguaje natural</span>
+                    </span>
+                    <span class="ltm-colapsar"><i class="fas fa-table-columns"></i></span>
+                </header>
+                <div class="ltm-cuerpo ltm-cuerpo--chat">
+                    <span class="ltm-saludo">
+                        <img src="{{ url_for('static', filename='img/Pord_IA.png') }}" alt="" class="ltm-mascota">
+                        <span class="ltm-saludo__t">¡Hola, bienvenido!</span>
+                    </span>
+                    <span class="ltm-composer">
+                        <span class="ltm-composer__ico"><i class="far fa-clock"></i></span>
+                        <span class="ltm-composer__ph">Escribe tu pregunta de producción...</span>
+                        <span class="ltm-composer__btn"><i class="fas fa-paper-plane"></i></span>
+                    </span>
+                </div>
+            </section>
+        </div>
         <div class="lt-app__veil" aria-hidden="true"></div>
 
         <!-- [2026-08-30] Indicador de carga posterior a la animación. El spinner del

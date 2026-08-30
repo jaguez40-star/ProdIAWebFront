@@ -74,46 +74,221 @@ body.login-page *::after {
 
 /* Capa 1 — la app de fondo (captura estática de MainChat) */
 
-/* [2026-08-30] NUNCA se amplía la captura. Mide 860×715 y el hueco ronda los
-   1560×1130: llenarlo exigía escalar un 158% (contain) o un 181% (cover), y de
-   ahí venía el desenfoque — no hay propiedad de CSS que invente los píxeles que
-   faltan. Con width/height:auto + max-*:100% la imagen se muestra a tamaño
-   natural, nítida, y solo se REDUCE si la ventana es más pequeña que ella.
-   margin:auto la centra dentro de la caja (izquierda hasta el panel de login).
-   Para que llene el hueco haría falta recapturarla a ~1560×1130 o más. */
+/* [2026-08-30] La app de fondo es una MAQUETA en HTML/CSS, no una captura. Una
+   imagen de 860×715 había que ampliarla un 182% para llenar este hueco y salía
+   borrosa; esto se renderiza nítido a cualquier tamaño.
+   Llega hasta right:0, por debajo del panel de login (z-index:3), para que el
+   panel Chat se vea cortado y dé sensación de continuidad. */
 
 .lt-app__img {
   position: absolute;
   left: 0;
   top: 0;
-  right: 460px;
+  right: 0;
   bottom: 0;
-  /* Ocupa el hueco entero, por decisión del usuario. Sin topes de tamaño: la
-     captura (860×715) se amplía lo que haga falta —del orden del 180%— hasta
-     llenar todo el blanco a la izquierda del panel de login. Eso implica
-     desenfoque, asumido a cambio de no dejar espacio muerto; la única forma de
-     tener ambas cosas es recapturar la imagen a ~1560×1300 o más.
-     OJO: tiene que ser width/height (100%), no width:auto con max-width — un
-     max-* SOLO limita, nunca amplía, así que con auto la imagen se quedaría
-     clavada en sus 860px naturales. */
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  /* [2026-08-30] Imagen1.png es a color: reposo en gris/deshabilitado tal como pide
-     el documento de diseño (anime_log.md §5.3), ya no la versión atenuada de cuando
-     la fuente venía gris quemada (PanelLEft.png, plan §1 H-1 — superado). */
+  display: flex;
+  gap: 14px;
+  padding: 22px;
+  /* Reposo: gris y apagada, como pide el documento de diseño (anime_log.md §5.3). */
   filter: grayscale(1) opacity(.42) contrast(.96);
   opacity: 1;
-  /* [2026-08-30] La captura hace TODO su ciclo en 600ms — muy por delante del
-     panel derecho, que tarda 2.5s. Se enciende a color (.3s) y se desvanece
-     (.4s tras 200ms de retardo), así que a los 600ms ya no está: el resto de la
-     animación, y sobre todo el hueco de red posterior al redirect, transcurre
-     con la pantalla limpia en vez de con la imagen congelada. */
+  /* La maqueta hace TODO su ciclo en 600ms — muy por delante del panel derecho,
+     que tarda 2.5s. Se enciende a color (.3s) y se desvanece (.4s tras 200ms),
+     así que a los 600ms ya no está: el hueco de red posterior al redirect
+     transcurre con la pantalla limpia. */
   transition:
     filter  .3s ease,
     opacity .4s ease .2s;
   pointer-events: none;
   z-index: 0;
+}
+
+/* ── Maqueta de MainChat (namespace ltm-) ─────────────────────── */
+/* Valores tomados de MainChat/static/css/acordeon.css e historial.css, para que
+   coincida con la app real. Si el diseño de MainChat cambia, hay que actualizar
+   esto a mano: es el precio de no cargar aquí sus 3.400 líneas de CSS, que
+   traen reglas globales con !important. */
+
+.ltm-panel {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid var(--pv-border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.ltm-panel--hist { flex: 0 0 26%; }
+.ltm-panel--chat { flex: 1 1 auto; }
+
+.ltm-cab {
+  flex: 0 0 auto;
+  background: #004236;
+  padding: 13px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ltm-num {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 14%);
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  font-family: var(--pv-font-mono);
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.ltm-titulos { flex: 1; min-width: 0; }
+
+.ltm-titulo {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 15px;
+  font-weight: 800;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.ltm-ico { color: var(--pv-lime); font-size: 14px; flex-shrink: 0; }
+
+.ltm-sub {
+  display: block;
+  font-size: 11.5px;
+  color: rgb(255 255 255 / 72%);
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
+.ltm-colapsar {
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  background: rgb(255 255 255 / 12%);
+  color: #fff;
+  font-size: 13px;
+}
+
+.ltm-cuerpo {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  min-height: 0;
+}
+
+.ltm-nueva {
+  flex: 0 0 auto;
+  text-align: center;
+  background: var(--pv-primary);
+  color: #fff;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: .02em;
+}
+
+.ltm-vacio {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--pv-muted);
+}
+
+.ltm-pie {
+  flex: 0 0 auto;
+  border-top: 1px solid var(--pv-border);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.ltm-pie__t {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  color: var(--pv-muted);
+}
+
+.ltm-pie__c { font-size: 12px; color: var(--pv-pos); }
+
+.ltm-chips { display: flex; gap: 8px; }
+
+.ltm-chip {
+  border: 1px solid var(--pv-border);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 11.5px;
+  color: var(--pv-text-soft);
+}
+
+/* Cuerpo del Chat: saludo y composer centrados, como en la app real. */
+
+.ltm-cuerpo--chat {
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+}
+
+.ltm-saludo { display: flex; align-items: center; gap: 14px; }
+.ltm-mascota { width: 58px; height: 58px; object-fit: contain; }
+
+.ltm-saludo__t {
+  font-size: 26px;
+  font-weight: 400;
+  color: var(--pv-text-soft);
+}
+
+.ltm-composer {
+  display: flex;
+  align-items: center;
+  width: min(560px, 90%);
+  border: 1px solid var(--pv-border);
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.ltm-composer__ico {
+  padding: 10px 12px;
+  border-right: 1px solid var(--pv-border);
+  color: var(--pv-icon);
+  font-size: 13px;
+}
+
+.ltm-composer__ph {
+  flex: 1;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: var(--pv-icon);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.ltm-composer__btn {
+  padding: 11px 16px;
+  background: var(--pv-primary);
+  color: #fff;
+  font-size: 13px;
+}
+
+/* En pantallas estrechas el panel Historial se come demasiado sitio. */
+@media (max-width: 1279.98px) {
+  .ltm-panel--hist { flex: 0 0 32%; }
+  .ltm-saludo__t { font-size: 20px; }
 }
 
 .lt-app__veil {
@@ -192,10 +367,9 @@ body.lt-is-gone .lt-loading {
   .lt-loading { bottom: 28px; }
 }
 
-@media (max-width: 1023.98px) {
-  /* right, no padding-right: la caja ahora se define con los cuatro inset. */
-  .lt-app__img { right: 400px; }
-}
+/* La maqueta llega siempre a right:0 (el panel de login la tapa), así que aquí
+   no hay que recortarla: solo se ajusta la proporción del panel Historial, y eso
+   ya lo hace el breakpoint de 1279.98px. */
 
 /* Móvil: no hay imagen visible detrás del formulario, así que la capa de app
    se retira por completo (plan §1 H-10). */
