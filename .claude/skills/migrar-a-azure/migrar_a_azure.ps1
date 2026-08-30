@@ -405,23 +405,22 @@ foreach ($r in $repos) {
         continue
     }
 
-    # El SHA del repositorio de trabajo va en el mensaje: sin esto no hay forma
-    # de saber que version esta realmente desplegada. Es un identificador opaco
-    # de siete caracteres, no dice de donde viene. El asunto del commit de
-    # origen NO se copia: es texto que este script no controla.
+    # Mensaje minimo: solo la version y la fecha. Nada que revele como se
+    # produjo la publicacion. El SHA es un identificador opaco de siete
+    # caracteres y es lo unico que permite saber que version esta desplegada.
+    # El asunto del commit de origen NO se copia: es texto que este script no
+    # controla y podria arrastrar cualquier cosa.
     $lineas = @(
-        "sync $shaOrigen",
+        "Version $shaOrigen",
         '',
-        "Version    : $shaOrigen",
-        "Publicado  : $(Get-Date -Format 'yyyy-MM-dd HH:mm')",
-        "Verificado : $($rutas.Count) archivos, hash de blob identico al origen,",
-        "             sin trazas del repositorio de trabajo."
+        "Publicado: $(Get-Date -Format 'yyyy-MM-dd HH:mm')"
     )
     $archivoMsg = Join-Path $env:TEMP "msg_azure_$r.txt"
     [System.IO.File]::WriteAllText($archivoMsg, ($lineas -join "`n"),
                                    (New-Object System.Text.UTF8Encoding($false)))
 
     git -C $dst commit -q -F $archivoMsg
+    Remove-Item $archivoMsg -Force -ErrorAction SilentlyContinue
     git -C $dst push origin "HEAD:$RamaAzure"
     if ($LASTEXITCODE -ne 0) { throw "El push a Azure fallo en '$r'." }
 
