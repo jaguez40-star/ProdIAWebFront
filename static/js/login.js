@@ -181,10 +181,16 @@ loginForm.addEventListener('submit', async (e) => {
         if (response.ok && data.success && data.user_info) {
             showSuccess(data.message || 'Autenticación exitosa');
 
-            // Redirect a MainChat (antes '/', el layout viejo de dos paneles)
-            setTimeout(() => {
-                window.location.href = '/mainchat';
-            }, 500);
+            // [2026-08-30] Si login-transition.js está cargado, él gobierna la
+            // navegación: la anima y redirige al terminar (~1250 ms). Si no lo
+            // está, se conserva el comportamiento de siempre.
+            // Ver Planes/plan_LOGIN-TRANSICION-SALIDA_20260830.md §1 H-6.
+            if (typeof window.__ltRedirigir !== 'function') {
+                // Redirect a MainChat (antes '/', el layout viejo de dos paneles)
+                setTimeout(() => {
+                    window.location.href = '/mainchat';
+                }, 500);
+            }
         } else {
             // Check if access was denied due to whitelist
             if (data.access_denied || data.message === 'ACCESS_DENIED') {

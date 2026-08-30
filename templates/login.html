@@ -37,6 +37,16 @@
 
     <!-- Login layout -->
     <div class="login-grid">
+        <!-- [2026-08-30] Capa de la app de fondo (anime_log.md §5.3), adaptada a Flask.
+             La imagen ya viene en escala de grises quemada, así que el "encendido" es
+             una subida de opacidad y contraste, no un paso a color (ver plan §1 H-1).
+             Decorativa: aria-hidden.
+             MARCADOR DE VERSIÓN: verificar_deploy.ps1 busca la cadena 'lt-app__img'
+             para detectar un deploy que se quedó sin la transición (plan §1 H-14). -->
+        <img src="{{ url_for('static', filename='img/PanelLEft.png') }}"
+             class="lt-app__img" alt="" aria-hidden="true">
+        <div class="lt-app__veil" aria-hidden="true"></div>
+
         <!-- [2026-08-26] Panel de marca: constelación neuronal animada (log_in.md).
              Puramente decorativo (aria-hidden) — SVG inline + SMIL, sin JS ni dependencias.
              Coordenadas y timings FIJOS del doc (§5-6), no generados: viewBox 400×460,
@@ -440,7 +450,15 @@
     <!-- Cache-bust necesario: login.js decide a dónde va el usuario tras entrar.
          Sin él, quien tuviera la versión anterior en caché seguiría cayendo en '/'
          (el layout viejo) en vez de /mainchat. -->
-    <script src="{{ url_for('static', filename='js/login.js') }}?v=20260821s"></script>
+    <!-- [2026-08-30] Sello subido a 20260830a: login.js cambia en esta entrega
+         (delega el redirect en login-transition.js). Sin subirlo, quien tuviera la
+         versión anterior en caché seguiría redirigiendo a los 500 ms y vería la
+         animación cortada a la mitad. Ver plan §1 H-17. -->
+    <script src="{{ url_for('static', filename='js/login.js') }}?v=20260830a"></script>
     <script src="{{ url_for('static', filename='js/login-steps.js') }}"></script>
+    <!-- Transición de salida. DEBE cargar el último: parchea showSuccess igual que
+         login-steps.js, y al registrarse después su gancho corre primero,
+         congelando el botón antes de que se vea revivir (plan §1 H-2 y H-7). -->
+    <script src="{{ url_for('static', filename='js/login-transition.js') }}?v=20260830a"></script>
 </body>
 </html>

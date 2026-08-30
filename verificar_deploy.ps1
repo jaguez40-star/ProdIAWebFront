@@ -45,7 +45,7 @@ if (-not (Test-Path $appPy)) {
     }
 }
 
-# --- 2) templates/login.html: rediseno de la constelacion (13 nodos) ---
+# --- 2) templates/login.html: rediseno de la constelacion (13 nodos) + transicion de salida ---
 $loginHtml = Join-Path $Path "templates\login.html"
 if (-not (Test-Path $loginHtml)) {
     Check-Fail "No existe templates\login.html"
@@ -58,7 +58,18 @@ if (-not (Test-Path $loginHtml)) {
     } elseif ($hasConstelacion) {
         Check-Warn "login.html tiene la constelacion pero NO la marca de '13 nodos' -- puede ser una version intermedia (12 nodos), $lines lineas"
     } else {
-        Check-Fail "login.html NO tiene el rediseno de la constelacion -- version VIEJA ($lines lineas, se esperan ~446)"
+        Check-Fail "login.html NO tiene el rediseno de la constelacion -- version VIEJA ($lines lineas, se esperan ~453)"
+    }
+
+    # [2026-08-30] Marcador de la transicion de salida del login.
+    # La constelacion sigue en el HTML pero oculta por CSS, asi que los dos
+    # marcadores de arriba ya no distinguen un deploy CON transicion de uno SIN
+    # ella. Este chequeo si. Ver plan LOGIN-TRANSICION-SALIDA.
+    $hasTransicion = Select-String -Path $loginHtml -Pattern "lt-app__img" -Quiet
+    if ($hasTransicion) {
+        Check-Pass "login.html tiene la transicion de salida (capa lt-app__img)"
+    } else {
+        Check-Fail "login.html NO tiene la transicion de salida -- version anterior al 2026-08-30"
     }
 }
 
@@ -69,9 +80,9 @@ if (-not (Test-Path $loginCss)) {
 } else {
     $lines = (Get-Content $loginCss).Count
     if ($lines -ge 400) {
-        Check-Pass "login.css tiene $lines lineas (esperado ~508)"
+        Check-Pass "login.css tiene $lines lineas (esperado ~560)"
     } else {
-        Check-Fail "login.css tiene solo $lines lineas -- parece una version vieja (esperado ~508)"
+        Check-Fail "login.css tiene solo $lines lineas -- parece una version vieja (esperado ~560)"
     }
 }
 

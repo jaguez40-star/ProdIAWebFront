@@ -57,38 +57,85 @@ body.login-page *::after {
   }
 }
 
-/* ── Grid 2 columnas ──────────────────────────────────────────── */
+/* ── Layout de dos capas ──────────────────────────────────────── */
+/* [2026-08-30] Antes era un grid de 2 columnas. Ahora el formulario está en
+   posición absoluta para poder CRUZAR sobre la imagen sin reflow al salir
+   (plan §1 H-4). El reencuadre de la imagen se consigue animando el
+   padding-right de la propia imagen, no un width (plan §1 H-5).
+   overflow:hidden es OBLIGATORIO: sin él, el panel viajando a -104vw genera
+   scroll horizontal (anime_log.md §10, error nº2). Va aquí y no en el body,
+   porque login.js restaura el overflow del body en beforeunload (plan §1 H-18). */
 
 .login-grid {
+  position: relative;
   min-height: 100vh;
-  display: grid;
-  grid-template-columns: 1fr 460px;
+  overflow: hidden;
 }
+
+/* Capa 1 — la app de fondo (captura estática de MainChat) */
+
+.lt-app__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center center;
+  padding: 40px 460px 40px 40px;
+  /* Reposo: la imagen YA es gris en el PNG, así que solo se apaga un poco más.
+     🔧 CUANDO LLEGUE LA CAPTURA A COLOR: borrar la línea de abajo y descomentar
+     la siguiente, que es la del documento de diseño (anime_log.md §5.3). */
+  filter: opacity(.55) contrast(.92);
+  /* filter: grayscale(1) opacity(.42) contrast(.96); */
+  transition: filter .9s ease .1s, padding 1.15s cubic-bezier(.7, 0, .2, 1);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.lt-app__veil {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, .34);
+  opacity: 1;
+  transition: opacity .8s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Encendido: la clase la pone login-transition.js sobre <body>.
+   El padding-right baja a 40px (no a 0) para que la captura conserve un margen
+   respirable al ocupar la pantalla completa. */
+
+body.lt-is-live .lt-app__img {
+  padding-right: 40px;
+  filter: opacity(1) contrast(1);
+  /* 🔧 VERSIÓN A COLOR: filter: grayscale(0) opacity(1) contrast(1); */
+}
+
+body.lt-is-live .lt-app__veil { opacity: 0; }
 
 @media (max-width: 1023.98px) {
-  .login-grid { grid-template-columns: 1fr 400px; }
+  .lt-app__img { padding-right: 400px; }
 }
 
+/* Móvil: no hay imagen visible detrás del formulario, así que la capa de app
+   se retira por completo (plan §1 H-10). */
 @media (max-width: 767.98px) {
-  .login-grid { grid-template-columns: 1fr; }
-  .brand-panel { display: none; }
+  .lt-app__img,
+  .lt-app__veil { display: none; }
 }
 
 /* ── Panel de marca ───────────────────────────────────────────── */
 /* [2026-08-26] Constelación neuronal (log_in.md) — reemplaza el degradado verde sólido.
    Fondo blanco; la divisoria la sigue dando .form-panel { border-left }, ya existente. */
 
-.brand-panel {
-  position: relative;
-  background: #fff;
-  overflow: hidden;
-  /* [2026-08-26] Centrado real (petición del usuario): antes el SVG se posicionaba
-     con top:44px fijo (solo centrado horizontal). flex lo centra en las DOS direcciones
-     dentro de todo el alto del panel. */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+/* [2026-08-30] La constelación cede el sitio a la captura de MainChat
+   (plan, Decisión 3). Se oculta por CSS en vez de borrarla del HTML por DOS
+   motivos: el rollback es esta única regla, y verificar_deploy.ps1 usa las
+   cadenas "constelaci" y "13 nodos" de login.html como marcador de versión —
+   borrarlas haría FALLAR la verificación de un deploy correcto (plan §1 H-13). */
+
+.brand-panel { display: none; }
 
 .lg-constellation {
   /* position:static a propósito: ya no se ancla por top/transform — es quien reparte
@@ -135,17 +182,62 @@ body.login-page *::after {
 
 /* ── Panel de formulario ──────────────────────────────────────── */
 
+/* [2026-08-30] Absoluto sobre la derecha: no participa del flujo, por eso puede
+   cruzar la imagen sin provocar reflow (anime_log.md §5.2). z-index:3 lo mantiene
+   por encima de la capa de app y del velo. overflow-y:auto se conserva: sigue
+   siendo necesario en pantallas bajas (plan §1 H-19). */
+
 .form-panel {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 460px;
+  z-index: 3;
   background: #fff;
   border-left: 1px solid var(--pv-border);
   padding: 48px 40px;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
+  box-shadow: -14px 0 34px rgba(20, 40, 30, .06);
+  transform: translateX(0);
+  opacity: 1;
+  /* El retardo de 100 ms en la opacidad evita que el panel "se apague" antes de
+     moverse: primero se percibe el desplazamiento, luego el desvanecimiento
+     (anime_log.md §5.2). */
+  transition:
+    transform 1.2s cubic-bezier(.7, 0, .2, 1),
+    opacity   1.1s ease .1s,
+    filter    1.1s ease;
 }
 
+/* Salida: -104vw, NO -100%. El porcentaje se resuelve contra el ancho del propio
+   panel (460px), así que apenas lo movería (anime_log.md §10, error nº1). */
+
+body.lt-is-gone .form-panel {
+  transform: translateX(-104vw);
+  opacity: 0;
+  filter: blur(2px);
+  pointer-events: none;
+}
+
+@media (max-width: 1023.98px) {
+  .form-panel { width: 400px; }
+}
+
+/* Móvil: ocupa todo el ancho y degrada a fade puro — desplazarlo dejaría la
+   pantalla en blanco, porque no hay imagen detrás (plan §1 H-10). */
 @media (max-width: 767.98px) {
-  .form-panel { border-left: none; padding: 32px 20px; }
+  .form-panel {
+    position: static;
+    width: 100%;
+    border-left: none;
+    box-shadow: none;
+    padding: 32px 20px;
+    min-height: 100vh;
+  }
+  body.lt-is-gone .form-panel { transform: none; }
 }
 
 .form-content {
