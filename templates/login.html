@@ -38,14 +38,23 @@
     <!-- Login layout -->
     <div class="login-grid">
         <!-- [2026-08-30] Capa de la app de fondo (anime_log.md §5.3), adaptada a Flask.
-             La imagen ya viene en escala de grises quemada, así que el "encendido" es
-             una subida de opacidad y contraste, no un paso a color (ver plan §1 H-1).
+             Imagen1.png viene A COLOR (sustituye a PanelLEft.png, que era gris quemado):
+             el "encendido" es ahora el grayscale→color real del documento de diseño.
              Decorativa: aria-hidden.
              MARCADOR DE VERSIÓN: verificar_deploy.ps1 busca la cadena 'lt-app__img'
              para detectar un deploy que se quedó sin la transición (plan §1 H-14). -->
-        <img src="{{ url_for('static', filename='img/PanelLEft.png') }}"
+        <img src="{{ url_for('static', filename='img/Imagen1.png') }}"
              class="lt-app__img" alt="" aria-hidden="true">
         <div class="lt-app__veil" aria-hidden="true"></div>
+
+        <!-- [2026-08-30] Indicador de carga posterior a la animación. El spinner del
+             botón viaja fuera de pantalla junto con el panel; sin esto, el hueco real
+             de red hasta que /mainchat pinta (fuentes externas + JS del shell) se ve
+             como una imagen congelada, sin ningún indicio de actividad. -->
+        <div class="lt-loading" aria-hidden="true">
+            <span class="spinner-border spinner-border-sm" role="status"></span>
+            <span class="lt-loading__text">Cargando ProdIA…</span>
+        </div>
 
         <!-- [2026-08-26] Panel de marca: constelación neuronal animada (log_in.md).
              Puramente decorativo (aria-hidden) — SVG inline + SMIL, sin JS ni dependencias.

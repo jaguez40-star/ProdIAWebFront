@@ -2,8 +2,8 @@
  * Transición de salida del login — ProdIA 2.0
  *
  * Al autenticar, el panel del formulario viaja a la izquierda cruzando sobre la
- * imagen de la app (PanelLEft.png), que en paralelo se aclara y se reencuadra a
- * pantalla completa. Al terminar, redirect a /mainchat.
+ * imagen de la app (Imagen1.png), que en paralelo pasa de gris a color y se
+ * reencuadra a pantalla completa. Al terminar, redirect a /mainchat.
  *
  * Diseño: anime_log.md. Plan: Planes/plan_LOGIN-TRANSICION-SALIDA_20260830.md
  *
