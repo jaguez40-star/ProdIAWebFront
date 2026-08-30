@@ -177,15 +177,18 @@ body.login-page *::after {
   gap: 3px;
 }
 
+/* [2026-08-30] Tipografia de la marca un 10% mayor, a peticion del usuario:
+   28px -> 30.8px y 13px -> 14.3px. El alto del PNG (.logo-prodia, 64px) no
+   cambia: el bloque de texto crece dentro del flex sin descuadrar la fila. */
 .logo-name {
-  font: 700 28px/1 var(--pv-font-sans);
-  color: var(--pv-text);
+  font: 700 30.8px/1 var(--pv-font-sans);
+  color: var(--pv-primary);
   letter-spacing: 1px;
 }
 
 .logo-sub {
-  font: 500 13px/1 var(--pv-font-sans);
-  color: var(--pv-muted);
+  font: 500 14.3px/1 var(--pv-font-sans);
+  color: var(--pv-primary);
   letter-spacing: 0.5px;
 }
 
