@@ -86,7 +86,11 @@ body.login-page *::after {
      el documento de diseño (anime_log.md §5.3), ya no la versión atenuada de cuando
      la fuente venía gris quemada (PanelLEft.png, plan §1 H-1 — superado). */
   filter: grayscale(1) opacity(.42) contrast(.96);
-  transition: filter .9s ease .1s, padding 1.15s cubic-bezier(.7, 0, .2, 1);
+  opacity: 1;
+  transition:
+    filter  .9s ease .1s,
+    padding 1.15s cubic-bezier(.7, 0, .2, 1),
+    opacity .35s ease;
   pointer-events: none;
   z-index: 0;
 }
@@ -111,6 +115,14 @@ body.lt-is-live .lt-app__img {
 }
 
 body.lt-is-live .lt-app__veil { opacity: 0; }
+
+/* [2026-08-30] Fase final, justo antes de navegar: la captura se retira y deja la
+   pantalla limpia con solo el indicador de carga. El navegador mantiene esta página
+   a la vista hasta que /mainchat pinta, así que sin este fade la imagen se quedaba
+   congelada a pantalla completa durante todo ese hueco — que puede ser de varios
+   segundos. La clase la pone login-transition.js al terminar el encendido. */
+
+body.lt-is-loading .lt-app__img { opacity: 0; }
 
 /* [2026-08-30] Indicador de carga posterior a la animación (ver login.html). Aparece
    YA COMPLETO a los 1.1s, antes de que el redirect dispare a los 1.25s (login-transition.js),

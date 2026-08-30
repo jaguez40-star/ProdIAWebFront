@@ -24,10 +24,21 @@
 (function () {
   'use strict';
 
-  // Duración del recorrido del panel. Debe ser >= la transition más larga
-  // (1.2s del transform), o el redirect cortaría la animación a medias
-  // (anime_log.md §10, error nº7).
-  var EXIT_MS = 1250;
+  // Fase 1 — el panel recorre su camino (transform 1.2s) y la imagen termina de
+  // encenderse (padding 1.15s). Debe ser >= la transition más larga, o el
+  // redirect cortaría la animación a medias (anime_log.md §10, error nº7).
+  var SHOW_MS = 1200;
+
+  // Fase 2 — la captura se desvanece y deja la pantalla limpia con solo el
+  // indicador de carga. Sin esto, la imagen se queda congelada a pantalla
+  // completa durante TODO el hueco de red posterior al redirect: el navegador
+  // mantiene la página vieja a la vista hasta que /mainchat pinta, y eso puede
+  // ser varios segundos. Debe coincidir con la transition de opacity en
+  // login.css (.35s).
+  var FADE_MS = 350;
+
+  // Se navega cuando ya no queda nada que mirar.
+  var EXIT_MS = SHOW_MS + FADE_MS;
 
   var DESTINO = '/mainchat';
 
@@ -53,6 +64,8 @@
   } catch (e) { /* noop */ }
 
   if (reducido) {
+    SHOW_MS = 0;
+    FADE_MS = 0;
     EXIT_MS = 0;
   }
 
@@ -94,6 +107,12 @@
 
       body.classList.add('lt-is-live');
       body.classList.add('lt-is-gone');
+
+      // Fase 2: retira la captura una vez terminado el encendido, para no dejarla
+      // congelada a pantalla completa mientras se espera a /mainchat.
+      window.setTimeout(function () {
+        body.classList.add('lt-is-loading');
+      }, SHOW_MS);
 
       window.setTimeout(redirigir, EXIT_MS);
     } catch (e) {
