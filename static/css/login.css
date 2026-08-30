@@ -79,9 +79,15 @@ body.login-page *::after {
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  /* [2026-08-30] cover, no contain: contain encaja la imagen ENTERA dentro del
+     área respetando su proporción, y como la caja es más ancha que la captura
+     (1010×699) sobraba alto — dos bandas vacías, arriba y abajo. cover escala
+     hasta llenar y recorta el excedente por los lados, que es aceptable: lo que
+     sobra queda bajo el panel de login. Sin padding vertical ni izquierdo, para
+     que ocupe todo el alto disponible. */
+  object-fit: cover;
   object-position: center center;
-  padding: 40px 460px 40px 40px;
+  padding: 0 460px 0 0;
   /* [2026-08-30] Imagen1.png es a color: reposo en gris/deshabilitado tal como pide
      el documento de diseño (anime_log.md §5.3), ya no la versión atenuada de cuando
      la fuente venía gris quemada (PanelLEft.png, plan §1 H-1 — superado). */
@@ -114,11 +120,10 @@ body.login-page *::after {
 }
 
 /* Encendido: la clase la pone login-transition.js sobre <body>.
-   El padding-right baja a 40px (no a 0) para que la captura conserve un margen
-   respirable al ocupar la pantalla completa. */
+   El padding-right baja a 0 para que la captura ocupe el ancho completo. */
 
 body.lt-is-live .lt-app__img {
-  padding-right: 40px;
+  padding-right: 0;
   filter: grayscale(0) opacity(1) contrast(1);
 }
 
