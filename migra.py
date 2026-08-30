@@ -12,7 +12,7 @@ scripts .bat, docs, el .env REAL y las BD SQLite ligeras:
   - vector_db/            (embeddings ChromaDB del chat clasico)
 
 EXCLUYE entornos y artefactos regenerables (venv, .venv, node_modules, dist, .git,
-caches, .claude) y datos PESADOS que viajan aparte:
+caches, herramientas locales) y datos PESADOS que viajan aparte:
   - data/ECP_PROD.db (910 MB) — copiar/restaurar aparte solo si se necesita el chat clasico.
   - INGESTA/Rep_Prod/data/ (corpus .xlsm ~7 GB) — fuente de ingesta, va aparte.
   - INGESTA/Rep_Prod/db/backups/ (dumps PostgreSQL multi-GB) — restaurar con psql aparte.
@@ -153,7 +153,7 @@ def build_manifest(files: list[Path], zip_name: str) -> str:
         "- `data/ECP_PROD.db` (910 MB) — copiar aparte SOLO si se necesita el chat clasico / DEMO Reporte Semanal.",
         "- `INGESTA/Rep_Prod/data/` — corpus .xlsm (~7 GB), fuente de ingesta.",
         "- `INGESTA/Rep_Prod/db/backups/` — dumps PostgreSQL (multi-GB); la BD `daily_report_prod` se restaura con psql.",
-        "- Entornos/caches/builds: venv, .venv, node_modules, dist, __pycache__, .git, .claude, etc.",
+        "- Entornos/caches/builds: venv, .venv, node_modules, dist, __pycache__, .git, etc.",
         "- Artefactos de ejecucion: data/uploads, data/exports, data/logs; *.xlsm/*.xlsx/*.log.",
         "",
         "## Restaurar en la maquina destino (139)",

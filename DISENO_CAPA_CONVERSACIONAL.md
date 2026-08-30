@@ -5,8 +5,8 @@
 > Postgres `daily_report_prod`). Complementa el documento de discusión original `Ambi.md` (que
 > contiene el *porqué* filosófico) con las **decisiones cerradas** y el estado real verificado.
 >
-> **Fecha de acuerdo:** 2026-07-08 · **Referenciado desde:** `CLAUDE.md` (§10) ·
-> **Fuente base:** `Ambi.md`, `INGESTA/Rep_Prod/CLAUDE.md`
+> **Fecha de acuerdo:** 2026-07-08 · **Referenciado desde:** la guia del proyecto (§10) ·
+> **Fuente base:** `Ambi.md`, la guia del sub-proyecto de INGESTA
 
 ---
 
@@ -207,7 +207,7 @@ Ambos son el **primer entregable** del `plan:` v1, antes que la lógica. Separar
 
 - **⚠️ Techo de datos y archivos cifrados (R5, 2026-07-08b) — dependencia de Fase 3/negocio, NO bloquea el
   Secundario.** La data llega hasta **~17-may-2026**: los archivos de **Junio 2026 y May 19–31 están CIFRADOS
-  con contraseña** (firma OLE2, openpyxl los rechaza; ver `INGESTA/Rep_Prod/CLAUDE.md` bitácora S14) → no
+  con contraseña** (firma OLE2, openpyxl los rechaza; ver la bitacora S14 del sub-proyecto) → no
   ingeribles sin la clave. Implicación: el sistema hoy **no puede responder sobre nada posterior a mediados de
   mayo**. **Desacople clave:** por **D1** el Secundario **para en el intent** (no ejecuta) → esto **NO bloquea**
   construir ni validar el slot-filling (v1/v2/v3) ni el golden set (mide *intent*, no números), y **H3** lo
@@ -530,6 +530,6 @@ No hay una "máquina" aparte que diseñar: **es una función de `pendiente`**. E
 ## 9. Referencias
 
 - `Ambi.md` — documento de discusión original (el *porqué* filosófico completo).
-- `INGESTA/Rep_Prod/CLAUDE.md` — modelo de datos (star schema), DDL, flujo audit-first.
+- Guia del sub-proyecto de INGESTA — modelo de datos (star schema), DDL, flujo audit-first.
 - `INGESTA/Rep_Prod/db/ddl_v2_postgres.sql` — esquema real (facts, dims, vistas).
 - Memoria del proyecto: `objetivos-capa-conversacional`, `modelos-ollama-dev-prod`, `entornos-dev-local-prod-139`.

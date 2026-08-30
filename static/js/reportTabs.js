@@ -4,7 +4,6 @@
  * Sistema reutilizable para crear tabs Bootstrap 5 en reportes.
  * Proporciona una API consistente para gestionar navegación entre tabs.
  *
- * @author Claude Code
  * @version 1.0.0
  */
 

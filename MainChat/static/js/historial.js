@@ -354,7 +354,7 @@
     // propio botón, y bastaba con que un hermano creciera para dejarlo pegado al contenido
     // con la franja en blanco debajo. Con la sección envolvente el pie es una zona con
     // identidad propia (separador arriba, fondo del panel abajo), como el pie del sidebar
-    // de Claude que pidió el usuario.
+    // de referencia que pidió el usuario.
     function bloqueUsuario() {
         var nombre = String(window.USER_FULL_NAME || '').trim() || 'Usuario';
         var inicial = nombre.charAt(0).toUpperCase();

@@ -6,7 +6,6 @@
  * Tab 2: Producción: Meta vs Real
  * Tab 3: Producción: POP vs Real (placeholder)
  *
- * @author Claude Code
  * @version 1.0.0
  */
 

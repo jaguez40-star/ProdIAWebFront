@@ -5942,7 +5942,7 @@
     // el panel derecho (tarjetas P50). Se pierde el "con corte a N de <mes>", que salía
     // de la curva diaria de /desempeno — endpoint que el panorama global ya no pide.
     // [2026-08-24] Saludo BREVE, a petición del usuario (referencia: la pantalla de
-    // bienvenida de claude.ai). Se retiró el menú de tres categorías —Estructura /
+    // bienvenida de una interfaz conversacional de referencia). Se retiró el menú de tres categorías —Estructura /
     // Cifras / Análisis con sus ejemplos— que exponía la taxonomía interna del
     // clasificador antes de que el usuario escribiera nada.
     // ⚠️ COSTE ASUMIDO Y CONSCIENTE: ese menú era el único sitio donde se anunciaban
@@ -6037,7 +6037,7 @@
     __cnEstadoInicio();
   }
 
-  // [2026-08-24] Estado de INICIO (petición del usuario, referencia claude.ai): mientras la
+  // [2026-08-24] Estado de INICIO (petición del usuario, referencia de una interfaz conversacional): mientras la
   // única burbuja sea el saludo, el saludo y la caja de entrada se agrupan en el CENTRO
   // vertical del panel en vez de quedar el saludo arriba y la caja pegada abajo con un
   // vacío enorme entre medias. Al llegar la primera pregunta se vuelve al layout normal

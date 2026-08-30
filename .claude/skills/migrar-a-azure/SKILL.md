@@ -11,8 +11,8 @@ En el servidor de pruebas conviven **dos carpetas separadas**, cada una con su
 propio `.git` y su unico remoto. No se mezclan, a proposito:
 
 ```
-C:\APLICACIONES\ProdIA\Repo ProdIA        -> clon de GitHub    (aqui se prueba)
-C:\APLICACIONES_AZURE\Repo ProdIA         -> clon de Azure     (aqui se publica)
+C:\APLICACIONES\ProdIA\Repo ProdIA        -> repositorio de trabajo (aqui se prueba)
+C:\APLICACIONES_AZURE\Repo ProdIA         -> clon de Azure          (aqui se publica)
 ```
 
 El puente entre ambas es una copia de archivos. Ese es el punto fragil de todo el
@@ -28,12 +28,12 @@ no coincide, aborta y no publica nada.
 ## Flujo completo del que este skill es el ultimo tramo
 
 ```
-LOCAL (sin VPN)          PRUEBAS (con VPN)                      139
-editar ──push──> GitHub ──pull──> Repo ProdIA
-                                    (probar)
-                                       │  ESTE SKILL
-                                       ▼
-                                 APLICACIONES_AZURE ──push──> Azure DevOps ──> prod
+REPO DE TRABAJO (con VPN)              AZURE                    139
+editar ──push──> repo ──pull──> Repo ProdIA
+                                  (probar)
+                                     │  ESTE SKILL
+                                     ▼
+                               APLICACIONES_AZURE ──push──> Azure DevOps ──> prod
 ```
 
 ## Como usarlo
@@ -82,7 +82,12 @@ fallo silencioso mas tipico de una copia incremental).
    contra los archivos del destino. No se fia de fechas ni de tamanos.
 3. **Copia con `robocopy /MIR`**, para que los **borrados tambien viajen**. Sin
    `/MIR`, un archivo eliminado sobrevive para siempre en Azure.
-4. **Excluye lo que nunca debe copiarse**: `.git`, `venv`, `.venv`,
+4. **Publica solo lo versionado y no excluido.** La copia va dirigida por
+   `git ls-tree`, no por un espejo del arbol: asi no viajan los archivos que
+   git ignora (`.codex/`, `temp_*`, `*.db`, copias ` - Copy`). Ademas excluye
+   la documentacion interna del equipo (`.claude`, `Planes`, `clmd`,
+   `data/bitacora`, `CLAUDE.md`, `BITACORA.md`) y, como siempre, `.git`,
+   `venv`, `.venv`,
    `node_modules`, `__pycache__`, `vector_db`, `flask_session`, `logs`, `dist`,
    y los archivos `.env`, `*.bak`, `*.pyc`. Pisar el `.env` del destino
    cambiaria sus credenciales.
@@ -115,3 +120,20 @@ de dos cosas, y conviene distinguirlas antes de aplicar:
   rescatarlo antes de aplicar**, o se pierde.
 
 En la duda, ejecutar sin `-Aplicar` y revisar la lista.
+
+## El chequeo de trazas
+
+Despues de verificar los hashes y **antes** de commitear, el script recorre todo
+lo copiado buscando `claude` y `jaguez40`. Si aparece uno solo, aborta y no
+publica nada.
+
+`github.com` a secas **no** forma parte del chequeo, a proposito: aparece en
+librerias de terceros (`leaflet-heat.js`, `jszip`, `plotly`, `package-lock.json`)
+y bloquearia el pipeline para siempre.
+
+Dos archivos estan exentos porque el termino les es estructural: `.gitignore`
+(la regla que ignora la carpeta de herramientas) y `migra.py` (su lista de
+exclusion). Cambiarles el texto los rompe.
+
+Si el chequeo falla, la solucion **nunca** es anadir el archivo a los exentos:
+es limpiar el texto en el repositorio de origen y volver a migrar.

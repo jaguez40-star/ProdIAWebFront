@@ -124,7 +124,7 @@ def token_login():
         last_name = name_parts[-1].capitalize() if len(name_parts) > 1 else ""
 
         # Shape de sesión IDÉNTICO al de /auth/login — no quitar campos ni cambiar claves.
-        # Lección de Eficiencias (bug #11 en CLAUDE.md de Landing): si el shape difiere,
+        # Lección de Eficiencias (bug #11 documentado en la guia de Landing): si el shape difiere,
         # código downstream (queries, SocketIO, UI) falla en silencio.
         session["user"] = {
             "username": user_email,        # email completo, mismo formato que login normal

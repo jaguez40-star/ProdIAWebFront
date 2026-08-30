@@ -39,7 +39,7 @@ En paralelo, se incorporaron al proyecto principal nuevos documentos de referenc
 #### S1 — Análisis de archivos fuente `.xlsm`
 Se auditaron las 2 muestras de archivos Excel (`20231231`, `20240211`) del tipo **sin raw** (~27–28 MB). Hallazgo crítico: la capa de datos a grano completo (`BDP_datos_dia/mes/Programa`) **solo existe en archivos "New" (~125 MB)**; los archivos estándar (~30 MB) contienen únicamente pivots agregados. Se detectaron credenciales de producción en texto plano dentro de `xl/connections.xml` (usuarios `c5243438`, `c7201640`; BD `BDP38PRD`) → acción: rotar credenciales.
 
-- **Archivos afectados:** `Doc_Desing/` (muestras), `CLAUDE.md`
+- **Archivos afectados:** `Doc_Desing/` (muestras), la guia del proyecto
 
 #### S2 — Decisiones de arquitectura (D1–D3)
 Se tomaron las 3 decisiones fundacionales del proyecto:
@@ -47,7 +47,7 @@ Se tomaron las 3 decisiones fundacionales del proyecto:
 - **D2 — Fuente = celdas de hoja** (no pivot cache ni conexión directa a `BDP38PRD`).
 - **D3 — Estrategia "degradación elegante"**: ingerir TODO archivo y preservar lo que cada uno trae. Archivo con raw → llena 3 facts ECP + filiales. Archivo sin raw → llena solo filiales/comentarios/config (ningún archivo se rechaza).
 
-- **Archivos afectados:** `CLAUDE.md` del sub-proyecto
+- **Archivos afectados:** la guia del sub-proyecto
 
 ---
 
@@ -91,8 +91,8 @@ Se construyó `etl/ingesta_prototipo.py` (autónomo, ejecutable con `uv run`). V
 #### S7 — Análisis del corpus real
 Se escaneó el corpus completo `data/{2023,2024,2025}/`: **37 archivos** en total, **16 con raw** (desde 2024-10-02), **21 sin raw** (2023 + Ene–Sep 2024). Conclusión: tamaño/nombre NO predicen la capa raw; la detección por hoja es la única regla confiable. El ETL debe ingerir TODOS los archivos y el upsert "última gana" construye la unión histórica.
 
-#### S8 — Documentación del agente (CLAUDE.md)
-Se añadieron al `CLAUDE.md` del sub-proyecto: modos de operación por prefijo (`plan:`, `auditoria:`, `backup:`), flujo profesional audit-first obligatorio, y la bitácora de sesiones (§12). Se formalizó la regla de cobertura: prohibido reducir alcance en silencio.
+#### S8 — Documentación del agente
+Se añadieron a la guia del sub-proyecto: modos de operación por prefijo (`plan:`, `auditoria:`, `backup:`), flujo profesional audit-first obligatorio, y la bitácora de sesiones (§12). Se formalizó la regla de cobertura: prohibido reducir alcance en silencio.
 
 #### S9 — Scaffolding del monorepo (FastAPI)
 Se creó la estructura `backend/` con FastAPI y organización por vertical slicing:
@@ -196,4 +196,4 @@ También se detectaron nuevos scripts utilitarios sin fecha específica dentro d
 
 ---
 
-*Generado el 2026-06-29 — Fuente: análisis de sistema de archivos + `INGESTA/Rep_Prod/CLAUDE.md §12`*
+*Generado el 2026-06-29 — Fuente: análisis de sistema de archivos + guia del sub-proyecto §12*

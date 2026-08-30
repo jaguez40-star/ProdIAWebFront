@@ -114,10 +114,10 @@ El codigo vive en **2 repos**, carpetas hermanas y no anidadas:
 - **`frontend\`** — ProdIAWebFront: solo Flask (puerto 5029).
 - **`backend\`** — ProdIABack: solo INGESTA (puerto 5030), FastAPI + su frontend React.
 
-El **origen de trabajo es GitHub `jaguez40-star`** (`ProdIAWebFront` y `ProdIABack`), porque
+El **origen de trabajo es un repositorio externo** (`ProdIAWebFront` y `ProdIABack`), porque
 la maquina local no tiene VPN y no alcanza Azure DevOps. El flujo es: editar en local →
-push a GitHub → pull en el servidor de pruebas → verificar → publicar en Azure DevOps `dev`
-(rama con politicas: no admite push directo) → servidor 139.
+push al repositorio de trabajo → pull en el servidor de pruebas → verificar → publicar en
+Azure DevOps `dev` (rama con politicas: no admite push directo) → servidor 139.
 
 El monorepo `ProdIA-2.0` queda como **archivo historico**, no como fuente de verdad.
 
@@ -127,8 +127,8 @@ Scripts de apoyo (ambos comiteados en `frontend\`):
 - `verificar_deploy.ps1`: chequea que un checkout desplegado tenga la version actual
   (puerto correcto, rediseno del login, y **todos** los estaticos que `templates/login.html`
   referencia realmente presentes) — correr siempre antes de dar un despliegue por bueno.
-- `.claude\skills\migrar-a-azure\migrar_a_azure.ps1`: puente hacia el checkout de Azure,
-  con verificacion de fidelidad hash por hash.
+- Script `migrar_a_azure.ps1` (en la carpeta de procedimientos del equipo): puente hacia el
+  checkout de Azure, con verificacion de fidelidad hash por hash.
 
 Detalle completo de la migracion de puertos (y por que hizo falta) en
 `POSTMORTEM_migracion_puertos_azure_20260826.md`.

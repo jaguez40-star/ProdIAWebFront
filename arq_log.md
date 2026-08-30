@@ -105,7 +105,7 @@ Los tres puntos donde el backend construye la sesión de usuario (SSO, bypass de
 | Insignia "ADMIN" en el menú de usuario | Cosmético — texto fijo, sin condición, se pinta a todo usuario | `mainchat_layout.html:53` |
 | Rutas `/admin`, `/test-clas`, `/settings` | Botones de interfaz sin ruta de backend detrás | `mainchat_layout.html:62-74` |
 | Campo `is_admin` | No existe en el código; solo aparece en un documento de planeación como algo pendiente de decidir | `Planes/plan_usuario_pie_historial.md:631` |
-| Roles "Admin / Limitado" por campo asignado | Ajeno a este repositorio — descripción tomada de la memoria de otro proyecto guardada como referencia | `clmd/CLAUDE_muestra.md:156` |
+| Roles "Admin / Limitado" por campo asignado | Ajeno a este repositorio — descripción tomada de la memoria de otro proyecto guardada como referencia | documentacion de referencia interna, linea 156 |
 | Grupos de Active Directory (`memberOf`) | Nunca se consultan — el bind LDAP no hace ninguna búsqueda al directorio | `utils/auth_service.py` (ausencia verificada) |
 
 Consecuencia práctica: **todo usuario que pasa la autenticación tiene exactamente los mismos privilegios de aplicación**. No existe ningún decorador tipo `@requires_role` o `@admin_required` en ningún archivo del backend.

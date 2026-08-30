@@ -1,15 +1,19 @@
-<#
+﻿<#
 .SYNOPSIS
-    Migra los cambios ya probados desde el checkout de GitHub hacia el checkout
+    Migra los cambios ya probados desde el repositorio de trabajo hacia el checkout
     de Azure DevOps, y verifica que la copia sea fiel antes de publicar.
 
 .DESCRIPTION
     Pensado para el servidor de pruebas, donde conviven dos carpetas separadas:
 
-        C:\APLICACIONES\ProdIA\Repo ProdIA    -> clon de GitHub (aqui se prueba)
+        C:\APLICACIONES\ProdIA\Repo ProdIA    -> repositorio de trabajo (aqui se prueba)
         C:\APLICACIONES_AZURE\Repo ProdIA     -> clon de Azure DevOps (aqui se publica)
 
     Cada una tiene su propio .git y su unico remoto; no se mezclan.
+
+    Solo se publica lo que git tiene versionado, menos la documentacion interna
+    del equipo. Antes de publicar se verifica hash por hash y se comprueba que
+    no viaje ninguna traza del repositorio de origen.
 
     El paso debil de una copia de archivos es que nada garantiza que el destino
     quede identico al origen: fue la causa del incidente del puerto 5007 en la
@@ -58,6 +62,51 @@ $ExcluirDirs     = @('.git', 'venv', '.venv', '.uv', 'node_modules', '__pycache_
                      '.pytest_cache', 'vector_db', 'flask_session', 'logs', 'dist')
 $ExcluirArchivos = @('.env', '*.bak', '*.pyc')
 
+# Rutas relativas (carpetas o archivos) que no deben salir de este repositorio.
+# Son documentacion interna del equipo y procedimientos de trabajo: no forman
+# parte del producto que se despliega.
+$ExcluirRutas = @(
+    '.claude',
+    '.codex',
+    'Planes',
+    'clmd',
+    'data/bitacora',
+    'CLAUDE.md',
+    'BITACORA.md'
+)
+
+# Terminos que no deben aparecer en NINGUN archivo publicado.
+# 'github.com' a secas queda fuera a proposito: aparece en librerias de terceros
+# (leaflet, jszip, plotly, package-lock.json) y bloquearia el pipeline para
+# siempre. El marcador preciso de la cuenta de origen es 'jaguez40'.
+$TerminosProhibidos = @('claude', 'jaguez40')
+
+# Archivos donde el termino es estructuralmente necesario y no se puede quitar:
+#   .gitignore -> la regla '.claude/*' deja de ignorar la carpeta si se cambia
+#   migra.py   -> la lista de exclusion del empaquetador nombra esa carpeta
+$ExentosDelChequeo = @('.gitignore', 'migra.py')
+
+
+# Unico sitio donde se decide si una ruta relativa se migra o no.
+# Se usa para filtrar lo versionado, para copiar, para inspeccionar el destino
+# y para el chequeo de trazas: si divergieran, la verificacion daria falsos
+# fallos y el skill no podria publicar nunca.
+function Test-Excluido([string] $RutaRelativa) {
+    # OJO: PowerShell NO distingue mayusculas en los nombres de variable. Usar
+    # $rel dentro de una funcion cuyo parametro es $Rel machaca el parametro.
+    # Por eso aqui los nombres son distintos de verdad.
+    $normalizada = $RutaRelativa.Replace('\', '/')
+    $partes      = $normalizada.Split('/')
+    $nombre      = $partes[-1]
+
+    foreach ($d in $ExcluirDirs)     { if ($partes -contains $d) { return $true } }
+    foreach ($f in $ExcluirArchivos) { if ($nombre -like $f)     { return $true } }
+    foreach ($p in $ExcluirRutas) {
+        if ($normalizada -eq $p -or $normalizada.StartsWith($p + '/')) { return $true }
+    }
+    return $false
+}
+
 
 function Write-Titulo([string] $Texto) {
     Write-Host ''
@@ -77,21 +126,60 @@ function Get-MapaVersionado([string] $RutaRepo) {
 }
 
 # Archivos realmente presentes en una carpeta, aplicando las mismas exclusiones
-# que usara robocopy. Sirve para detectar los que sobran en el destino.
+# que la copia. Sirve para detectar los que sobran en el destino.
 function Get-ArchivosReales([string] $Raiz) {
+    if (-not (Test-Path $Raiz)) { return @() }
+    $res = New-Object System.Collections.Generic.List[string]
+    Get-ChildItem $Raiz -Recurse -File -Force -ErrorAction SilentlyContinue | ForEach-Object {
+        $rel = $_.FullName.Substring($Raiz.Length + 1).Replace('\', '/')
+        if (-not (Test-Excluido $rel)) { $res.Add($rel) }
+    }
+    return $res
+}
+
+# Archivos presentes en el destino que estan EXCLUIDOS de la migracion. No se
+# copian ni se borran: si ya estaban en Azure (por ejemplo Planes/ desde julio),
+# hay que retirarlos a mano. Solo se informan.
+function Get-RestosExcluidos([string] $Raiz) {
     if (-not (Test-Path $Raiz)) { return @() }
     $res = New-Object System.Collections.Generic.List[string]
     Get-ChildItem $Raiz -Recurse -File -Force -ErrorAction SilentlyContinue | ForEach-Object {
         $rel    = $_.FullName.Substring($Raiz.Length + 1).Replace('\', '/')
         $partes = $rel.Split('/')
-        $excl   = $false
-        foreach ($d in $ExcluirDirs)     { if ($partes -contains $d)  { $excl = $true; break } }
-        if (-not $excl) {
-            foreach ($f in $ExcluirArchivos) { if ($_.Name -like $f) { $excl = $true; break } }
+        $nombre = $partes[-1]
+        $tecnico = $false
+        foreach ($d in $ExcluirDirs)     { if ($partes -contains $d) { $tecnico = $true; break } }
+        if (-not $tecnico) {
+            foreach ($f in $ExcluirArchivos) { if ($nombre -like $f) { $tecnico = $true; break } }
         }
-        if (-not $excl) { $res.Add($rel) }
+        # Solo interesan los excluidos "por politica", no los tecnicos (.git, venv...)
+        if (-not $tecnico -and (Test-Excluido $rel)) { $res.Add($rel) }
     }
     return $res
+}
+
+# Recorre los archivos publicados buscando trazas del origen. Es lo que de
+# verdad garantiza el requisito: una lista de exclusiones se queda corta en
+# cuanto alguien anade un archivo nuevo; esto mide el resultado.
+function Find-Trazas([string] $Raiz, $Rutas) {
+    $binarios  = @('.png','.jpg','.jpeg','.gif','.ico','.woff','.woff2','.ttf','.eot',
+                   '.db','.zip','.xlsx','.xls','.pdf','.pyc','.dll','.exe')
+    $hallazgos = New-Object System.Collections.Generic.List[string]
+    foreach ($ruta in $Rutas) {
+        $nombre = $ruta.Split('/')[-1]
+        if ($ExentosDelChequeo -contains $nombre) { continue }
+        if ($binarios -contains [System.IO.Path]::GetExtension($nombre).ToLower()) { continue }
+        $full = Join-Path $Raiz $ruta
+        if (-not (Test-Path -LiteralPath $full)) { continue }
+        $texto = [System.IO.File]::ReadAllText($full)
+        foreach ($t in $TerminosProhibidos) {
+            if ($texto -match [regex]::Escape($t)) {
+                $hallazgos.Add(("{0}  ->  '{1}'" -f $ruta, $t))
+                break
+            }
+        }
+    }
+    return $hallazgos
 }
 
 # Hash de blob de archivos concretos del destino, para compararlos con el origen.
@@ -137,7 +225,7 @@ foreach ($r in $repos) {
     Write-Titulo "$r"
 
     # El origen debe estar limpio: si hay cambios sin commitear, lo que se
-    # publique en Azure no correspondera a ningun commit de GitHub.
+    # publique en Azure no correspondera a ningun commit.
     $sucio = git -C $src status --porcelain
     if ($sucio) {
         Write-Host '  El checkout de origen tiene cambios sin commitear:' -ForegroundColor Yellow
@@ -152,7 +240,19 @@ foreach ($r in $repos) {
     # -----------------------------------------------------------------------
     #  Que cambiaria
     # -----------------------------------------------------------------------
-    $mapaSrc  = Get-MapaVersionado $src
+    # Se filtra lo versionado ANTES de nada: si no, la verificacion hash de mas
+    # abajo pediria en el destino archivos que hemos decidido no copiar, y
+    # abortaria siempre.
+    $mapaCompleto = Get-MapaVersionado $src
+    $mapaSrc = @{}
+    foreach ($k in $mapaCompleto.Keys) {
+        if (-not (Test-Excluido $k)) { $mapaSrc[$k] = $mapaCompleto[$k] }
+    }
+    $omitidos = $mapaCompleto.Count - $mapaSrc.Count
+    if ($omitidos -gt 0) {
+        Write-Host ("  No se migran {0} archivos versionados (documentacion interna)." -f $omitidos) -ForegroundColor DarkGray
+    }
+
     $rutas    = @($mapaSrc.Keys)
     $hashDst  = Get-HashesDe $dst $rutas
     $realDst  = Get-ArchivosReales $dst
@@ -197,15 +297,42 @@ foreach ($r in $repos) {
     Write-Host ''
     Write-Host '  Copiando...' -ForegroundColor Cyan
 
-    $argsRobo = @($src, $dst, '/MIR', '/NFL', '/NDL', '/NP', '/NJH', '/NJS', '/R:2', '/W:2')
-    $argsRobo += '/XD'; $argsRobo += $ExcluirDirs
-    $argsRobo += '/XF'; $argsRobo += $ExcluirArchivos
+    # La copia va dirigida por la lista de lo versionado y NO excluido, no por
+    # un espejo del arbol. Con /MIR viajaban tambien los archivos ignorados por
+    # git -- .codex\, temp_*, *.db, copias " - Copy" -- porque .gitignore no
+    # tiene efecto sobre robocopy. Asi se publica exactamente lo que git tiene.
+    foreach ($rel in $rutas) {
+        $origenArch  = Join-Path $src $rel
+        $destinoArch = Join-Path $dst $rel
+        $carpeta     = Split-Path $destinoArch -Parent
+        if (-not (Test-Path -LiteralPath $carpeta)) {
+            New-Item -ItemType Directory -Path $carpeta -Force | Out-Null
+        }
+        Copy-Item -LiteralPath $origenArch -Destination $destinoArch -Force
+    }
 
-    & robocopy @argsRobo | Out-Null
-    $codigo = $LASTEXITCODE
+    # Borrar del destino lo que sobra, para que los borrados tambien viajen. Sin
+    # esto, un archivo eliminado en origen sobrevive para siempre en Azure.
+    # Get-ArchivosReales ya respeta las exclusiones, asi que ni el .env ni los
+    # entornos del destino se tocan.
+    foreach ($rel in (Get-ArchivosReales $dst)) {
+        if (-not $mapaSrc.ContainsKey($rel)) {
+            Remove-Item -LiteralPath (Join-Path $dst $rel) -Force -ErrorAction SilentlyContinue
+        }
+    }
 
-    # robocopy devuelve 0-7 en exito. Solo 8 o mas es error real.
-    if ($codigo -ge 8) { throw "robocopy fallo en '$r' con codigo $codigo." }
+    # Carpetas que hayan quedado vacias tras los borrados. Se aplica la MISMA
+    # exclusion: sin esto, el barrido entraria en el venv\ y el node_modules\
+    # del destino y les borraria carpetas vacias. De mas profunda a menos, para
+    # que una carpeta que queda vacia al vaciarse su hija tambien caiga.
+    Get-ChildItem $dst -Recurse -Directory -Force -ErrorAction SilentlyContinue |
+        Sort-Object { $_.FullName.Length } -Descending | ForEach-Object {
+            $relDir = $_.FullName.Substring($dst.Length + 1)
+            if (-not (Test-Excluido $relDir) -and
+                -not (Get-ChildItem $_.FullName -Force -ErrorAction SilentlyContinue)) {
+                Remove-Item -LiteralPath $_.FullName -Force -ErrorAction SilentlyContinue
+            }
+        }
 
     # -----------------------------------------------------------------------
     #  Verificar que la copia fue fiel  (esto es lo que faltaba en 2026-08-26)
@@ -228,6 +355,39 @@ foreach ($r in $repos) {
 
     Write-Host ("  OK: {0} archivos identicos al origen." -f $rutas.Count) -ForegroundColor Green
 
+    # -----------------------------------------------------------------------
+    #  Que no viaje ninguna traza del repositorio de origen ni de las
+    #  herramientas de trabajo. Se mide sobre lo YA copiado, no sobre lo que
+    #  se pretendia copiar.
+    # -----------------------------------------------------------------------
+    Write-Host '  Buscando trazas del origen...' -ForegroundColor Cyan
+    $trazas = Find-Trazas $dst $rutas
+    if ($trazas.Count -gt 0) {
+        Write-Host ''
+        Write-Host '  HAY TRAZAS DEL ORIGEN EN LO COPIADO. No se publica nada.' -ForegroundColor Red
+        $trazas | Select-Object -First 20 | ForEach-Object { Write-Host "    $_" -ForegroundColor Red }
+        if ($trazas.Count -gt 20) { Write-Host ("    ... y {0} mas" -f ($trazas.Count - 20)) -ForegroundColor Red }
+        throw "Chequeo de trazas fallido en '$r': $($trazas.Count) archivo(s)."
+    }
+    Write-Host '  OK: sin trazas del origen.' -ForegroundColor Green
+
+    # Restos de migraciones anteriores que ahora estan excluidos: no se tocan,
+    # pero conviene saber que siguen ahi.
+    $restos = Get-RestosExcluidos $dst
+    if ($restos.Count -gt 0) {
+        # Cuales de esos restos llevan ademas una traza dentro: son los urgentes.
+        $restosConTraza = @(Find-Trazas $dst $restos | ForEach-Object { $_.Split(' ')[0] })
+        Write-Host ''
+        Write-Host ('  -- RESTOS A BORRAR A MANO EN EL DESTINO ({0}) --' -f $restos.Count) -ForegroundColor Magenta
+        Write-Host '     (excluidos de la migracion, pero ya presentes en el destino)' -ForegroundColor DarkGray
+        Write-Host ('     con traza dentro: {0}  -- estos son los urgentes' -f $restosConTraza.Count) -ForegroundColor Magenta
+        $restos | Select-Object -First 25 | ForEach-Object {
+            $marca = if ($restosConTraza -contains $_) { '!' } else { ' ' }
+            Write-Host ("   {0} {1}" -f $marca, $_)
+        }
+        if ($restos.Count -gt 25) { Write-Host ("     ... y {0} mas" -f ($restos.Count - 25)) }
+    }
+
     if (-not $Push) {
         $resumen += [pscustomobject]@{ Repo = $r; Cambios = $total; Estado = 'copiado' }
         continue
@@ -245,16 +405,17 @@ foreach ($r in $repos) {
         continue
     }
 
-    # El SHA de GitHub va en el mensaje: sin esto no hay forma de saber que
-    # version esta realmente desplegada.
+    # El SHA del repositorio de trabajo va en el mensaje: sin esto no hay forma
+    # de saber que version esta realmente desplegada. Es un identificador opaco
+    # de siete caracteres, no dice de donde viene. El asunto del commit de
+    # origen NO se copia: es texto que este script no controla.
     $lineas = @(
-        "sync desde GitHub $shaOrigen",
+        "sync $shaOrigen",
         '',
-        $msgOrigen,
-        '',
-        "Origen   : github.com/jaguez40-star (rama main), commit $shaOrigen",
-        "Migrado  : $(Get-Date -Format 'yyyy-MM-dd HH:mm')",
-        "Verificado: $($rutas.Count) archivos, hash de blob identico al origen."
+        "Version    : $shaOrigen",
+        "Publicado  : $(Get-Date -Format 'yyyy-MM-dd HH:mm')",
+        "Verificado : $($rutas.Count) archivos, hash de blob identico al origen,",
+        "             sin trazas del repositorio de trabajo."
     )
     $archivoMsg = Join-Path $env:TEMP "msg_azure_$r.txt"
     [System.IO.File]::WriteAllText($archivoMsg, ($lineas -join "`n"),

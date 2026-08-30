@@ -5,7 +5,6 @@
  * Tab 1: Gráfico de desempeño + Tabla de resumen diferidas
  * Tab 2: Card de resumen mensual
  *
- * @author Claude Code
  * @version 1.0.0
  */
 

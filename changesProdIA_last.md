@@ -1,7 +1,7 @@
 # Cambios ProdIA — 5 al 12 de agosto de 2026
 
 > **Nota:** todo el trabajo de este período se hizo el **11 de agosto**. Entre el 5 y el 10 no hay
-> ningún commit, y el 12 tampoco. La bitácora del `CLAUDE.md` sigue cerrada en 2026-08-04, así que
+> ningún commit, y el 12 tampoco. La bitácora de la guia sigue cerrada en 2026-08-04, así que
 > este período **no está registrado allí**.
 
 **11 commits, todos del 2026-08-11** (`b1e5086` … `0a43f25`).
