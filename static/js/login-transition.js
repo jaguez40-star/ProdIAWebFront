@@ -25,7 +25,7 @@
   'use strict';
 
   // Duración del recorrido del panel. Debe ser >= la transition más larga
-  // (1.5s del transform), o el redirect cortaría la animación a medias
+  // (1.875s del transform), o el redirect cortaría la animación a medias
   // (anime_log.md §10, error nº7).
   //
   // La captura del fondo NO espera hasta aquí: se enciende y se desvanece en los
@@ -33,7 +33,7 @@
   // enseguida, en vez de quedarse congelada a pantalla completa durante todo el
   // hueco de red que sigue al redirect — el navegador mantiene esta página a la
   // vista hasta que /mainchat pinta, y eso puede ser varios segundos.
-  var EXIT_MS = 1500;
+  var EXIT_MS = 1875;
 
   var DESTINO = '/mainchat';
 
