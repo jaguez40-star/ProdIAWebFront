@@ -89,8 +89,10 @@ body.login-page *::after {
   display: flex;
   gap: 14px;
   padding: 22px;
-  /* Reposo: gris y apagada, como pide el documento de diseño (anime_log.md §5.3). */
-  filter: grayscale(1) opacity(.42) contrast(.96);
+  /* Reposo: gris y apagada, como pide el documento de diseño (anime_log.md §5.3).
+     [2026-08-30] Difuminado reducido un 25%: opacity .42 -> .53. El velo blanco
+     baja a la par (ver .lt-app__veil), porque los dos suman al mismo efecto. */
+  filter: grayscale(1) opacity(.53) contrast(.96);
   opacity: 1;
   /* La maqueta hace TODO su ciclo en 600ms — muy por delante del panel derecho,
      que tarda 2.5s. Se enciende a color (.3s) y se desvanece (.4s tras 200ms),
@@ -294,7 +296,8 @@ body.login-page *::after {
 .lt-app__veil {
   position: absolute;
   inset: 0;
-  background: rgba(255, 255, 255, .34);
+  /* [2026-08-30] .26, antes .34: acompaña la reducción del 25% del difuminado. */
+  background: rgba(255, 255, 255, .26);
   opacity: 1;
   /* .3s, no .8s: acompaña el ciclo corto de la imagen. Si tardara más, el velo
      seguiría tiñendo la pantalla cuando la captura ya se ha ido. */
