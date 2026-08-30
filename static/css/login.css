@@ -88,18 +88,18 @@ body.login-page *::after {
   top: 0;
   right: 460px;
   bottom: 0;
-  width: auto;
-  height: auto;
-  max-width: 100%;
-  max-height: 100%;
-  /* Punto medio: se permite ampliar hasta un 35% (1160×965). Llenar el hueco
-     entero exigía un 158% y se veía borroso; a tamaño natural se veía nítida
-     pero perdida en medio de la pantalla. Hasta un 35% el desenfoque apenas se
-     percibe y aprovecha bastante más espacio.
-     Van DESPUÉS de los max-*:100% a propósito: un navegador sin min() ignora
-     estas dos líneas y se queda con el límite conservador, nunca sin límite. */
-  max-width: min(100%, 1160px);
-  max-height: min(100%, 965px);
+  /* Punto medio: la caja mide el 100% del hueco pero con un tope de 1160×965,
+     es decir un 35% por encima del tamaño natural de la captura (860×715).
+     Llenar el hueco entero exigía un 158% y salía borrosa; a tamaño natural se
+     veía nítida pero perdida en medio de la pantalla.
+     OJO: tiene que ser width/height (100%), no width:auto con max-width — un
+     max-* SOLO limita, nunca amplía, así que con auto la imagen se quedaba
+     clavada en sus 860px. El tope va en max-width/max-height, y margin:auto
+     centra la caja resultante dentro del hueco. */
+  width: 100%;
+  height: 100%;
+  max-width: 1160px;
+  max-height: 965px;
   margin: auto;
   object-fit: contain;
   /* [2026-08-30] Imagen1.png es a color: reposo en gris/deshabilitado tal como pide
