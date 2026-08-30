@@ -422,7 +422,12 @@
              // [2026-08-25] CN-WAFFLE · el riel de 158px pasó a un botón que abre un popover.
              // El BOTÓN va aquí (se repinta con la pestaña, es barato); el POPOVER vive en
              // document.body y se monta una sola vez — este innerHTML lo destruiría (H2).
-        '    <div class="cn-railbar">' + __cnAnMenuBtn() + '</div>' +
+             // [2026-08-30] La barra solo se pinta en la vista clásica. En MainChat el
+             // botón se fue a la cabecera del panel Insights (lo inyecta acordeon.js
+             // llamando a MultiTabShell.analisisBtnHtml), y así esos 51px van a los
+             // gráficos. Ver __cnHayAcordeon.
+        (__cnHayAcordeon() ? '' :
+        '    <div class="cn-railbar">' + __cnAnMenuBtn() + '</div>') +
         '    <div class="cn-col" id="cn-col">' +
         '      <div class="cn-canvas" id="cn-canvas"></div>' +
         '      <div class="cn-stack" id="cn-stack"></div>' +
@@ -1626,19 +1631,32 @@
   // el DOM deja de ser un sitio fiable para guardarla.
   var __cnRailActiva = "desempeno";
 
-  // [2026-08-25] CN-WAFFLE · Botón que abre el popover de análisis. Solo icono (decisión
-  // del usuario): con 2 tarjetas el valor es recuperar los 158px del riel, no organizar.
-  // El punto indicador (.is-active) compensa que el título del análisis activo ya no se
-  // vea — sin él el botón parece inerte (H5).
-  // `title` + `aria-label` llevan el nombre del activo: es la única pista textual que queda.
+  // [2026-08-30] Este shell lo montan DOS vistas con layouts distintos:
+  //   - /mainchat  → tiene acordeón (.mc-shell): el waffle va en la cabecera del panel
+  //                  Insights, que lo pinta acordeon.js. No hace falta barra propia.
+  //   - /          → NO carga acordeon.js: no hay cabecera donde alojarlo, así que
+  //                  conserva la barra .cn-railbar de siempre.
+  // Sin esta distinción, la vista clásica se quedaría SIN waffle y sin acceso a los
+  // análisis. La marca .mc-shell existe solo en la plantilla de MainChat.
+  function __cnHayAcordeon() {
+    return !!document.querySelector(".mc-shell");
+  }
+
+  // [2026-08-30] Es un <span role="button">, NO un <button>: en MainChat vive dentro de
+  // .mc-cabecera, que a su vez ES un <button> (el que colapsa el panel), y un botón
+  // anidado dentro de otro es HTML inválido — el parser lo expulsaría fuera de su padre
+  // y rompería el layout de la cabecera.
+  // Al no ser un <button> hay que reponer a mano lo que este daba gratis: tabindex para
+  // el foco, y Enter/Espacio, que se manejan en el listener de document.
+  // Sirve igual en la vista clásica, donde sigue dentro de .cn-railbar.
   function __cnAnMenuBtn() {
     var act = __cnRailActiva;
     var cfg = act ? __CN_ANALISIS.filter(function (a) { return a.key === act; })[0] : null;
     var etiq = cfg ? ("Análisis · " + cfg.titulo) : "Análisis";
-    return '<button type="button" class="cn-anbtn' + (act ? " is-active" : "") + '"' +
+    return '<span role="button" tabindex="0" class="cn-anbtn' + (act ? " is-active" : "") + '"' +
       ' id="cn-anbtn" aria-haspopup="true" aria-expanded="false"' +
       ' title="' + esc(etiq) + '" aria-label="' + esc(etiq) + '">' +
-      '<i class="bi bi-grid-3x3-gap-fill"></i></button>';
+      '<i class="bi bi-grid-3x3-gap-fill"></i></span>';
   }
 
   // activeKey: clave a resaltar al construir (o null = ninguna, p.ej. cuando se muestra el Panorama). F1.
@@ -1676,9 +1694,17 @@
   // su rejilla.
   function __cnRailSync(activeKey) {
     __cnRailActiva = activeKey || null;
-    // 1. El botón: se repinta entero (es un solo <button>, más simple que mutar clases).
-    var barra = document.querySelector(".cn-railbar");
-    if (barra) barra.innerHTML = __cnAnMenuBtn();
+    // 1. El botón: se repinta entero (es un solo nodo, más simple que mutar clases).
+    //    [2026-08-30] Se busca por id, no por su contenedor: puede estar en la barra
+    //    (vista clásica) o en la cabecera del panel Insights (MainChat), que además
+    //    acordeon.js reconstruye en cada colapsar/expandir. Se reemplaza el nodo en su
+    //    sitio, sea cual sea, y así vale para los dos casos.
+    var btnViejo = document.getElementById("cn-anbtn");
+    if (btnViejo && btnViejo.parentNode) {
+      var tmp = document.createElement("div");
+      tmp.innerHTML = __cnAnMenuBtn();
+      btnViejo.parentNode.replaceChild(tmp.firstChild, btnViejo);
+    }
     // 2. La rejilla del popover, SOLO si está montado y visible (si está cerrado se
     //    repinta al abrirlo — __cnAnMenuAbrir siempre llama a __cnRailCards).
     var pop = document.getElementById("cn-anpop");
@@ -1723,7 +1749,16 @@
       if (!pop.hidden && !pop.contains(t)) __cnAnMenuAbrir(false);
     });
     document.addEventListener("keydown", function (e) {
-      if (e.key === "Escape" && !pop.hidden) __cnAnMenuAbrir(false);
+      if (e.key === "Escape" && !pop.hidden) { __cnAnMenuAbrir(false); return; }
+      // [2026-08-30] Enter y Espacio sobre el waffle. Un <button> los traía de serie,
+      // pero ahora es un <span role="button"> (ver __cnAnMenuBtn), así que hay que
+      // manejarlos. Va aquí, en la delegación de document, y no en el nodo: la cabecera
+      // que lo contiene se reconstruye entera en cada colapsar/expandir.
+      if (e.key !== "Enter" && e.key !== " " && e.key !== "Spacebar") return;
+      var t = e.target;
+      if (!t || typeof t.closest !== "function" || !t.closest("#cn-anbtn")) return;
+      e.preventDefault();   // Espacio, si no, hace scroll de la página
+      __cnAnMenuAbrir(pop.hidden);
     });
     window.addEventListener("resize", function () {
       if (!pop.hidden) __cnAnMenuSituar();
@@ -7300,5 +7335,9 @@
   // stackScroll: lo usa acordeon.js tras repintar Plotly al expandir Insights — el resize cambia
   // la altura del contenido y la vista se quedaba arriba. Se expone para no duplicar allí la
   // búsqueda del scroller ni la doble medición.
-  window.MultiTabShell = { mount: mount, unmount: unmount, prewarm: __cnPrewarmGlobal, setActiveTab: setActiveTab, paintFocoStk: __cnPaintFocoStk, stackScroll: __cnStackScroll, compProdCargar: __cnCompProdCargar };
+  // [2026-08-30] analisisBtnHtml: acordeon.js lo llama al construir la cabecera del panel
+  // Insights, donde ahora vive el waffle. Devuelve el HTML ya con el estado correcto
+  // (punto indicador y title del análisis activo), porque esa cabecera se reconstruye en
+  // cada colapsar/expandir y __cnRailActiva es privada de este módulo.
+  window.MultiTabShell = { mount: mount, unmount: unmount, prewarm: __cnPrewarmGlobal, setActiveTab: setActiveTab, paintFocoStk: __cnPaintFocoStk, stackScroll: __cnStackScroll, compProdCargar: __cnCompProdCargar, analisisBtnHtml: __cnAnMenuBtn };
 })();

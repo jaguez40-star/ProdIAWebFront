@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="{{ url_for('mainchat.static', filename='css/mainchat.css') }}?v=20260825h">
     <!-- Estilos del shell de multitab_shell.js (prefijo rb-cp / cn- / colapsable-layout):
          MainChat no lo cargaba porque hasta ahora no montaba el shell dentro de sí misma. -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/colapsable.css') }}?v=20260825c">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/colapsable.css') }}?v=20260830a">
     <link rel="stylesheet" href="{{ url_for('mainchat.static', filename='css/acordeon.css') }}?v=20260826a">
     <link rel="stylesheet" href="{{ url_for('mainchat.static', filename='css/historial.css') }}?v=20260826a">
 {% endblock %}
@@ -143,9 +143,9 @@
      defer) — pero main.js no usa nada del shell fuera de su propio listener
      DOMContentLoaded, que de todas formas dispara después de que todo lo diferido
      termine. -->
-<script defer src="{{ url_for('static', filename='js/multitab_shell.js') }}?v=20260826m"></script>
+<script defer src="{{ url_for('static', filename='js/multitab_shell.js') }}?v=20260830a"></script>
 <script defer src="{{ url_for('mainchat.static', filename='js/mainchat.js') }}?v=20260825i"></script>
-<script defer src="{{ url_for('mainchat.static', filename='js/acordeon.js') }}?v=20260826a"></script>
+<script defer src="{{ url_for('mainchat.static', filename='js/acordeon.js') }}?v=20260830a"></script>
 <!-- Después de acordeon.js: historial.js se registra en window.MainChatHistorial y
      pinta por su cuenta al final de su IIFE, porque el primer render() del acordeón
      ya ocurrió al parsear el script anterior. -->

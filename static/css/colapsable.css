@@ -1487,6 +1487,20 @@
 .cn-anbtn:hover { border-color: var(--rb-green,#1f6b4a); }
 .cn-anbtn[aria-expanded="true"] { border-color: var(--rb-green,#1f6b4a);
   box-shadow: 0 0 0 1px var(--rb-green,#1f6b4a); }
+/* [2026-08-30] Waffle dentro de la cabecera del panel Insights (solo en MainChat; en la
+   vista clásica sigue en .cn-railbar, con los estilos de arriba intactos).
+   Sobre el verde #004236 de la cabecera, el borde claro no se ve: el botón pasa a fondo
+   translúcido, con los mismos valores que .mc-act-badge —el badge vecino— para que los
+   dos se lean como una familia. */
+.mc-anbtn-caja { flex: 0 0 auto; display: flex; align-items: center; }
+
+.mc-anbtn-caja .cn-anbtn { width: 30px; height: 30px; border-radius: 8px; border: 0;
+  background: rgb(255 255 255 / 14%); color: #fff; font-size: .95rem; }
+.mc-anbtn-caja .cn-anbtn:hover { background: rgb(255 255 255 / 26%); border-color: transparent; }
+.mc-anbtn-caja .cn-anbtn:focus-visible { outline: 2px solid #ccd32a; outline-offset: 2px; }
+.mc-anbtn-caja .cn-anbtn[aria-expanded="true"] { background: rgb(255 255 255 / 30%);
+  border-color: transparent; box-shadow: 0 0 0 1px #ccd32a; }
+
 /* Punto indicador: con solo el icono, el título del análisis activo ya no se ve (H5).
    Sin esto el botón parece inerte. */
 .cn-anbtn.is-active::after { content: ""; position: absolute; top: -2px; right: -2px;

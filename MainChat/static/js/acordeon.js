@@ -312,7 +312,13 @@
             cabecera.disabled = true;
             cabecera.title = 'Debe quedar al menos un panel abierto';
         }
-        cabecera.addEventListener('click', function () {
+        cabecera.addEventListener('click', function (e) {
+            // [2026-08-30] El waffle de análisis vive dentro de esta cabecera (solo en
+            // Insights). Sin esta guarda, pulsarlo colapsaría el panel: el clic burbujea
+            // hasta aquí. No se resuelve con stopPropagation en el waffle porque el
+            // listener que ABRE su popover está en document, y cortarlo lo dejaría muerto.
+            var t = e && e.target;
+            if (t && typeof t.closest === 'function' && t.closest('#cn-anbtn')) return;
             colapsar(seccion.id);
         });
 
@@ -355,6 +361,18 @@
             actBadge.innerHTML = _actBadgeHtml();
             cabecera.appendChild(actBadge);
             _cargarAct();
+
+            // [2026-08-30] Waffle de análisis. Antes vivía en una columna propia de 51px
+            // a la izquierda del contenido; aquí no cuesta ancho porque ocupa el hueco
+            // que ya sobraba en el header. Lo pinta el shell, que es quien sabe qué
+            // análisis está activo. Guarda defensiva: si el shell no cargó, el panel
+            // funciona igual, solo sin waffle.
+            if (window.MultiTabShell && typeof window.MultiTabShell.analisisBtnHtml === 'function') {
+                var caja = document.createElement('span');
+                caja.className = 'mc-anbtn-caja';
+                caja.innerHTML = window.MultiTabShell.analisisBtnHtml();
+                cabecera.appendChild(caja);
+            }
         }
 
         cabecera.appendChild(colapsarIco);
