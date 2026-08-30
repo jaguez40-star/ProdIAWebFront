@@ -24,21 +24,24 @@
 (function () {
   'use strict';
 
-  // Fase 1 — el panel recorre su camino (transform 1.2s) y la imagen termina de
-  // encenderse (padding 1.15s). Debe ser >= la transition más larga, o el
-  // redirect cortaría la animación a medias (anime_log.md §10, error nº7).
-  var SHOW_MS = 1200;
+  // Fase 1 — cuánto se ve la captura encendida antes de empezar a retirarla.
+  // 900ms: el filtro de encendido (.9s con .1s de retardo) ya está prácticamente
+  // completo, así que el color se aprecia, pero no se deja la imagen ahí parada.
+  var SHOW_MS = 900;
 
   // Fase 2 — la captura se desvanece y deja la pantalla limpia con solo el
   // indicador de carga. Sin esto, la imagen se queda congelada a pantalla
   // completa durante TODO el hueco de red posterior al redirect: el navegador
   // mantiene la página vieja a la vista hasta que /mainchat pinta, y eso puede
   // ser varios segundos. Debe coincidir con la transition de opacity en
-  // login.css (.35s).
-  var FADE_MS = 350;
+  // login.css (.25s).
+  var FADE_MS = 250;
 
-  // Se navega cuando ya no queda nada que mirar.
-  var EXIT_MS = SHOW_MS + FADE_MS;
+  // El redirect espera DOS cosas: que la pantalla ya esté limpia
+  // (SHOW_MS + FADE_MS = 1150) y que el panel haya completado su recorrido
+  // (transform 1.2s), o se cortaría a medias (anime_log.md §10, error nº7).
+  // Manda la segunda, que es la más larga.
+  var EXIT_MS = 1200;
 
   var DESTINO = '/mainchat';
 

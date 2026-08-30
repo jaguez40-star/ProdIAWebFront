@@ -90,7 +90,7 @@ body.login-page *::after {
   transition:
     filter  .9s ease .1s,
     padding 1.15s cubic-bezier(.7, 0, .2, 1),
-    opacity .35s ease;
+    opacity .25s ease;
   pointer-events: none;
   z-index: 0;
 }
@@ -151,9 +151,13 @@ body.lt-is-loading .lt-app__img { opacity: 0; }
   transition: opacity .3s ease;
 }
 
+/* Completo a los 900ms (.6s de retardo + .3s de fundido), justo cuando la captura
+   empieza a retirarse: así el indicador ya está en pantalla y no queda un hueco
+   sin nada mientras la imagen se va. */
+
 body.lt-is-gone .lt-loading {
   opacity: 1;
-  transition-delay: .8s;
+  transition-delay: .6s;
 }
 
 .lt-loading .spinner-border {
