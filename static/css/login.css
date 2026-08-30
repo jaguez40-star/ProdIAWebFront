@@ -74,22 +74,26 @@ body.login-page *::after {
 
 /* Capa 1 — la app de fondo (captura estática de MainChat) */
 
+/* [2026-08-30] NUNCA se amplía la captura. Mide 860×715 y el hueco ronda los
+   1560×1130: llenarlo exigía escalar un 158% (contain) o un 181% (cover), y de
+   ahí venía el desenfoque — no hay propiedad de CSS que invente los píxeles que
+   faltan. Con width/height:auto + max-*:100% la imagen se muestra a tamaño
+   natural, nítida, y solo se REDUCE si la ventana es más pequeña que ella.
+   margin:auto la centra dentro de la caja (izquierda hasta el panel de login).
+   Para que llene el hueco haría falta recapturarla a ~1560×1130 o más. */
+
 .lt-app__img {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  /* [2026-08-30] contain SIN padding vertical. La captura (860×715) es casi
-     cuadrada (ratio 1.20) y el hueco es apaisado (~1.38), así que contain la
-     limita por el ALTO: lo llena entero, que es lo que se busca, y deja el
-     sobrante a un lado en vez de recortar.
-     No usar cover aquí: escalaría un 181% en vez de un 158% —bastante más
-     borroso— y ademas cortaria la cabecera y el pie de la captura.
-     Las bandas de arriba y abajo que hubo antes no eran culpa de contain, sino
-     del padding de 40px que lo acompañaba. */
+  left: 0;
+  top: 0;
+  right: 460px;
+  bottom: 0;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  margin: auto;
   object-fit: contain;
-  object-position: left center;
-  padding: 0 460px 0 0;
   /* [2026-08-30] Imagen1.png es a color: reposo en gris/deshabilitado tal como pide
      el documento de diseño (anime_log.md §5.3), ya no la versión atenuada de cuando
      la fuente venía gris quemada (PanelLEft.png, plan §1 H-1 — superado). */
@@ -184,7 +188,8 @@ body.lt-is-gone .lt-loading {
 }
 
 @media (max-width: 1023.98px) {
-  .lt-app__img { padding-right: 400px; }
+  /* right, no padding-right: la caja ahora se define con los cuatro inset. */
+  .lt-app__img { right: 400px; }
 }
 
 /* Móvil: no hay imagen visible detrás del formulario, así que la capa de app
