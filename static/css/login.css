@@ -269,10 +269,13 @@ body.lt-is-gone .lt-loading {
   /* El retardo de 100 ms en la opacidad evita que el panel "se apague" antes de
      moverse: primero se percibe el desplazamiento, luego el desvanecimiento
      (anime_log.md §5.2). */
+  /* [2026-08-30] Un 25% más lento que el 1.2s original (los tres valores
+     escalados ×1.25, para que la proporción entre ellos no cambie): alarga la
+     salida y da margen antes de navegar. */
   transition:
-    transform 1.2s cubic-bezier(.7, 0, .2, 1),
-    opacity   1.1s ease .1s,
-    filter    1.1s ease;
+    transform 1.5s cubic-bezier(.7, 0, .2, 1),
+    opacity   1.375s ease .125s,
+    filter    1.375s ease;
 }
 
 /* Salida: -104vw, NO -100%. El porcentaje se resuelve contra el ancho del propio
