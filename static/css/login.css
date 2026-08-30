@@ -88,20 +88,16 @@ body.login-page *::after {
   top: 0;
   right: 460px;
   bottom: 0;
-  /* La caja mide el 100% del hueco pero con un tope de 1400×1165, un 163% por
-     encima del tamaño natural de la captura (860×715). Ocupa ~77% del hueco.
-     El techo real está en 1565×1300 (182%), donde ya toca los bordes y el
-     desenfoque canta; a tamaño natural (100%) se ve nítida pero perdida en
-     medio de la pantalla, ocupando solo el 29%.
+  /* Ocupa el hueco entero, por decisión del usuario. Sin topes de tamaño: la
+     captura (860×715) se amplía lo que haga falta —del orden del 180%— hasta
+     llenar todo el blanco a la izquierda del panel de login. Eso implica
+     desenfoque, asumido a cambio de no dejar espacio muerto; la única forma de
+     tener ambas cosas es recapturar la imagen a ~1560×1300 o más.
      OJO: tiene que ser width/height (100%), no width:auto con max-width — un
-     max-* SOLO limita, nunca amplía, así que con auto la imagen se quedaba
-     clavada en sus 860px. El tope va en max-width/max-height, y margin:auto
-     centra la caja resultante dentro del hueco. */
+     max-* SOLO limita, nunca amplía, así que con auto la imagen se quedaría
+     clavada en sus 860px naturales. */
   width: 100%;
   height: 100%;
-  max-width: 1400px;
-  max-height: 1165px;
-  margin: auto;
   object-fit: contain;
   /* [2026-08-30] Imagen1.png es a color: reposo en gris/deshabilitado tal como pide
      el documento de diseño (anime_log.md §5.3), ya no la versión atenuada de cuando
