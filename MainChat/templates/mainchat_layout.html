@@ -131,11 +131,23 @@
     window.USER_FULL_NAME  = {{ session.get('user', {}).get('full_name', '')|tojson }};
 </script>
 
-<script src="{{ url_for('static', filename='js/multitab_shell.js') }}?v=20260826m"></script>
-<script src="{{ url_for('mainchat.static', filename='js/mainchat.js') }}?v=20260825i"></script>
-<script src="{{ url_for('mainchat.static', filename='js/acordeon.js') }}?v=20260826a"></script>
+<!-- [2026-08-30] defer en los 4: el navegador puede parsear y pintar el HTML ya
+     presente (.mc-shell, #mainchat-root) ANTES de descargar+ejecutar estos ~500KB+ de
+     JS, en vez de bloquear el pintado hasta que terminan.
+     SIEMPRE los 4 juntos, nunca un subconjunto: acordeon.js espera que
+     window.MultiTabShell ya exista al montarse (si no existe, sale en silencio sin
+     reintentar), y defer preserva el orden relativo entre scripts diferidos — pero
+     solo entre sí; quitarle defer a uno solo rompería esa garantía.
+     Efecto colateral verificado inofensivo: invierte el orden de ejecución respecto a
+     bootstrap.bundle.min.js y main.js (que van después en el documento y siguen sin
+     defer) — pero main.js no usa nada del shell fuera de su propio listener
+     DOMContentLoaded, que de todas formas dispara después de que todo lo diferido
+     termine. -->
+<script defer src="{{ url_for('static', filename='js/multitab_shell.js') }}?v=20260826m"></script>
+<script defer src="{{ url_for('mainchat.static', filename='js/mainchat.js') }}?v=20260825i"></script>
+<script defer src="{{ url_for('mainchat.static', filename='js/acordeon.js') }}?v=20260826a"></script>
 <!-- Después de acordeon.js: historial.js se registra en window.MainChatHistorial y
      pinta por su cuenta al final de su IIFE, porque el primer render() del acordeón
      ya ocurrió al parsear el script anterior. -->
-<script src="{{ url_for('mainchat.static', filename='js/historial.js') }}?v=20260826b"></script>
+<script defer src="{{ url_for('mainchat.static', filename='js/historial.js') }}?v=20260826b"></script>
 {% endblock %}
