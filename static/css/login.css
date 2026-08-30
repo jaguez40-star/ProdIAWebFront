@@ -88,18 +88,19 @@ body.login-page *::after {
   top: 0;
   right: 460px;
   bottom: 0;
-  /* Punto medio: la caja mide el 100% del hueco pero con un tope de 1160×965,
-     es decir un 35% por encima del tamaño natural de la captura (860×715).
-     Llenar el hueco entero exigía un 158% y salía borrosa; a tamaño natural se
-     veía nítida pero perdida en medio de la pantalla.
+  /* La caja mide el 100% del hueco pero con un tope de 1400×1165, un 163% por
+     encima del tamaño natural de la captura (860×715). Ocupa ~77% del hueco.
+     El techo real está en 1565×1300 (182%), donde ya toca los bordes y el
+     desenfoque canta; a tamaño natural (100%) se ve nítida pero perdida en
+     medio de la pantalla, ocupando solo el 29%.
      OJO: tiene que ser width/height (100%), no width:auto con max-width — un
      max-* SOLO limita, nunca amplía, así que con auto la imagen se quedaba
      clavada en sus 860px. El tope va en max-width/max-height, y margin:auto
      centra la caja resultante dentro del hueco. */
   width: 100%;
   height: 100%;
-  max-width: 1160px;
-  max-height: 965px;
+  max-width: 1400px;
+  max-height: 1165px;
   margin: auto;
   object-fit: contain;
   /* [2026-08-30] Imagen1.png es a color: reposo en gris/deshabilitado tal como pide
