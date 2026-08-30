@@ -79,14 +79,16 @@ body.login-page *::after {
   inset: 0;
   width: 100%;
   height: 100%;
-  /* [2026-08-30] cover, no contain: contain encaja la imagen ENTERA dentro del
-     área respetando su proporción, y como la caja es más ancha que la captura
-     (1010×699) sobraba alto — dos bandas vacías, arriba y abajo. cover escala
-     hasta llenar y recorta el excedente por los lados, que es aceptable: lo que
-     sobra queda bajo el panel de login. Sin padding vertical ni izquierdo, para
-     que ocupe todo el alto disponible. */
-  object-fit: cover;
-  object-position: center center;
+  /* [2026-08-30] contain SIN padding vertical. La captura (860×715) es casi
+     cuadrada (ratio 1.20) y el hueco es apaisado (~1.38), así que contain la
+     limita por el ALTO: lo llena entero, que es lo que se busca, y deja el
+     sobrante a un lado en vez de recortar.
+     No usar cover aquí: escalaría un 181% en vez de un 158% —bastante más
+     borroso— y ademas cortaria la cabecera y el pie de la captura.
+     Las bandas de arriba y abajo que hubo antes no eran culpa de contain, sino
+     del padding de 40px que lo acompañaba. */
+  object-fit: contain;
+  object-position: left center;
   padding: 0 460px 0 0;
   /* [2026-08-30] Imagen1.png es a color: reposo en gris/deshabilitado tal como pide
      el documento de diseño (anime_log.md §5.3), ya no la versión atenuada de cuando
@@ -94,14 +96,12 @@ body.login-page *::after {
   filter: grayscale(1) opacity(.42) contrast(.96);
   opacity: 1;
   /* [2026-08-30] La captura hace TODO su ciclo en 600ms — muy por delante del
-     panel derecho, que conserva su 1.2s. Se enciende a color (.3s), se reencuadra
-     (.45s) y se desvanece (.4s tras 200ms de retardo), así que a los 600ms ya no
-     está: el resto de la animación, y sobre todo el hueco de red posterior al
-     redirect, transcurre con la pantalla limpia en vez de con la imagen
-     congelada a pantalla completa. */
+     panel derecho, que tarda 2.5s. Se enciende a color (.3s) y se desvanece
+     (.4s tras 200ms de retardo), así que a los 600ms ya no está: el resto de la
+     animación, y sobre todo el hueco de red posterior al redirect, transcurre
+     con la pantalla limpia en vez de con la imagen congelada. */
   transition:
     filter  .3s ease,
-    padding .45s cubic-bezier(.7, 0, .2, 1),
     opacity .4s ease .2s;
   pointer-events: none;
   z-index: 0;
@@ -120,10 +120,11 @@ body.login-page *::after {
 }
 
 /* Encendido: la clase la pone login-transition.js sobre <body>.
-   El padding-right baja a 0 para que la captura ocupe el ancho completo. */
+   El padding-right ya no se anima: con contain la captura está limitada por el
+   alto, así que ensanchar la caja no la agranda — solo la desplazaría de golpe
+   hacia la derecha. */
 
 body.lt-is-live .lt-app__img {
-  padding-right: 0;
   filter: grayscale(0) opacity(1) contrast(1);
 }
 
