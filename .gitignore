@@ -276,3 +276,6 @@ image.png
 
 # Archivo de diferidas (dato operacional, no código)
 DIFERIDAS_MES.csv
+
+# Respaldos generados por respaldar_proyecto.py (regenerables)
+ProdIA_respaldo_*.zip
