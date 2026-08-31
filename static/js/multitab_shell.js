@@ -1948,7 +1948,7 @@
     if (!ed || !ed.focos || !dd || !dd.curva) return;
     ed.focos.forEach(function (f) {
       var day = el("cn-foco-day-" + f.rank), mon = el("cn-foco-mon-" + f.rank);
-      if (day) __cnDailyInto(f.producto, day, dd);
+      if (day) __cnDailyInto(f.producto, day, dd, ed.tarjetas);   // ed.tarjetas → línea de PPTO diario
       if (mon) __cnGapCampoInto(f.producto, mon, ed, dd, f);   // panel derecho = producido vs producción esperada por campo
     });
   }
@@ -1966,18 +1966,30 @@
     ed.focos.forEach(function (f) {
       var day = blk.querySelector("#cn-foco-day-" + f.rank + sufijo);
       var mon = blk.querySelector("#cn-foco-mon-" + f.rank + sufijo);
-      if (day) __cnDailyInto(f.producto, day, dd);
+      if (day) __cnDailyInto(f.producto, day, dd, ed.tarjetas);   // ed.tarjetas → línea de PPTO diario
       if (mon) __cnGapCampoInto(f.producto, mon, ed, dd, f);
     });
   }
 
   // Gráfica DIARIA (curva del producto) + línea de referencia = PROMEDIO DIARIO 2026 (del REAL mensual)
   // dibujada POR ENCIMA, con texto explicativo al pie. La referencia sale de d.ritmo_mensual.promedio_dia.
-  function __cnDailyInto(prod, hostEl, d) {
+  // [2026-08-31] +tarjetas: se añade una 2ª línea de referencia con el PPTO DIARIO del producto.
+  // Viene de `ed.tarjetas` (payload de /ejecutivo), NO de `d` (payload de /desempeno) — son dos
+  // endpoints distintos; por eso entra como parámetro opcional y los dos call sites lo pasan.
+  // Se usa k.bopd.requerido, que es el MISMO dato y la MISMA unidad que la curva (bbl/día, MSCF/día),
+  // el que ya muestra la tarjeta "Ejecución diaria vs PPTO" de al lado. Sin conversiones inventadas.
+  // ⚠️ BLANCOS queda fuera a propósito: el backend manda bopd:null porque su fact diario y su mensual
+  // modelan cosas distintas (corrientes físicas vs "GAS CONVERTIDO MME") y NO reconcilian —
+  // 2,10× ó 3,06× según el criterio, ver HALLAZGO_concepto_multiplicidad.md §4bis. Ponerle una línea
+  // exigiría inventar un factor de corrección. Queda pendiente de la decisión de negocio (§5 Paso 3).
+  function __cnDailyInto(prod, hostEl, d, tarjetas) {
     var serie = (d.curva && d.curva.series && d.curva.series[prod]) || [];
     var fechas = (d.curva && d.curva.fechas) || [];
     var nombre = prod.charAt(0).toUpperCase() + prod.slice(1).toLowerCase();
     var rm = d.ritmo_mensual || {};
+    // PPTO diario del producto. null si no aplica (BLANCOS, o entidad sin PPTO/PROGRAMA formal).
+    var tj = (tarjetas || []).filter(function (k) { return k.producto === prod; })[0];
+    var pptoDia = (tj && tj.bopd && tj.bopd.requerido != null) ? tj.bopd.requerido : null;
     var mesNom = (d.mes && d.mes.nombre) || "";   // mes dinámico = último mes de datos cargados
     // Referencia = PROMEDIO DIARIO 2026, SOLO si el producto reconcilia día↔mes (GAS/CRUDO → promedio_dia).
     // BLANCOS NO reconcilia: su curva diaria suma 4 conceptos-copia → ×4 vs el mensual (ver
@@ -2004,24 +2016,34 @@
     __cnDailyPlot(elp, fechas, serie, ref, U, prod === "GAS", prom2026 != null, __cnProdCol(prod),
                   esCompProd ? 1.30 : undefined,
                   esCompProd ? { x: "Día" + (mesNom ? " de " + mesNom : " del mes"),
-                                 y: "Producción (" + (U || "unidades") + "/día)" } : undefined);
+                                 y: "Producción (" + (U || "unidades") + "/día)" } : undefined,
+                  pptoDia);
     var cap = hostEl.querySelector("[data-cap]");
     if (cap && !esCompProd) {
-      cap.innerHTML = __cnDailyCap(promMes, ref, prom2026 != null, U, prod === "GAS", (d.mes && d.mes.nombre) || "El mes");
+      cap.innerHTML = __cnDailyCap(promMes, ref, prom2026 != null, U, prod === "GAS", (d.mes && d.mes.nombre) || "El mes", pptoDia);
     }
   }
 
   // Texto explicativo bajo la curva diaria: media real del mes vs promedio 2026, con la brecha.
-  function __cnDailyCap(promMes, ref, esAnio, unidad, esGas, mesNom) {
+  function __cnDailyCap(promMes, ref, esAnio, unidad, esGas, mesNom, pptoDia) {
     var fmtD = esGas ? __cnGasM : function (v) { return __cnMilesEC(Math.round(v)); };
     var u = unidad ? (" " + unidad) : "";
     var media = '<b>' + fmtD(promMes) + u + '/día</b>';
-    if (!esAnio || !ref) return 'La curva verde es la producción real día a día (media ' + media + ').';
+    // [2026-08-31] Frase del PPTO: se añade solo si hay dato, y dice si la media va por debajo o por
+    // encima de la meta diaria. Se construye aparte para no duplicar las dos ramas de abajo.
+    var ppto = "";
+    if (pptoDia) {
+      var gp = (promMes / pptoDia - 1) * 100;
+      ppto = ' La línea azul es el <b>PPTO diario</b>: <b>' + fmtD(pptoDia) + u + '/día</b>' +
+        ' — la media del mes va <b>~' + Math.abs(Math.round(gp)) + '% ' +
+        (gp < 0 ? "por debajo" : "por encima") + '</b> del presupuesto.';
+    }
+    if (!esAnio || !ref) return 'La curva verde es la producción real día a día (media ' + media + ').' + ppto;
     var gap = ref ? (promMes / ref - 1) * 100 : 0;
     var dir = gap < 0 ? "por debajo" : "por encima";
     return 'La curva verde es la producción real día a día (media ' + media + '). La línea punteada es el ' +
       '<b>promedio diario de 2026</b>: <b>' + fmtD(ref) + u + '/día</b>. ' +
-      esc(mesNom) + ' corre <b>~' + Math.abs(Math.round(gap)) + '% ' + dir + '</b> del ritmo del año.';
+      esc(mesNom) + ' corre <b>~' + Math.abs(Math.round(gap)) + '% ' + dir + '</b> del ritmo del año.' + ppto;
   }
 
   // Curva diaria (línea + markers + área) + LÍNEA punteada de referencia (promedio 2026 o, en fallback,
@@ -2029,13 +2051,16 @@
   // esGas: el gas se grafica en MSCF (÷1e6).
   // [2026-08-11] +col: color YA RESUELTO por el caller (vía __cnProdCol) para la identidad de
   // producto. esGas NO cambia de rol — sigue gobernando solo la conversión de unidades a MSCF.
-  function __cnDailyPlot(elp, fechas, valores, ref, unidad, esGas, refEsAnio, col, holgura, ejes) {
+  // [2026-08-31] +pptoDia: 2ª línea de referencia (PPTO diario). Mismo tratamiento de unidades que
+  // `ref` — el gas se divide por 1e6 igual. null → no se dibuja (BLANCOS y entidades sin PPTO).
+  function __cnDailyPlot(elp, fechas, valores, ref, unidad, esGas, refEsAnio, col, holgura, ejes, pptoDia) {
     if (!elp) return;
     if (!window.Plotly) { elp.innerHTML = '<div class="text-muted small p-2">(Plotly no disponible)</div>'; return; }
     var uni = unidad ? (" " + unidad) : "";
     var fmtD = esGas ? __cnGasM : function (v) { return __cnMilesEC(Math.round(v)); };
     var yPlot = esGas ? valores.map(function (v) { return v == null ? null : v / 1e6; }) : valores;
     var refPlot = esGas ? ref / 1e6 : ref;
+    var pptoPlot = (pptoDia != null) ? (esGas ? pptoDia / 1e6 : pptoDia) : null;
     // Eje X categórico = número de día del mes ("2026-05-01" → "1"). El hover conserva la fecha completa.
     var xcat = fechas.map(function (f) {
       var s = String(f).slice(0, 10).split("-");   // ["2026","05","01"]
@@ -2051,13 +2076,26 @@
         text: (refEsAnio ? "promedio diario 2026 · " : "promedio del mes · ") + fmtD(ref) + uni + "/día",
         showarrow: false, font: { size: 10, color: "#BA7517" } });
     }
+    // [2026-08-31] PPTO diario: línea sólida azul, para no confundirse con la punteada ámbar del
+    // promedio. Su etiqueta ancla a la DERECHA (xanchor:right) porque la del promedio ya ocupa la
+    // izquierda: si ambas nacieran en x=0 se solaparían cuando los dos valores quedan cerca.
+    if (pptoPlot) {
+      shapes.push({ type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: pptoPlot, y1: pptoPlot,
+        line: { color: "#1B6FA8", width: 1.5 } });
+      anns.push({ x: 1, y: pptoPlot, xref: "paper", yref: "y", xanchor: "right", yanchor: "bottom",
+        text: "PPTO · " + fmtD(pptoDia) + uni + "/día",
+        showarrow: false, font: { size: 10, color: "#1B6FA8" } });
+    }
     // Eje Y desde 0, con techo = max(curva, referencia) + holgura → la referencia queda con aire.
     // [2026-08-25] `holgura` es ADITIVO y por defecto 1.12: el panel de Focos no cambia. El panel
     // «Comportamiento {Producto}» pasa 1.30 — su curva es casi plana (la producción diaria varía
     // poco) y con el 12% quedaba pegada al borde superior.
+    // [2026-08-31] El PPTO entra en el max: suele estar POR ENCIMA de la curva (es la meta), así que
+    // sin esto su línea quedaba fuera del área visible — justo el caso de CRUDO (PPTO 3,49M vs curva
+    // 2,83M) y de GAS (3,1 vs 2,3).
     var vals = yPlot.filter(function (v) { return v != null; });
     var dataMax = vals.length ? Math.max.apply(null, vals) : 0;
-    var top = Math.max(dataMax, refPlot || 0) * (holgura || 1.12) || 1;
+    var top = Math.max(dataMax, refPlot || 0, pptoPlot || 0) * (holgura || 1.12) || 1;
     var lineCol = col || "#1f6b4a";
     var ejX = (ejes || {}).x || "", ejY = (ejes || {}).y || "";
     // Con título de eje hacen falta ~16px más abajo y ~10px a la izquierda; sin él, márgenes de siempre.
