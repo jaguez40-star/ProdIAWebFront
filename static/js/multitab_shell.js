@@ -2707,15 +2707,18 @@
       });
       return;
     }
-    // [2026-07-26] Muestra TODOS los campos del ámbito: detractores (▼ bajo meta) Y compensadores
-    // (▲ sobre meta). Antes solo pintaba detractores → en un Activo con un campo por encima (p.ej.
-    // CHICHIMENE 105% amortiguando a CHICHIMENE SW 89%) ese campo quedaba invisible aunque estaba en
-    // el payload. Ahora el desglose del activo muestra los 2 lados.
-    var comps = (g && g.compensadores) || [];
-    // [2026-07-26] Orden por % de Producción esperada ASCENDENTE (0% arriba → sube; sin meta al final)
-    // — decisión del usuario, "como la imagen de BLANCOS". Detractores (▼) y compensadores (▲) en una
-    // sola lista ordenada por cumplimiento, NO por faltante absoluto (así el % queda monótono en los
-    // 3 productos; antes el faltante en barriles y el % divergían cuando las metas diferían).
+    // [2026-08-31] Solo se pintan los DETRACTORES (▼ bajo meta) — decisión del usuario: este panel
+    // responde "dónde está el faltante", y los campos sobre meta distraían de esa lectura.
+    //
+    // Revierte deliberadamente la decisión del 2026-07-26, que había sumado los compensadores
+    // (▲ sobre meta) porque en un Activo con un campo por encima (p.ej. CHICHIMENE 105% amortiguando
+    // a CHICHIMENE SW 89%) ese campo quedaba invisible pese a venir en el payload. Ese contexto se
+    // pierde aquí a propósito; `g.compensadores` SIGUE usándose en los gráficos de divergencia
+    // (__ejecDiverg, ~línea 5599 en adelante), que no se tocan.
+    //
+    // Orden por % de Producción esperada ASCENDENTE (0% arriba → sube; sin meta al final), NO por
+    // faltante absoluto: así el % queda monótono en los 3 productos (antes el faltante en barriles
+    // y el % divergían cuando las metas diferían).
     var mkRow = function (d, dir) {
       var m = d.meta;
       return { campo: d.campo, prod: Math.max(d.real, 0), meta: m, dir: dir,
@@ -2724,10 +2727,11 @@
                cumpl: m > 0 ? __ejClamp(d.real / m, 0, 1) : 1, sinMeta: !(m > 0) };
     };
     var rows = dets.map(function (d) { return mkRow(d, "bajo"); })
-      .concat(comps.map(function (d) { return mkRow(d, "alto"); }))
       .sort(function (a, b) { return a.ratio - b.ratio; });
     if (!rows.length) {
-      hostEl.innerHTML = '<div class="gpm"><div class="gpm__empty">Sin campos con desviación en el periodo.</div></div>';
+      // [2026-08-31] Al filtrar los compensadores, este caso ya no significa "sin desviación": puede
+      // haber campos SOBRE meta y ninguno por debajo. Decirlo así evita afirmar algo que no es cierto.
+      hostEl.innerHTML = '<div class="gpm"><div class="gpm__empty">Ningún campo por debajo de la Producción esperada en el periodo.</div></div>';
       return;
     }
     var gapTotal = rows.reduce(function (s, r) { return r.dir === "bajo" ? s + r.delta : s; }, 0);
@@ -2757,7 +2761,7 @@
         '<div class="gpm__body">' + body + '</div>' +
         '<div class="gpm__legend">' +
           '<span class="gpm__lg"><i class="gpm__chip gpm__chip--fill"></i> ' + prodLbl + '</span>' +
-          '<span class="gpm__lg">▼ bajo meta · ▲ sobre meta</span></div>' +
+          '<span class="gpm__lg">▼ bajo meta</span></div>' +
       '</div>';
     // anima el relleno 0→valor al montar (respeta prefers-reduced-motion vía CSS)
     (window.requestAnimationFrame || function (f) { setTimeout(f, 30); })(function () {
