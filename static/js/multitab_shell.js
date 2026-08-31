@@ -2716,18 +2716,19 @@
     // pierde aquí a propósito; `g.compensadores` SIGUE usándose en los gráficos de divergencia
     // (__ejecDiverg, ~línea 5599 en adelante), que no se tocan.
     //
-    // Orden por % de Producción esperada ASCENDENTE (0% arriba → sube; sin meta al final), NO por
-    // faltante absoluto: así el % queda monótono en los 3 productos (antes el faltante en barriles
-    // y el % divergían cuando las metas diferían).
+    // [2026-08-31] Orden por FALTANTE ABSOLUTO descendente (el mayor déficit arriba) — decisión del
+    // usuario: el panel responde "dónde está el faltante", y ahí manda el volumen, no el porcentaje.
+    // Sustituye al orden por % ascendente del 2026-07-26: un campo al 61% podía quedar por encima de
+    // otro al 78% que faltaba 200 kbbl más. Los "sin meta" (delta 0) caen al final por su propio peso.
     var mkRow = function (d, dir) {
       var m = d.meta;
       return { campo: d.campo, prod: Math.max(d.real, 0), meta: m, dir: dir,
                delta: dir === "alto" ? Math.max(d.real - m, 0) : Math.max(m - d.real, 0),
-               ratio: m > 0 ? d.real / m : Infinity,        // sin meta → al final
+               ratio: m > 0 ? d.real / m : Infinity,        // ya no ordena; se conserva por si vuelve
                cumpl: m > 0 ? __ejClamp(d.real / m, 0, 1) : 1, sinMeta: !(m > 0) };
     };
     var rows = dets.map(function (d) { return mkRow(d, "bajo"); })
-      .sort(function (a, b) { return a.ratio - b.ratio; });
+      .sort(function (a, b) { return b.delta - a.delta; });
     if (!rows.length) {
       // [2026-08-31] Al filtrar los compensadores, este caso ya no significa "sin desviación": puede
       // haber campos SOBRE meta y ninguno por debajo. Decirlo así evita afirmar algo que no es cierto.
