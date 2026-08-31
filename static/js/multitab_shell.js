@@ -3221,8 +3221,8 @@
   function __cnKb(v) { return (v == null) ? "—" : __cnKbpe(v); }
 
   // [2026-07-29] Estructura fiel al mockup «Épica 2 · Card P50 por producto» (artifact c14c7dc8):
-  // anillo grande centrado (Real/P50) + Real del mes + 6 filas. Base P50 y Compromiso llevan la
-  // marca ◆ dorada (son las dos referencias del compromiso); el Gap es fila numérica y su color va
+  // anillo grande centrado (Real/P50) + Real del mes + 5 filas (eran 6: "Base P50" se retiró el
+  // 2026-08-31). Compromiso lleva la marca ◆ dorada; el Gap es fila numérica y su color va
   // por SIGNO, no por el semáforo de la tarjeta (en el mockup CRUDO está "En meta" y su gap es rojo).
   // Reusa el contenedor .cp-mes__kpi y su header; el cuerpo son clases .cp-p50__*.
   function __cnP50CardHtml(p) {
@@ -3267,7 +3267,8 @@
         '<div class="cp-p50__reallbl">Real del mes</div>' +
       '</div>' +
       '<div class="cp-p50__rows">' +
-        fila("Base P50", __cnKb(p50), true) +
+        // [2026-08-31] Fila "Base P50" retirada a pedido: su valor ya está representado en el
+        // anillo (Real/P50) y en el Gap vs P50. La variable p50 sigue en uso para ambos.
         fila(compLbl, __cnKb(p.compromiso), true) +
         fila("Proyección cierre", __cnKb(p.proy_mes)) +
         fila("Programa día", __cnKb(p.programa_dia)) +
