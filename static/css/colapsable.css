@@ -1458,7 +1458,15 @@
    Las otras 8 reglas de .cn-desemp__scroll (:1326-1339) NO se replican: lo equivalente ya lo fijan
    las reglas .cp-foco__panel (:1668-1670) con mayor especificidad, y .cn-ins__ev-scroll no se emite
    en este acordeón (verificado). */
-.cn-stk__body .cp-foco__panel .cn-desemp__grid2--kpi { max-height: 375px; min-height: 0; }
+/* [2026-08-31] El techo sube de 375px a 520px. Los 375px se calibraron cuando el backend mandaba
+   3 detractores; hoy manda 5 (TOP_DETRACTORES en analisis/api.py) y las dos últimas filas quedaban
+   recortadas — el dato llegaba y se renderizaba, pero no se veía.
+   Cuenta con los valores comprimidos de abajo: fila ≈ 44px (nombre 18 + 2 + barra 10 + 1 + pie 13),
+   gap 6px → 5 filas ≈ 244px; + cabecera 33 + padding 12 + leyenda 35 ≈ 324px. Holgado. Pero el
+   .gpm__top lleva flex-wrap y con nombres largos ("CAÑO SUR ESTE" + el ▼ falta) la fila se va a dos
+   líneas y sube a ~62px → ≈ 414px. 520px cubre ese peor caso sin recortar.
+   Sigue siendo max-height, no height: un foco con 1-2 campos ocupa lo que necesita, no 520px. */
+.cn-stk__body .cp-foco__panel .cn-desemp__grid2--kpi { max-height: 520px; min-height: 0; }
 .cn-stk__body .cp-foco__panel .cn-desemp__grid2--kpi > * { height: 100%; min-height: 0; overflow: visible; }
 .cn-stk__body .cp-foco__panel .cn-desemp__grid2--kpi .cn-ins__card { height: 100%; }
 .cn-stk__body .cp-foco__panel .cn-desemp__grid2--kpi .cn-ins__card > .cn-ins__plot {
