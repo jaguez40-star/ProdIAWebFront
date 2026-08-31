@@ -2737,15 +2737,15 @@
     }
     var gapTotal = rows.reduce(function (s, r) { return r.dir === "bajo" ? s + r.delta : s; }, 0);
     var body = rows.map(function (r) {
-      var pct = Math.round(r.cumpl * 100);
-      var pctTxt = r.sinMeta ? "sin Producción esperada" : (pct + "% de Producción esperada");
-      var pctCls = (!r.sinMeta && r.dir === "bajo" && r.cumpl < 0.6) ? " is-low" : "";
+      // [2026-08-31] Se retira el "NN% de Producción esperada" de la fila — decisión del usuario:
+      // con 5 campos hacía que .gpm__top envolviera a dos líneas y el panel creciera de más. El dato
+      // no se pierde: el % sigue siendo el ancho de la barra, su banda de color (__cnGpmBand) y el
+      // aria-label, y el pie mantiene Producido vs Producción esperada en cifras absolutas.
       var deltaTxt = r.sinMeta ? '' : (r.dir === "alto"
         ? '<span class="gpm__falta gpm__falta--up">▲ +<b>' + fmtU(r.delta) + '</b></span>'
         : '<span class="gpm__falta">▼ falta <b>' + fmtU(r.delta) + '</b></span>');
       return '<div class="gpm__row gpm__row--' + r.dir + '">' +
-        '<div class="gpm__top"><span class="gpm__name">' + esc(r.campo) + '</span>' +
-        '<span class="gpm__pct' + pctCls + '">' + pctTxt + '</span>' + deltaTxt + '</div>' +
+        '<div class="gpm__top"><span class="gpm__name">' + esc(r.campo) + '</span>' + deltaTxt + '</div>' +
         '<div class="gpm__bar" role="meter" aria-valuenow="' + Math.round(r.prod) + '" aria-valuemin="0" ' +
         'aria-valuemax="' + Math.round(r.meta) + '" aria-label="' + esc(r.campo) + ': ' + prodLbl + ' ' + fmtU(r.prod) +
         ' de Producción esperada ' + fmtU(r.meta) + '">' +
