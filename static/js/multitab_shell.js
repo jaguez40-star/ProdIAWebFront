@@ -1398,7 +1398,7 @@
       traces.push({
         x: meses, y: S[p], name: NOM[p], type: "scatter", mode: "lines+markers",
         yaxis: isGas ? "y2" : "y", connectgaps: false,
-        line: { color: pc, width: 2.5 }, marker: { color: pc, size: 7 },
+        line: { color: pc, width: 2.5, shape: "spline", smoothing: 0.8 }, marker: { color: pc, size: 7 },
         hovertemplate: "%{x}<br>" + NOM[p] + ": %{y:,.0f}<extra></extra>"
       });
       if (pidx != null && S[p][pidx] != null) {   // anillo hueco sobre el mes proyectado
@@ -2055,14 +2055,16 @@
     var ppto = "";
     if (pptoDia) {
       var gp = (promMes / pptoDia - 1) * 100;
-      ppto = ' La línea azul es el <b>PPTO diario</b>: <b>' + fmtD(pptoDia) + u + '/día</b>' +
+      ppto = ' La línea punteada verde es el <b>PPTO diario</b>: <b>' + fmtD(pptoDia) + u + '/día</b>' +
         ' — la media del mes va <b>~' + Math.abs(Math.round(gp)) + '% ' +
         (gp < 0 ? "por debajo" : "por encima") + '</b> del presupuesto.';
     }
     if (!esAnio || !ref) return 'La curva verde es la producción real día a día (media ' + media + ').' + ppto;
     var gap = ref ? (promMes / ref - 1) * 100 : 0;
     var dir = gap < 0 ? "por debajo" : "por encima";
-    return 'La curva verde es la producción real día a día (media ' + media + '). La línea punteada es el ' +
+    // [2026-08-31] "punteada ámbar": desde que el PPTO también es punteado, decir solo "la línea
+    // punteada" ya no identifica a ninguna de las dos. El color es lo que las separa en el texto.
+    return 'La curva verde es la producción real día a día (media ' + media + '). La línea punteada ámbar es el ' +
       '<b>promedio diario de 2026</b>: <b>' + fmtD(ref) + u + '/día</b>. ' +
       esc(mesNom) + ' corre <b>~' + Math.abs(Math.round(gap)) + '% ' + dir + '</b> del ritmo del año.' + ppto;
   }
@@ -2100,12 +2102,16 @@
     // [2026-08-31] PPTO diario: línea sólida azul, para no confundirse con la punteada ámbar del
     // promedio. Su etiqueta ancla a la DERECHA (xanchor:right) porque la del promedio ya ocupa la
     // izquierda: si ambas nacieran en x=0 se solaparían cuando los dos valores quedan cerca.
+    // [2026-08-31] Verde corporativo (--primary-forest, el de las tarjetas del chat) y punteado
+    // fino, en vez del azul sólido inicial — decisión del usuario. El punteado hace el trabajo que
+    // antes hacía el contraste de color: la curva es #1f6b4a, así que dos verdes sólidos se
+    // confundirían. `dot` (puntos) se distingue además del `dash` (rayas) del promedio 2026.
     if (pptoPlot) {
       shapes.push({ type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: pptoPlot, y1: pptoPlot,
-        line: { color: "#1B6FA8", width: 1.5 } });
+        line: { color: "#004236", width: 1.5, dash: "dot" } });
       anns.push({ x: 1, y: pptoPlot, xref: "paper", yref: "y", xanchor: "right", yanchor: "bottom",
         text: "PPTO · " + fmtD(pptoDia) + uni + "/día",
-        showarrow: false, font: { size: 10, color: "#1B6FA8" } });
+        showarrow: false, font: { size: 10, color: "#004236" } });
     }
     // Eje Y desde 0, con techo = max(curva, referencia) + holgura → la referencia queda con aire.
     // [2026-08-25] `holgura` es ADITIVO y por defecto 1.12: el panel de Focos no cambia. El panel
@@ -2145,8 +2151,14 @@
     // [2026-08-31] Sin `fill: tozeroy`: con el eje ya no anclado en 0, el área rellenaba hasta el
     // borde inferior del recorte, que no es un cero ni ninguna otra referencia — pintaba una masa
     // de color que no significaba nada y tapaba las líneas de PPTO y promedio.
+    // [2026-08-31] `spline`: une los puntos con curvas suaves en vez de rectas quebradas —
+    // decisión del usuario. smoothing 0.8 (el máximo de Plotly es 1.3) da la curva sin que se
+    // desvíe de más: el spline INTERPOLA, así que entre dos días puede dibujar valores que ningún
+    // día tuvo y rebasar un poco los extremos. Los marcadores siguen en el dato exacto, y el hover
+    // lee de `customdata`, no del trazo, así que las cifras que se leen no cambian.
     Plotly.newPlot(elp, [{ x: xcat, y: yPlot, type: "scatter", mode: "lines+markers",
-      line: { color: lineCol, width: 2 }, marker: { color: lineCol, size: 4 },
+      line: { color: lineCol, width: 2, shape: "spline", smoothing: 0.8 },
+      marker: { color: lineCol, size: 4 },
       customdata: cd,
       hovertemplate: "%{customdata[0]}<br>%{customdata[1]}" + uni + "/día<extra></extra>" }], {
       autosize: true, margin: mrg, shapes: shapes, annotations: anns,
@@ -2244,8 +2256,8 @@
     function trazo(xs, ys, cds, punteado, alpha) {
       return { type: "scatter", mode: "lines+markers", fill: "tozeroy", hovertemplate: hoverMes,
                x: xs, y: ys, customdata: cds,
-               line: punteado ? { color: lineCol, width: 2.5, dash: "dot" }
-                              : { color: lineCol, width: 2.5 },
+               line: punteado ? { color: lineCol, width: 2.5, dash: "dot", shape: "spline", smoothing: 0.8 }
+                              : { color: lineCol, width: 2.5, shape: "spline", smoothing: 0.8 },
                marker: { color: lineCol, size: 6 },
                fillcolor: "rgba(" + rgb + "," + alpha + ")" };
     }
@@ -2895,18 +2907,24 @@
     var traces;
     if (idxActual > 0) {
       traces = [
+        // [2026-08-31] spline en las DOS mitades. Comparten el punto de unión (`idxActual - 1`), y
+        // cada spline lo aborda con su propia curvatura: puede verse un leve quiebre justo ahí.
+        // Se acepta a cambio de la coherencia visual con el resto de las curvas.
         { x: x.slice(0, idxActual), y: yPlot.slice(0, idxActual), customdata: cd.slice(0, idxActual),
-          type: "scatter", mode: "lines+markers", line: { color: "#1f6b4a", width: 2.5 },
+          type: "scatter", mode: "lines+markers",
+          line: { color: "#1f6b4a", width: 2.5, shape: "spline", smoothing: 0.8 },
           marker: { color: "#1f6b4a", size: 7 }, fill: "tozeroy", fillcolor: "rgba(31,107,74,0.15)",
           hovertemplate: hoverMon },
         { x: x.slice(idxActual - 1), y: yPlot.slice(idxActual - 1), customdata: cd.slice(idxActual - 1),
-          type: "scatter", mode: "lines+markers", line: { color: "#7fb59a", width: 2.5, dash: "dot" },
+          type: "scatter", mode: "lines+markers",
+          line: { color: "#7fb59a", width: 2.5, dash: "dot", shape: "spline", smoothing: 0.8 },
           marker: { color: ["#1f6b4a", "#7fb59a"], size: 7 }, fill: "tozeroy",
           fillcolor: "rgba(127,181,154,0.12)", hovertemplate: hoverMon }
       ];
     } else {
       traces = [{ x: x, y: yPlot, customdata: cd, type: "scatter", mode: "lines+markers",
-        line: { color: "#1f6b4a", width: 2.5 }, marker: { color: colores, size: 7 },
+        line: { color: "#1f6b4a", width: 2.5, shape: "spline", smoothing: 0.8 },
+        marker: { color: colores, size: 7 },
         fill: "tozeroy", fillcolor: "rgba(31,107,74,0.15)", hovertemplate: hoverMon }];
     }
     Plotly.newPlot(elp, traces, {
@@ -3000,7 +3018,7 @@
         bgcolor: "#d9534f", font: { color: "#fff", size: 10 } });
     }
     Plotly.newPlot(elp, [{ x: curva.fechas, y: curva.valores, type: "scatter", mode: "lines+markers",
-      line: { color: "#1f6b4a", width: 2 }, marker: { size: 3 },
+      line: { color: "#1f6b4a", width: 2, shape: "spline", smoothing: 0.8 }, marker: { size: 3 },
       hovertemplate: "%{x}<br>%{y:,.0f}<extra></extra>" }], {
       autosize: true, margin: { l: 52, r: 10, t: 14, b: 30 }, shapes: shapes, annotations: anns,   // sin height fijo → llena su tercio
       xaxis: { tickangle: -45, tickfont: { size: 9 } }, yaxis: { tickfont: { size: 9 }, separatethousands: true },
