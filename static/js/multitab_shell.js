@@ -2114,16 +2114,40 @@
     // [2026-08-31] El PPTO entra en el max: suele estar POR ENCIMA de la curva (es la meta), así que
     // sin esto su línea quedaba fuera del área visible — justo el caso de CRUDO (PPTO 3,49M vs curva
     // 2,83M) y de GAS (3,1 vs 2,3).
+    // [2026-08-31] El eje ya NO arranca en 0: se ajusta a la banda donde viven de verdad los datos.
+    // Motivo medido (CASTILLA·mayo): curva ~210-225k, promedio 220.918, PPTO 215.460 → las tres
+    // series se diferencian en ~2% pero el eje llegaba a 250k, así que ocupaban el 12% superior y
+    // se pisaban entre sí. Con la banda ajustada pasan a usar todo el alto y se separan.
+    // El mínimo y el máximo salen de LAS TRES series, no solo de las referencias: si se tomaran
+    // solo promedio y PPTO, los días que caen por debajo (210k) quedarían cortados fuera del área.
+    // Se descartó la escala logarítmica: comprime diferencias GRANDES, y aquí son del 2% — en
+    // espacio log promedio y PPTO distan 0,011 sobre un eje de ~5,4, o sea aún más juntas. Además
+    // log(0) es -infinito, así que tampoco podría arrancar en 0.
     var vals = yPlot.filter(function (v) { return v != null; });
-    var dataMax = vals.length ? Math.max.apply(null, vals) : 0;
-    var top = Math.max(dataMax, refPlot || 0, pptoPlot || 0) * (holgura || 1.12) || 1;
+    var refs = [refPlot, pptoPlot].filter(function (v) { return v != null && v > 0; });
+    var todos = vals.concat(refs);
+    var dataMax = todos.length ? Math.max.apply(null, todos) : 0;
+    var dataMin = todos.length ? Math.min.apply(null, todos) : 0;
+    // Margen = 12% del RANGO (no del valor), con un piso del 2% del máximo para cuando la banda es
+    // casi plana: sin ese piso, una serie constante daría rango 0 y el eje colapsaría a una línea.
+    var span = dataMax - dataMin;
+    var margen = Math.max(span * 0.12, dataMax * 0.02) || 1;
+    var top = dataMax + margen;
+    // El suelo nunca baja de 0 (no hay producción negativa) — con eso, una serie que sí arranque
+    // cerca de cero conserva el comportamiento de antes.
+    var bottom = Math.max(0, dataMin - margen);
+    // `holgura` (1.30 en «Comportamiento {Producto}») ya no hace falta para dar aire arriba: el
+    // margen es proporcional al rango real. Se sigue aceptando por firma para no tocar su call site.
     var lineCol = col || "#1f6b4a";
     var ejX = (ejes || {}).x || "", ejY = (ejes || {}).y || "";
     // Con título de eje hacen falta ~16px más abajo y ~10px a la izquierda; sin él, márgenes de siempre.
     var mrg = { l: ejY ? 62 : 52, r: 10, t: 14, b: ejX ? 46 : 30 };
+    // [2026-08-31] Sin `fill: tozeroy`: con el eje ya no anclado en 0, el área rellenaba hasta el
+    // borde inferior del recorte, que no es un cero ni ninguna otra referencia — pintaba una masa
+    // de color que no significaba nada y tapaba las líneas de PPTO y promedio.
     Plotly.newPlot(elp, [{ x: xcat, y: yPlot, type: "scatter", mode: "lines+markers",
       line: { color: lineCol, width: 2 }, marker: { color: lineCol, size: 4 },
-      fill: "tozeroy", fillcolor: "rgba(" + __cnHexRgb(lineCol) + ",0.15)", customdata: cd,
+      customdata: cd,
       hovertemplate: "%{customdata[0]}<br>%{customdata[1]}" + uni + "/día<extra></extra>" }], {
       autosize: true, margin: mrg, shapes: shapes, annotations: anns,
       // [2026-08-25] showlegend:false — este plot tiene UN solo trace y sin `name`, así que la
@@ -2137,7 +2161,7 @@
       // dice MSCF (no PC), coherente con `uni` del hover.
       xaxis: { type: "category", tickangle: -45, tickfont: { size: 9 },
                title: ejX ? { text: ejX, font: { size: 10, color: "#6E7C75" }, standoff: 6 } : undefined },
-      yaxis: { tickfont: { size: 9 }, separatethousands: true, range: [0, top],
+      yaxis: { tickfont: { size: 9 }, separatethousands: true, range: [bottom, top],
                title: ejY ? { text: ejY, font: { size: 10, color: "#6E7C75" }, standoff: 6 } : undefined },
       paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)"
     }, { displayModeBar: false, responsive: true }).then(function () { __cnPlotResize(elp); });
