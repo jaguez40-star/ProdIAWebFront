@@ -2042,7 +2042,12 @@
                   // [2026-08-31] 4ª referencia: la media real de ESTE mes, que ya se calculaba para
                   // el pie. Solo se dibuja si hay una referencia anual con la que contrastarla; si
                   // `ref` YA es promMes (fallback sin prom2026) serían la misma línea dos veces.
-                  prom2026 != null ? promMes : null);
+                  prom2026 != null ? promMes : null,
+                  // [2026-08-31] Leyenda en vez de etiquetas sobre las líneas — SOLO en el panel de
+                  // Focos (vista por producto), decisión del usuario. Con 4 referencias en un panel
+                  // estrecho las etiquetas se montaban: el promedio 2026 (2.852.019) y la media del
+                  // mes (2.829.436) distan 0,8% y sus textos se solapaban por completo.
+                  !esCompProd);
     var cap = hostEl.querySelector("[data-cap]");
     if (cap && !esCompProd) {
       cap.innerHTML = __cnDailyCap(promMes, ref, prom2026 != null, U, prod === "GAS", (d.mes && d.mes.nombre) || "El mes", pptoDia);
@@ -2059,22 +2064,19 @@
     var ppto = "";
     if (pptoDia) {
       var gp = (promMes / pptoDia - 1) * 100;
-      ppto = ' La línea punteada verde es el <b>PPTO diario</b>: <b>' + fmtD(pptoDia) + u + '/día</b>' +
-        ' — la media del mes va <b>~' + Math.abs(Math.round(gp)) + '% ' +
-        (gp < 0 ? "por debajo" : "por encima") + '</b> del presupuesto.';
+      ppto = ' Frente al <b>PPTO diario</b>, va <b>~' + Math.abs(Math.round(gp)) + '% ' +
+        (gp < 0 ? "por debajo" : "por encima") + '</b>.';
     }
     if (!esAnio || !ref) return 'La curva verde es la producción real día a día (media ' + media + ').' + ppto;
     var gap = ref ? (promMes / ref - 1) * 100 : 0;
     var dir = gap < 0 ? "por debajo" : "por encima";
     // [2026-08-31] "punteada ámbar": desde que el PPTO también es punteado, decir solo "la línea
     // punteada" ya no identifica a ninguna de las dos. El color es lo que las separa en el texto.
-    // [2026-08-31] "línea gris": en ESTA rama (hay promedio anual) la media del mes también se
-    // dibuja, así que se nombra. En la rama de arriba no se dibuja —serían la misma línea que
-    // `ref`— y por eso allí `media` sigue siendo solo una cifra.
-    return 'La curva verde es la producción real día a día (media ' + media + ', la línea gris). ' +
-      'La línea punteada ámbar es el ' +
-      '<b>promedio diario de 2026</b>: <b>' + fmtD(ref) + u + '/día</b>. ' +
-      esc(mesNom) + ' corre <b>~' + Math.abs(Math.round(gap)) + '% ' + dir + '</b> del ritmo del año.' + ppto;
+    // [2026-08-31] El pie ya no describe qué es cada línea ni repite sus valores: eso lo dice la
+    // leyenda del gráfico. Se queda con lo que la leyenda NO puede dar — la lectura: cuánto se
+    // separa el mes del ritmo del año y del presupuesto.
+    return esc(mesNom) + ' corre <b>~' + Math.abs(Math.round(gap)) + '% ' + dir +
+      '</b> del ritmo del año (media del mes ' + media + ').' + ppto;
   }
 
   // Curva diaria (línea + markers + área) + LÍNEA punteada de referencia (promedio 2026 o, en fallback,
@@ -2084,7 +2086,7 @@
   // producto. esGas NO cambia de rol — sigue gobernando solo la conversión de unidades a MSCF.
   // [2026-08-31] +pptoDia: 2ª línea de referencia (PPTO diario). Mismo tratamiento de unidades que
   // `ref` — el gas se divide por 1e6 igual. null → no se dibuja (BLANCOS y entidades sin PPTO).
-  function __cnDailyPlot(elp, fechas, valores, ref, unidad, esGas, refEsAnio, col, holgura, ejes, pptoDia, promMesRef) {
+  function __cnDailyPlot(elp, fechas, valores, ref, unidad, esGas, refEsAnio, col, holgura, ejes, pptoDia, promMesRef, conLeyenda) {
     if (!elp) return;
     if (!window.Plotly) { elp.innerHTML = '<div class="text-muted small p-2">(Plotly no disponible)</div>'; return; }
     var uni = unidad ? (" " + unidad) : "";
@@ -2101,11 +2103,24 @@
     });
     var cd = valores.map(function (v, i) { return [fechas[i], fmtD(v)]; });   // [fecha ISO, valor fmt]
     var shapes = [], anns = [];
+    // [2026-08-31] `conLeyenda` (panel de Focos): las referencias se identifican en una leyenda al
+    // pie en vez de con etiquetas sobre las líneas. Con 4 referencias en un panel estrecho las
+    // etiquetas se montaban —el promedio 2026 y la media del mes distan 0,8% en CRUDO— y ni
+    // reposicionarlas alcanzaba. `refLeyenda` acumula una traza fantasma (sin puntos: x/y vacíos)
+    // por referencia: Plotly las lista en la leyenda con su color y su patrón reales, sin dibujar
+    // nada en el área del gráfico. Cuando no hay leyenda, se emiten las anotaciones de siempre.
+    var trazasLey = [];
+    function refLeyenda(nombre, valor, color, patron) {
+      trazasLey.push({ x: [null], y: [null], type: "scatter", mode: "lines", name: nombre + " · " + fmtD(valor) + uni + "/día",
+                       line: { color: color, width: 1.5, dash: patron }, hoverinfo: "skip", showlegend: true });
+    }
     if (refPlot) {
       shapes.push({ type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: refPlot, y1: refPlot,
         line: { color: "#BA7517", width: 1.5, dash: "dash" } });
-      anns.push({ x: 0, y: refPlot, xref: "paper", yref: "y", xanchor: "left", yanchor: "bottom",
-        text: (refEsAnio ? "promedio diario 2026 · " : "promedio del mes · ") + fmtD(ref) + uni + "/día",
+      var refNom = refEsAnio ? "promedio diario 2026" : "promedio del mes";
+      if (conLeyenda) refLeyenda(refNom, ref, "#BA7517", "dash");
+      else anns.push({ x: 0, y: refPlot, xref: "paper", yref: "y", xanchor: "left", yanchor: "bottom",
+        text: refNom + " · " + fmtD(ref) + uni + "/día",
         showarrow: false, font: { size: 10, color: "#BA7517" } });
     }
     // [2026-08-31] PPTO diario: línea sólida azul, para no confundirse con la punteada ámbar del
@@ -2118,7 +2133,8 @@
     if (pptoPlot) {
       shapes.push({ type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: pptoPlot, y1: pptoPlot,
         line: { color: "#004236", width: 1.5, dash: "dot" } });
-      anns.push({ x: 1, y: pptoPlot, xref: "paper", yref: "y", xanchor: "right", yanchor: "bottom",
+      if (conLeyenda) refLeyenda("PPTO diario", pptoDia, "#004236", "dot");
+      else anns.push({ x: 1, y: pptoPlot, xref: "paper", yref: "y", xanchor: "right", yanchor: "bottom",
         text: "PPTO · " + fmtD(pptoDia) + uni + "/día",
         showarrow: false, font: { size: 10, color: "#004236" } });
     }
@@ -2130,7 +2146,8 @@
     if (promMesPlot) {
       shapes.push({ type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: promMesPlot, y1: promMesPlot,
         line: { color: "#5A6B7A", width: 1.5, dash: "dashdot" } });
-      anns.push({ x: 0.5, y: promMesPlot, xref: "paper", yref: "y", xanchor: "center", yanchor: "bottom",
+      if (conLeyenda) refLeyenda("media del mes", promMesRef, "#5A6B7A", "dashdot");
+      else anns.push({ x: 0.5, y: promMesPlot, xref: "paper", yref: "y", xanchor: "center", yanchor: "bottom",
         text: "media del mes · " + fmtD(promMesRef) + uni + "/día",
         showarrow: false, font: { size: 10, color: "#5A6B7A" } });
     }
@@ -2168,7 +2185,9 @@
     var lineCol = col || "#1f6b4a";
     var ejX = (ejes || {}).x || "", ejY = (ejes || {}).y || "";
     // Con título de eje hacen falta ~16px más abajo y ~10px a la izquierda; sin él, márgenes de siempre.
-    var mrg = { l: ejY ? 62 : 52, r: 10, t: 14, b: ejX ? 46 : 30 };
+    // [2026-08-31] +34px abajo con leyenda: va bajo el eje X (y:-0.30) y sin ese margen Plotly la
+    // recorta contra el borde del contenedor.
+    var mrg = { l: ejY ? 62 : 52, r: 10, t: 14, b: (ejX ? 46 : 30) + (conLeyenda ? 34 : 0) };
     // [2026-08-31] Sin `fill: tozeroy`: con el eje ya no anclado en 0, el área rellenaba hasta el
     // borde inferior del recorte, que no es un cero ni ninguna otra referencia — pintaba una masa
     // de color que no significaba nada y tapaba las líneas de PPTO y promedio.
@@ -2180,14 +2199,20 @@
     Plotly.newPlot(elp, [{ x: xcat, y: yPlot, type: "scatter", mode: "lines+markers",
       line: { color: lineCol, width: 2, shape: "spline", smoothing: 0.8 },
       marker: { color: lineCol, size: 4 },
+      name: "producción real", showlegend: !!conLeyenda,
       customdata: cd,
-      hovertemplate: "%{customdata[0]}<br>%{customdata[1]}" + uni + "/día<extra></extra>" }], {
+      hovertemplate: "%{customdata[0]}<br>%{customdata[1]}" + uni + "/día<extra></extra>" }].concat(trazasLey), {
       autosize: true, margin: mrg, shapes: shapes, annotations: anns,
       // [2026-08-25] showlegend:false — este plot tiene UN solo trace y sin `name`, así que la
       // leyenda solo podía decir "trace 0": no aportaba nada y el encabezado de la tarjeta ya
       // nombra la serie. Aplica a los dos paneles (Focos y Comportamiento) por eso mismo. El
       // marcador de día de __cnCompProdMarcarDia ya traía su propio showlegend:false.
-      showlegend: false,
+      // [2026-08-31] Con `conLeyenda` sí se muestra: ya no hay un solo trace sin nombre, sino la
+      // curva + una traza fantasma por referencia, todas con `name`. Horizontal y BAJO el eje X
+      // (y negativo), para no robar ancho al área de dibujo — el panel de Focos es estrecho.
+      showlegend: !!conLeyenda,
+      legend: conLeyenda ? { orientation: "h", x: 0, xanchor: "left", y: -0.30, yanchor: "top",
+                             font: { size: 9 }, bgcolor: "rgba(0,0,0,0)" } : undefined,
       // [2026-08-25] Títulos de eje: sin ellos no se sabía qué representa cada uno. `ejes` es
       // ADITIVO — sin él (panel de Focos) no se emite ninguno y el layout queda byte-idéntico.
       // La unidad del eje Y es la REAL del plot: en gas los valores van ÷1e6, así que el rótulo
