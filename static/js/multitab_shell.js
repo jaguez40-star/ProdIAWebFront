@@ -1996,6 +1996,27 @@
     // INGESTA/Rep_Prod/HALLAZGO_concepto_multiplicidad.md). Sin referencia 2026 → se compara contra el
     // promedio de su propio mes y el título NO dice "vs promedio diario 2026" (no contradice la tarjeta KPI).
     var prom2026 = (rm.promedio_dia && rm.promedio_dia[prod] != null) ? rm.promedio_dia[prod] : null;
+    // [2026-08-31] Fallback del PPTO para el panel de CAMPO (cuant_dia_panel), que se pinta SIN
+    // tarjetas (se les pasa [] a propósito: hablaban del mes y la pregunta era de un día, ver :3813).
+    // `d.por_producto[].ppto` es el PPTO MENSUAL ya filtrado por la entidad consultada —el mismo
+    // `where()` que escala la curva y el promedio 2026—, así que en una pregunta por CHICHIMENE es
+    // el PPTO de CHICHIMENE, no el de CRUDO entero. Se divide por los DÍAS DEL MES (no por los días
+    // con reporte): es la meta diaria de plan, no cambia al avanzar el mes, y es el mismo criterio
+    // que usa `requerido_dia` en la tarjeta de producto.
+    // ppto = 0 → sin línea: hay campos que producen sin meta asignada (15 de 128 en crudo) y no se
+    // les inventa una (misma regla que `campos_sin_meta` en el backend).
+    // ⚠️ El guard `prom2026 != null` NO es decorativo: BLANCOS sí tiene PPTO en `por_producto`, así
+    // que sin él el fallback le dibujaría una línea que su curva diaria no puede comparar (mide
+    // corrientes físicas; el mensual mide "GAS CONVERTIDO MME" — no reconcilian, 2,10-3,06×).
+    // `promedio_dia` es null exactamente cuando el backend detecta esa no-reconciliación, así que
+    // sirve de semáforo: si él no se fía del mensual para este producto, el PPTO tampoco vale.
+    // 🔑 Va DESPUÉS de declarar prom2026: con `var` el hoisting lo dejaría en undefined y la guarda
+    // sería siempre falsa — el fallback no se ejecutaría nunca y el fallo sería silencioso.
+    if (pptoDia == null && prom2026 != null) {
+      var dimMes = (d.mes && d.mes.dias_del_mes) || 0;
+      var pp = (d.por_producto || []).filter(function (x) { return x.producto === prod; })[0];
+      if (dimMes && pp && pp.ppto) pptoDia = pp.ppto / dimMes;
+    }
     var delMes = mesNom ? (' del mes de ' + esc(mesNom)) : ' del mes';
     var hd = esc(nombre) + ' · producción diaria' + delMes + (prom2026 != null ? ' vs promedio diario 2026' : '');
     hostEl.innerHTML =
