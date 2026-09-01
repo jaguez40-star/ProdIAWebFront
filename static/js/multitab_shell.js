@@ -3731,7 +3731,10 @@
       host.innerHTML = (datos.vista === "campos")
         ? __cnAnzCamposHtml(focosF, sufijo)
         : __cnFocosHtml(focosF, ed.sin_foco, ed.meta, ed.tarjetas, sufijo, entidad, nivel);
-      var edScoped = { focos: focosF, gap_por_producto: ed.gap_por_producto };
+      // [2026-08-31] +tarjetas: __cnDailyInto las necesita para la línea de PPTO diario. Este
+      // objeto es un SUBCONJUNTO deliberado de `ed` (A7: no se pasa el payload entero), así que
+      // todo campo que consuma el pintor tiene que añadirse aquí explícitamente o llega undefined.
+      var edScoped = { focos: focosF, gap_por_producto: ed.gap_por_producto, tarjetas: ed.tarjetas };
       if (blk.isConnected) {
         __cnPaintFocoStk(blk, edScoped, dd, sufijo);
         // [2026-08-24 · 4ª pasada] Se vuelve a pedir la bajada AQUÍ. Este panel se rellena por
