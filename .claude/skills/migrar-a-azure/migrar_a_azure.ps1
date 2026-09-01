@@ -50,7 +50,12 @@ param(
     [switch] $Aplicar,
     [switch] $Push,
 
-    [string] $RamaAzure = 'dev'
+    # [2026-08-31] Pasa de 'dev' a 'prodiav2' — decisión del usuario: el proyecto se movió a esa
+    # rama y 'dev' NO debe volver a recibir publicaciones, ni en frontend ni en backend. Los dos
+    # checkouts del 139 (E:\APLICACIONES\ProdIA_v2\{frontend,backend}) ya están en prodiav2.
+    # Se deja como parámetro, así que un despliegue puntual a otra rama sigue siendo posible con
+    # -RamaAzure, pero el default ya no publica en dev por descuido.
+    [string] $RamaAzure = 'prodiav2'
 )
 
 $ErrorActionPreference = 'Stop'

@@ -69,7 +69,7 @@ fallo silencioso mas tipico de una copia incremental).
 | `-Origen` | `C:\APLICACIONES\ProdIA\Repo ProdIA` | Checkout de GitHub |
 | `-Destino` | `C:\APLICACIONES_AZURE\Repo ProdIA` | Checkout de Azure |
 | `-Repo` | `ambos` | `frontend`, `backend` o `ambos` |
-| `-RamaAzure` | `dev` | Rama destino en Azure DevOps |
+| `-RamaAzure` | `prodiav2` | Rama destino en Azure DevOps. **Era `dev` hasta el 2026-08-31**: el proyecto se movio a `prodiav2` y `dev` ya no debe recibir publicaciones |
 | `-Aplicar` | — | Copia de verdad |
 | `-Push` | — | Copia, verifica, commitea y publica (implica `-Aplicar`) |
 
