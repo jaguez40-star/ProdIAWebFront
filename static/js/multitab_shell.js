@@ -2038,7 +2038,11 @@
                   esCompProd ? 1.30 : undefined,
                   esCompProd ? { x: "Día" + (mesNom ? " de " + mesNom : " del mes"),
                                  y: "Producción (" + (U || "unidades") + "/día)" } : undefined,
-                  pptoDia);
+                  pptoDia,
+                  // [2026-08-31] 4ª referencia: la media real de ESTE mes, que ya se calculaba para
+                  // el pie. Solo se dibuja si hay una referencia anual con la que contrastarla; si
+                  // `ref` YA es promMes (fallback sin prom2026) serían la misma línea dos veces.
+                  prom2026 != null ? promMes : null);
     var cap = hostEl.querySelector("[data-cap]");
     if (cap && !esCompProd) {
       cap.innerHTML = __cnDailyCap(promMes, ref, prom2026 != null, U, prod === "GAS", (d.mes && d.mes.nombre) || "El mes", pptoDia);
@@ -2064,7 +2068,11 @@
     var dir = gap < 0 ? "por debajo" : "por encima";
     // [2026-08-31] "punteada ámbar": desde que el PPTO también es punteado, decir solo "la línea
     // punteada" ya no identifica a ninguna de las dos. El color es lo que las separa en el texto.
-    return 'La curva verde es la producción real día a día (media ' + media + '). La línea punteada ámbar es el ' +
+    // [2026-08-31] "línea gris": en ESTA rama (hay promedio anual) la media del mes también se
+    // dibuja, así que se nombra. En la rama de arriba no se dibuja —serían la misma línea que
+    // `ref`— y por eso allí `media` sigue siendo solo una cifra.
+    return 'La curva verde es la producción real día a día (media ' + media + ', la línea gris). ' +
+      'La línea punteada ámbar es el ' +
       '<b>promedio diario de 2026</b>: <b>' + fmtD(ref) + u + '/día</b>. ' +
       esc(mesNom) + ' corre <b>~' + Math.abs(Math.round(gap)) + '% ' + dir + '</b> del ritmo del año.' + ppto;
   }
@@ -2076,7 +2084,7 @@
   // producto. esGas NO cambia de rol — sigue gobernando solo la conversión de unidades a MSCF.
   // [2026-08-31] +pptoDia: 2ª línea de referencia (PPTO diario). Mismo tratamiento de unidades que
   // `ref` — el gas se divide por 1e6 igual. null → no se dibuja (BLANCOS y entidades sin PPTO).
-  function __cnDailyPlot(elp, fechas, valores, ref, unidad, esGas, refEsAnio, col, holgura, ejes, pptoDia) {
+  function __cnDailyPlot(elp, fechas, valores, ref, unidad, esGas, refEsAnio, col, holgura, ejes, pptoDia, promMesRef) {
     if (!elp) return;
     if (!window.Plotly) { elp.innerHTML = '<div class="text-muted small p-2">(Plotly no disponible)</div>'; return; }
     var uni = unidad ? (" " + unidad) : "";
@@ -2084,6 +2092,7 @@
     var yPlot = esGas ? valores.map(function (v) { return v == null ? null : v / 1e6; }) : valores;
     var refPlot = esGas ? ref / 1e6 : ref;
     var pptoPlot = (pptoDia != null) ? (esGas ? pptoDia / 1e6 : pptoDia) : null;
+    var promMesPlot = (promMesRef != null && promMesRef > 0) ? (esGas ? promMesRef / 1e6 : promMesRef) : null;
     // Eje X categórico = número de día del mes ("2026-05-01" → "1"). El hover conserva la fecha completa.
     var xcat = fechas.map(function (f) {
       var s = String(f).slice(0, 10).split("-");   // ["2026","05","01"]
@@ -2113,6 +2122,18 @@
         text: "PPTO · " + fmtD(pptoDia) + uni + "/día",
         showarrow: false, font: { size: 10, color: "#004236" } });
     }
+    // [2026-08-31] Media real de ESTE mes. Gris azulado: verde y ámbar ya están tomados por las
+    // otras tres líneas, y los cálidos (#B04A38, ámbar) significan alerta en este tablero — el
+    // promedio es un dato neutro, no un estado. El azul se descartó por la misma razón por la que
+    // se le quitó al PPTO. `dashdot` se distingue del `dash` del promedio anual y del `dot` del PPTO.
+    // Etiqueta CENTRADA (x:0.5): izquierda y derecha ya las ocupan las otras dos.
+    if (promMesPlot) {
+      shapes.push({ type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: promMesPlot, y1: promMesPlot,
+        line: { color: "#5A6B7A", width: 1.5, dash: "dashdot" } });
+      anns.push({ x: 0.5, y: promMesPlot, xref: "paper", yref: "y", xanchor: "center", yanchor: "bottom",
+        text: "media del mes · " + fmtD(promMesRef) + uni + "/día",
+        showarrow: false, font: { size: 10, color: "#5A6B7A" } });
+    }
     // Eje Y desde 0, con techo = max(curva, referencia) + holgura → la referencia queda con aire.
     // [2026-08-25] `holgura` es ADITIVO y por defecto 1.12: el panel de Focos no cambia. El panel
     // «Comportamiento {Producto}» pasa 1.30 — su curva es casi plana (la producción diaria varía
@@ -2130,7 +2151,7 @@
     // espacio log promedio y PPTO distan 0,011 sobre un eje de ~5,4, o sea aún más juntas. Además
     // log(0) es -infinito, así que tampoco podría arrancar en 0.
     var vals = yPlot.filter(function (v) { return v != null; });
-    var refs = [refPlot, pptoPlot].filter(function (v) { return v != null && v > 0; });
+    var refs = [refPlot, pptoPlot, promMesPlot].filter(function (v) { return v != null && v > 0; });
     var todos = vals.concat(refs);
     var dataMax = todos.length ? Math.max.apply(null, todos) : 0;
     var dataMin = todos.length ? Math.min.apply(null, todos) : 0;
