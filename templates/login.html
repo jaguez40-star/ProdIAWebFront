@@ -14,6 +14,36 @@
 
     <!-- Custom Login CSS -->
     <link href="{{ url_for('static', filename='css/login.css') }}?v={{ range(1000, 9999) | random }}" rel="stylesheet">
+
+    <!-- [2026-09-03 · PRECARGA-MAINCHAT] Calentar los estáticos de /mainchat MIENTRAS el
+         usuario está en el login. El destino no empieza a cargar hasta que
+         login-transition.js hace el redirect (EXIT_MS, 2.5s), así que sin esto el
+         navegador llega a /mainchat con la caché vacía y arranca de cero: handshake a las
+         dos CDN de fuentes + ~500KB de JS (ver mainchat_layout.html:305-307) + 4 CSS
+         render-blocking. Ese es el hueco que el indicador "Cargando ProdIA…" tapa hoy
+         (ver el bloque .lt-loading más abajo).
+         Va en el <head> y no en login-transition.js a propósito: así aprovecha TODO el
+         tiempo que el usuario tarda en teclear sus credenciales, no solo los 2.5s de la
+         animación. `prefetch` es de baja prioridad — no compite con el CSS del login.
+         NO se prefetchea el documento /mainchat en sí: es una ruta con sesión y
+         golpearla aquí registraría un acceso fantasma. Solo estáticos, que no ejecutan
+         nada ni tocan el backend.
+         ⚠️ Los ?v= deben coincidir EXACTOS con los de mainchat_layout.html (:10, :13-15,
+         :317-323). Si allí se sube un token y aquí no, esto deja de servir EN SILENCIO
+         (no rompe nada: solo se pierde la precarga de ese archivo). -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="prefetch" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap">
+
+    <link rel="prefetch" href="{{ url_for('mainchat.static', filename='css/mainchat.css') }}?v=20260903f">
+    <link rel="prefetch" href="{{ url_for('static', filename='css/colapsable.css') }}?v=20260831a">
+    <link rel="prefetch" href="{{ url_for('mainchat.static', filename='css/acordeon.css') }}?v=20260826a">
+    <link rel="prefetch" href="{{ url_for('mainchat.static', filename='css/historial.css') }}?v=20260826a">
+
+    <link rel="prefetch" href="{{ url_for('static', filename='js/multitab_shell.js') }}?v=20260903i">
+    <link rel="prefetch" href="{{ url_for('mainchat.static', filename='js/mainchat.js') }}?v=20260903d">
+    <link rel="prefetch" href="{{ url_for('mainchat.static', filename='js/acordeon.js') }}?v=20260830a">
+    <link rel="prefetch" href="{{ url_for('mainchat.static', filename='js/historial.js') }}?v=20260826b">
 </head>
 <body class="login-page">
     <!-- Overlay SSO: visible solo si la URL trae ?token=. login.js lo oculta al terminar. -->
