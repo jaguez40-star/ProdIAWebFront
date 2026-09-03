@@ -278,7 +278,7 @@ def analisis_desempeno():
         # [2026-09-03 · CURVA-VENTANA] +v_ini/v_fin: la ventana móvil de la curva diaria
         # («los últimos 30 días»). Esta lista es una LISTA BLANCA CERRADA: un parámetro que no
         # esté aquí NO llega a INGESTA y se pierde en silencio — el navegador nunca habla con
-        # el 5030 (CLAUDE.md §2), así que este es el único punto por donde puede pasar.
+        # el 5030 (ver la guia del proyecto, §2), así que este es el único punto por donde puede pasar.
         # 🔑 Entran TAMBIÉN en la clave de caché de `_analisis_proxy_cacheado` (se arma con
         #    estos `params`), y eso es DELIBERADO: sin ellos, «los últimos 30 días» y «día a
         #    día en agosto» sobre la misma entidad compartirían entrada y la segunda pregunta
