@@ -1438,3 +1438,138 @@ def generate_fixed_report():
             "success": False,
             "error": str(e)
         }), 500
+
+
+# ─────────────────────────────────────────────────────────────────────
+# [2026-09-03] Reporte de accesos para Admin > Usuarios Uso
+# ─────────────────────────────────────────────────────────────────────
+
+from utils.auth_middleware import login_required  # noqa: E402  (H9)
+
+
+@api_bp.route("/admin/usuarios-uso", methods=["GET"])
+@login_required
+def admin_usuarios_uso():
+    """
+    Devuelve el reporte de accesos agregado por usuario.
+
+    Lee el log de autenticación (activo + rotados) y agrupa por usuario:
+    sesiones, fechas, actividad y rechazos. No consulta INGESTA ni la BD.
+    """
+    import glob
+    import os
+    import re
+    from collections import OrderedDict
+
+    from config.settings import BASE_DIR
+
+    LOG_DIR = os.path.join(str(BASE_DIR), "data", "logs")
+    PATRON = os.path.join(LOG_DIR, "auth_operations.log*")
+
+    # Formato real (auth_logger.py:53): "%(asctime)s | %(levelname)s | %(message)s"
+    RE_LINEA = re.compile(
+        r"^(\d{4}-\d{2}-\d{2}) \d{2}:\d{2}:\d{2} \| \w+ \| "
+        r"(LOGIN_SUCCESS|LOGIN_FAILURE|ACTIVIDAD) \| Usuario: ([^|]+?)"
+        r"(?: \| (?:Dominio|Razón|Razon|Accion): ([^|]+?))?"
+        r"(?: \| Ruta: .+)?$"
+    )
+
+    ETIQUETA = {
+        "CHAT": "Chat",
+        "REPORTE": "Reportes",
+        "GRAFICA": "Gráficas",
+    }
+
+    def normalizar(usuario):
+        # H7: el mismo usuario aparece con y sin dominio según el camino de login.
+        # Sin esto, sale partido en dos filas.
+        return usuario.strip().lower().split("@")[0]
+
+    entraron = OrderedDict()
+    rechazados = OrderedDict()
+
+    for archivo in sorted(glob.glob(PATRON)):
+        try:
+            with open(archivo, encoding="utf-8", errors="replace") as fh:
+                for linea in fh:
+                    m = RE_LINEA.match(linea.strip())
+                    if not m:
+                        continue
+                    fecha, evento, usuario, extra = m.groups()
+                    clave = normalizar(usuario)
+
+                    if evento == "LOGIN_SUCCESS":
+                        reg = entraron.setdefault(
+                            clave,
+                            {
+                                "usuario": usuario.strip(),
+                                "sesiones": 0,
+                                "fechas": [],
+                                "acciones": set(),
+                            },
+                        )
+                        reg["sesiones"] += 1
+                        if fecha not in reg["fechas"]:
+                            reg["fechas"].append(fecha)
+
+                    elif evento == "ACTIVIDAD":
+                        reg = entraron.setdefault(
+                            clave,
+                            {
+                                "usuario": usuario.strip(),
+                                "sesiones": 0,
+                                "fechas": [],
+                                "acciones": set(),
+                            },
+                        )
+                        if extra:
+                            reg["acciones"].add(
+                                ETIQUETA.get(extra.strip(), extra.strip())
+                            )
+
+                    elif evento == "LOGIN_FAILURE":
+                        motivo = (extra or "").strip()
+                        # H8: separar "no está en la lista blanca" del resto.
+                        if "lista blanca" in motivo.lower():
+                            observacion = "No está en la lista blanca"
+                        else:
+                            observacion = motivo or "Credenciales inválidas"
+                        reg = rechazados.setdefault(
+                            clave,
+                            {
+                                "usuario": usuario.strip(),
+                                "intentos": 0,
+                                "fechas": [],
+                                "observacion": observacion,
+                            },
+                        )
+                        reg["intentos"] += 1
+                        if fecha not in reg["fechas"]:
+                            reg["fechas"].append(fecha)
+        except OSError:
+            continue
+
+    def salida_entraron(reg):
+        acciones = sorted(reg["acciones"])
+        return {
+            "usuario": reg["usuario"],
+            "sesiones": reg["sesiones"],
+            "fechas": sorted(reg["fechas"]),
+            "que_hizo": ", ".join(acciones) if acciones else "Solo entró",
+        }
+
+    return jsonify(
+        {
+            "success": True,
+            "entraron": [salida_entraron(r) for r in entraron.values()],
+            "rechazados": [
+                {
+                    "usuario": r["usuario"],
+                    "intentos": r["intentos"],
+                    "fechas": sorted(r["fechas"]),
+                    "observacion": r["observacion"],
+                }
+                for r in rechazados.values()
+            ],
+        }
+    )

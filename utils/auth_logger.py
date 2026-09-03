@@ -102,6 +102,23 @@ class AuthLogger:
         """
         self.logger.info(f"SESSION_EXPIRED | Usuario: {username}")
 
+    def log_actividad(self, username, accion, ruta):
+        """
+        [2026-09-03] Registra una acción del usuario dentro de la app.
+
+        Alimenta la columna "Qué hizo" del panel Admin > Usuarios Uso. Se emite
+        desde el after_request de app.py, no desde cada ruta: así las 55 rutas
+        quedan cubiertas sin tocar ninguna.
+
+        Args:
+            username (str): Correo o usuario de la sesión
+            accion (str): Categoría de actividad (CHAT, REPORTE, GRAFICA, VISTA)
+            ruta (str): Ruta HTTP que originó la acción
+        """
+        self.logger.info(
+            f"ACTIVIDAD | Usuario: {username} | Accion: {accion} | Ruta: {ruta}"
+        )
+
 
 # Instancia global del logger de autenticación
 auth_logger = AuthLogger()

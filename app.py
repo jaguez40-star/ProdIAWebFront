@@ -108,6 +108,52 @@ def create_app():
         response.headers['Vary'] = 'Accept-Encoding'
         return response
 
+    # [2026-09-03] Registro de actividad para Admin > Usuarios Uso.
+    # Un solo hook en vez de instrumentar las 55 rutas de los 6 blueprints: cubre
+    # todo sin tocar routes/api.py ni routes/chat.py (archivos compartidos).
+    # Solo registra peticiones de negocio con sesión iniciada; los estáticos, el
+    # polling de socket.io y el tráfico anónimo se descartan (serían ruido: el
+    # histórico medido da 469 peticiones totales frente a 223 útiles).
+    # [2026-09-03] R2: /api/consulta*/preguntar son las preguntas reales del chat de
+    # /mainchat (multitab_shell.js pregunta por HTTP). El chat clásico (/) va por
+    # socket.io y NO pasa por aquí (R1, límite conocido): de él solo se capta crear/abrir
+    # conversación. El orden importa: prefijos más específicos ANTES que los genéricos si
+    # se solaparan (aquí no se solapan, pero se mantiene el criterio).
+    ACTIVIDAD_RUTAS = (
+        ("/api/consulta/preguntar", "CHAT"),
+        ("/api/consulta2/preguntar", "CHAT"),
+        ("/new_conversation", "CHAT"),
+        ("/select_conversation", "CHAT"),
+        ("/api/conversation", "CHAT"),
+        ("/api/generate_fixed_report", "REPORTE"),
+        ("/api/ai/generate_chart", "GRAFICA"),
+    )
+
+    @app.after_request
+    def registrar_actividad(response):
+        try:
+            if response.status_code >= 400:
+                return response
+
+            usuario = session.get("user_email")
+            if not usuario:
+                return response
+
+            ruta = request.path
+            for prefijo, accion in ACTIVIDAD_RUTAS:
+                if ruta.startswith(prefijo):
+                    from utils.auth_logger import auth_logger
+
+                    auth_logger.log_actividad(
+                        username=usuario, accion=accion, ruta=ruta
+                    )
+                    break
+        except Exception:
+            # El registro de actividad NUNCA debe tumbar una respuesta buena.
+            logger.debug("No se pudo registrar la actividad", exc_info=True)
+
+        return response
+
     # Login route
     @app.route("/login")
     def login():

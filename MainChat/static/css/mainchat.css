@@ -291,3 +291,64 @@ body:has(.mc-shell) .main-content {
     color: var(--mc-muted);
     margin: 0;
 }
+
+/* ── Admin > Usuarios Uso ───────────────────────────────────────────── */
+
+/* [2026-09-03] Tabla de accesos. Sin .table de Bootstrap: sus estilos traen
+   márgenes y bordes pensados para páginas completas y desentonan dentro del
+   panel del modal, que ya tiene su propio ritmo de espaciado. */
+.mc-uso-bloque {
+    margin-bottom: 22px;
+}
+
+.mc-uso-titulo {
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin: 0 0 8px;
+}
+
+.mc-uso-titulo--ok {
+    color: var(--mc-primary);
+}
+
+.mc-uso-titulo--no {
+    color: var(--mc-neg);
+}
+
+.mc-uso-tabla {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+}
+
+.mc-uso-tabla th {
+    text-align: left;
+    font-weight: 700;
+    color: #fff;
+    background: var(--mc-primary);
+    padding: 7px 10px;
+    white-space: nowrap;
+}
+
+.mc-uso-titulo--no + .mc-uso-tabla th {
+    background: var(--mc-neg);
+}
+
+.mc-uso-tabla td {
+    padding: 7px 10px;
+    border-bottom: 1px solid var(--mc-border);
+    color: var(--mc-navy);
+    vertical-align: top;
+}
+
+.mc-uso-num {
+    text-align: center;
+    font-weight: 700;
+}
+
+.mc-uso-vacio {
+    color: var(--mc-muted);
+    font-style: italic;
+}

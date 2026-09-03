@@ -133,6 +133,106 @@
         });
     });
 
+    // [2026-09-03] Admin > Usuarios Uso: se puebla al abrir el modal, no al cargar la
+    // página — así no se paga la lectura del log en cada visita a /mainchat. Una sola
+    // vez por sesión de página: 'shown.bs.modal' se dispara en cada apertura, pero el
+    // guard de cargado evita releer.
+    const modalAdmin = document.getElementById('mc-admin-modal');
+    if (modalAdmin) {
+        let usoCargado = false;
+
+        modalAdmin.addEventListener('shown.bs.modal', function () {
+            if (usoCargado) return;
+            usoCargado = true;
+            cargarUsuariosUso();
+        });
+    }
+
+    function escapar(txt) {
+        const d = document.createElement('div');
+        d.textContent = txt == null ? '' : String(txt);
+        return d.innerHTML;
+    }
+
+    function filasEntraron(lista) {
+        let html = '';
+        for (let i = 0; i < lista.length; i++) {
+            const r = lista[i];
+            html += '<tr>' +
+                '<td>' + escapar(r.usuario) + '</td>' +
+                '<td class="mc-uso-num">' + escapar(r.sesiones) + '</td>' +
+                '<td>' + escapar(r.fechas.join(', ')) + '</td>' +
+                '<td>' + escapar(r.que_hizo) + '</td>' +
+                '</tr>';
+        }
+        return html;
+    }
+
+    function filasRechazados(lista) {
+        let html = '';
+        for (let i = 0; i < lista.length; i++) {
+            const r = lista[i];
+            html += '<tr>' +
+                '<td>' + escapar(r.usuario) + '</td>' +
+                '<td class="mc-uso-num">' + escapar(r.intentos) + '</td>' +
+                '<td>' + escapar(r.fechas.join(', ')) + '</td>' +
+                '<td>' + escapar(r.observacion) + '</td>' +
+                '</tr>';
+        }
+        return html;
+    }
+
+    function cargarUsuariosUso() {
+        const caja = document.getElementById('mc-admin-uso');
+        if (!caja) return;
+
+        fetch('/api/admin/usuarios-uso', { credentials: 'same-origin' })
+            .then(function (r) {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.json();
+            })
+            .then(function (data) {
+                const entraron = data.entraron || [];
+                const rechazados = data.rechazados || [];
+
+                if (!entraron.length && !rechazados.length) {
+                    caja.innerHTML = '<p class="mc-admin-panel__placeholder">' +
+                        'Todavía no hay accesos registrados. La tabla se irá poblando ' +
+                        'con los inicios de sesión y la actividad a partir de ahora.</p>';
+                    return;
+                }
+
+                let html = '';
+
+                html += '<div class="mc-uso-bloque">' +
+                    '<h6 class="mc-uso-titulo mc-uso-titulo--ok">Entraron</h6>' +
+                    '<table class="mc-uso-tabla"><thead><tr>' +
+                    '<th>Usuario</th><th>Sesiones</th><th>Fechas</th><th>Qué hizo</th>' +
+                    '</tr></thead><tbody>' +
+                    (entraron.length
+                        ? filasEntraron(entraron)
+                        : '<tr><td colspan="4" class="mc-uso-vacio">Sin registros</td></tr>') +
+                    '</tbody></table></div>';
+
+                html += '<div class="mc-uso-bloque">' +
+                    '<h6 class="mc-uso-titulo mc-uso-titulo--no">Rechazados</h6>' +
+                    '<table class="mc-uso-tabla"><thead><tr>' +
+                    '<th>Usuario</th><th>Intentos</th><th>Fechas</th><th>Observación</th>' +
+                    '</tr></thead><tbody>' +
+                    (rechazados.length
+                        ? filasRechazados(rechazados)
+                        : '<tr><td colspan="4" class="mc-uso-vacio">Sin registros</td></tr>') +
+                    '</tbody></table></div>';
+
+                caja.innerHTML = html;
+            })
+            .catch(function (err) {
+                console.error('MainChat: error cargando Usuarios Uso', err);
+                caja.innerHTML = '<p class="mc-admin-panel__placeholder">' +
+                    'No se pudo cargar el reporte de accesos.</p>';
+            });
+    }
+
     const salir = document.getElementById('mc-logout');
     if (salir) {
         salir.addEventListener('click', function () {
