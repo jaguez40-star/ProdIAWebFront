@@ -1089,18 +1089,17 @@
   // __cnPregModalPintar).
   var __cnHistSeed = [
     {
-      cat: "Análisis",
+      cat: "Diagnóstico de causas",
       icono: "bi-graph-up-arrow",
       items: [
         "Analiza el comportamiento del producto …",
         "Analiza el comportamiento de la producción de … en el Campo …",
         "¿Qué campos explican el faltante de …?",
-        "¿Cuáles son las causas de las diferidas en el campo …?",
-        "¿Cómo vamos este mes?"
+        "¿Cuáles son las causas de las diferidas en el campo …?"
       ]
     },
     {
-      cat: "Cifras",
+      cat: "Cifras de producción",
       icono: "bi-123",
       items: [
         "¿Cuánto crudo produjo el campo …?",
@@ -1108,7 +1107,14 @@
         "¿Cuál es el acumulado del año de …?",
         "¿Cuánto ha producido … en lo que va del año?",
         "¿Cuál es el acumulado de gas de …?",
-        "¿Cuánto produjo … el mes pasado?",
+        "¿Cuánto produjo … el mes pasado?"
+      ]
+    },
+    {
+      cat: "Cumplimiento vs metas",
+      icono: "bi-bullseye",
+      items: [
+        "¿Cómo vamos este mes?",
         "¿Cómo va … frente al presupuesto este mes?",
         "¿Cuánto produjo … en … vs el operativo?",
         "¿Cuánto produjo … en … contra el contable?",
@@ -1116,7 +1122,7 @@
       ]
     },
     {
-      cat: "Comparar y ordenar",
+      cat: "Rankings y contribución",
       icono: "bi-bar-chart-steps",
       items: [
         "¿Cuáles son los 5 campos que más crudo producen?",
@@ -1127,7 +1133,7 @@
       ]
     },
     {
-      cat: "En el tiempo",
+      cat: "Evolución en el tiempo",
       icono: "bi-calendar3",
       items: [
         "Muéstrame la producción del campo …, día a día para el mes de …",
@@ -1138,7 +1144,7 @@
       ]
     },
     {
-      cat: "Estructura",
+      cat: "Catálogo y jerarquía",
       icono: "bi-diagram-3",
       items: [
         "¿Qué campos tiene el activo …?",
@@ -1147,7 +1153,7 @@
       ]
     },
     {
-      cat: "Operación",
+      cat: "Eventos operativos",
       icono: "bi-tools",
       items: [
         "¿Qué mantenimientos se han realizado en el campo …, en el último mes?",
@@ -4275,10 +4281,13 @@
   //    __cnPanelMesHtml TAMBIÉN (:4088). Pasarle el mismo `d` a las dos duplicaría el aviso
   //    «⚠️ El mes de agosto sigue en curso…» en la misma tarjeta. Al envoltorio se le pasa una
   //    copia SIN `avisos`; se quedan donde el usuario ya los conoce, bajo "Corte".
-  // 🔑 Sin `serie_acum` (p.ej. un solo mes cerrado) cae al KPI solo: nunca un hueco.
+  // 🔑 [2026-09-03] Hacen falta DOS puntos, no uno. Una ventana corta («los últimos 3 meses»
+  //    con un solo mes CERRADO dentro) daba una "curva" de un punto: un dot suelto, con leyenda
+  //    de dos series y la de PPTO invisible —`mode:"lines"` con un solo punto no dibuja NADA—.
+  //    Parecía un panel roto. Con un mes, el KPI y sus avisos ya cuentan la historia entera.
   function __cnCuantAcumHtml(d) {
     var kpi = __cnCuantCardHtml(d);
-    if (!d.serie_acum || !d.serie_acum.length) return kpi;
+    if (!d.serie_acum || d.serie_acum.length < 2) return kpi;
     var dSinAvisos = {};
     for (var k in d) { if (Object.prototype.hasOwnProperty.call(d, k)) dSinAvisos[k] = d[k]; }
     dSinAvisos.avisos = [];
@@ -4325,8 +4334,13 @@
     if (serie.some(function (p) { return p.ppto_acum != null; })) {
       traces.push({
         x: meses, y: serie.map(function (p) { return esc1(p.ppto_acum); }),
-        name: "Presupuesto acumulado", type: "scatter", mode: "lines",
+        // [2026-09-03] +markers: `ppto_acum` es null mientras el acumulado de PPTO va en 0, así
+        // que la serie puede quedarse en UN solo punto no nulo (p.ej. una ventana de 2 meses
+        // donde el primero no tiene meta). Con `mode:"lines"` puro ese punto no se dibuja y el
+        // presupuesto desaparece sin decir por qué. Los marcadores lo hacen visible siempre.
+        name: "Presupuesto acumulado", type: "scatter", mode: "lines+markers",
         line: { color: "#8a978f", width: 2, dash: "dot" }, connectgaps: false,
+        marker: { color: "#8a978f", size: 5 },
         customdata: serie.map(function (p) { return p.ppto_acum == null ? "—" : fmtD(p.ppto_acum); }),
         hovertemplate: "%{x}<br>PPTO acum.: %{customdata}" + (unidad ? " " + unidad : "") + "<extra></extra>"
       });
