@@ -275,7 +275,15 @@ def analisis_desempeno():
         seg = request.args.get("segmento")
         if seg:
             params["segmento"] = seg
-        for _k in ("nivel", "periodo"):
+        # [2026-09-03 · CURVA-VENTANA] +v_ini/v_fin: la ventana móvil de la curva diaria
+        # («los últimos 30 días»). Esta lista es una LISTA BLANCA CERRADA: un parámetro que no
+        # esté aquí NO llega a INGESTA y se pierde en silencio — el navegador nunca habla con
+        # el 5030 (CLAUDE.md §2), así que este es el único punto por donde puede pasar.
+        # 🔑 Entran TAMBIÉN en la clave de caché de `_analisis_proxy_cacheado` (se arma con
+        #    estos `params`), y eso es DELIBERADO: sin ellos, «los últimos 30 días» y «día a
+        #    día en agosto» sobre la misma entidad compartirían entrada y la segunda pregunta
+        #    recibiría la curva de la primera durante los 45 s del TTL.
+        for _k in ("nivel", "periodo", "v_ini", "v_fin"):
             _v = request.args.get(_k)
             if _v:
                 params[_k] = _v

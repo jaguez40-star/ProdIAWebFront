@@ -1982,6 +1982,14 @@
   // modelan cosas distintas (corrientes físicas vs "GAS CONVERTIDO MME") y NO reconcilian —
   // 2,10× ó 3,06× según el criterio, ver HALLAZGO_concepto_multiplicidad.md §4bis. Ponerle una línea
   // exigiría inventar un factor de corrección. Queda pendiente de la decisión de negocio (§5 Paso 3).
+  // [2026-09-03 · CURVA-VENTANA] "2026-07-25" -> "25/07". Sin Date: `new Date("2026-07-25")`
+  // parsea como UTC y en un navegador al oeste de Greenwich devuelve el día ANTERIOR — el
+  // clásico off-by-one de zona horaria, que aquí correría la etiqueta del rango un día.
+  function __cnFechaCorta(iso) {
+    var s = String(iso || "");
+    return (s.length >= 10) ? (s.slice(8, 10) + "/" + s.slice(5, 7)) : s;
+  }
+
   function __cnDailyInto(prod, hostEl, d, tarjetas) {
     var serie = (d.curva && d.curva.series && d.curva.series[prod]) || [];
     var fechas = (d.curva && d.curva.fechas) || [];
@@ -1991,6 +1999,10 @@
     var tj = (tarjetas || []).filter(function (k) { return k.producto === prod; })[0];
     var pptoDia = (tj && tj.bopd && tj.bopd.requerido != null) ? tj.bopd.requerido : null;
     var mesNom = (d.mes && d.mes.nombre) || "";   // mes dinámico = último mes de datos cargados
+    // [2026-09-03 · CURVA-VENTANA] `curva_ventana` lo emite /desempeno cuando la curva NO es la
+    // del mes. Rotular "del mes de agosto" sobre 30 días a caballo entre julio y agosto sería
+    // afirmar algo falso sobre lo que el usuario está viendo.
+    var cvVen = d.curva_ventana || null;
     // Referencia = PROMEDIO DIARIO 2026, SOLO si el producto reconcilia día↔mes (GAS/CRUDO → promedio_dia).
     // BLANCOS NO reconcilia: su curva diaria suma 4 conceptos-copia → ×4 vs el mensual (ver
     // INGESTA/Rep_Prod/HALLAZGO_concepto_multiplicidad.md). Sin referencia 2026 → se compara contra el
@@ -2017,7 +2029,9 @@
       var pp = (d.por_producto || []).filter(function (x) { return x.producto === prod; })[0];
       if (dimMes && pp && pp.ppto) pptoDia = pp.ppto / dimMes;
     }
-    var delMes = mesNom ? (' del mes de ' + esc(mesNom)) : ' del mes';
+    var delMes = cvVen
+      ? (' · ' + __cnFechaCorta(cvVen.ini) + ' a ' + __cnFechaCorta(cvVen.fin))
+      : (mesNom ? (' del mes de ' + esc(mesNom)) : ' del mes');
     var hd = esc(nombre) + ' · producción diaria' + delMes + (prom2026 != null ? ' vs promedio diario 2026' : '');
     hostEl.innerHTML =
       '<div class="cn-ins__card"><div class="cn-ins__card-hd"><i class="bi bi-graph-up"></i> ' + hd + '</div>' +
@@ -2025,6 +2039,13 @@
       '<div class="cn-ins__cap" data-cap></div></div>';
     var elp = hostEl.querySelector("[data-p]");
     if (!fechas.length) { elp.innerHTML = '<div class="p-2 text-muted small">Sin curva diaria para este producto.</div>'; return; }
+    // [2026-09-03 · CURVA-VENTANA] Con ventana el eje X pasa a DD/MM. `__cnDailyPlot` mapea la
+    // fecha al día del mes como categoría (:3867), así que en una ventana jul→ago saldría
+    // "25,26,...,31,1,2,...,23" sin decir de qué mes es cada tramo. Se reescriben las etiquetas
+    // ANTES de pintar; la serie de valores no se toca.
+    if (cvVen && fechas.length) {
+      fechas = fechas.map(function (f) { return __cnFechaCorta(f); });
+    }
     var vd = serie.filter(function (v) { return v != null && v > 0; });
     var promMes = vd.length ? vd.reduce(function (a, b) { return a + b; }, 0) / vd.length : 0;   // media del mes (fallback)
     var ref = prom2026 != null ? prom2026 : promMes;    // referencia: promedio 2026 (REAL mensual) o media del mes
@@ -3892,9 +3913,30 @@
     var host = blk.querySelector(".cn-stk__body");
     if (!host) return;
     var entidad = datos.entidad, nivel = datos.nivel, periodo = datos.periodo;
-    var key = __cnAnzCacheKey(entidad, nivel, periodo);
-    var qs = __cnAnzQS(entidad, nivel, periodo);
-    var qsEj = qs + (qs ? "&" : "?") + "pulir=false";
+    // [2026-09-03 · CURVA-VENTANA] Ventana móvil («los últimos 30 días»): la curva se pide
+    // acotada a [ini,fin] en vez de al mes.
+    // 🔑 v2/H10: va TAMBIÉN en la clave de caché del navegador. `__cnDesempCache` es
+    //    compartida con el tablero y con las demás preguntas; sin distinguir la ventana, una
+    //    pregunta por ventana y otra por el mes de la misma entidad comparten entrada y la
+    //    segunda pinta la curva de la primera.
+    // 🔑 v2/H11: la query se arma con un ARRAY, no concatenando. `__cnAnzQS` devuelve "" en
+    //    el caso global (sin entidad/nivel/periodo) y un `qs + "&v_ini=…"` habría producido
+    //    una URL sin "?" — inválida, y solo en ese caso.
+    var ven = datos.ventana || null;
+    var key = __cnAnzCacheKey(entidad, nivel, periodo) + (ven ? ("|v:" + ven.ini + ".." + ven.fin) : "");
+    var _qp = [];
+    if (entidad) _qp.push("entidad=" + encodeURIComponent(entidad));
+    if (nivel) _qp.push("nivel=" + encodeURIComponent(nivel));
+    if (periodo) _qp.push("periodo=" + encodeURIComponent(periodo));
+    if (ven) {
+      _qp.push("v_ini=" + encodeURIComponent(ven.ini));
+      _qp.push("v_fin=" + encodeURIComponent(ven.fin));
+    }
+    var qs = _qp.length ? ("?" + _qp.join("&")) : "";
+    // El fetch a /ejecutivo va SIN la ventana a propósito: ese endpoint es mensual y no la
+    // entiende. Conserva la query de siempre (__cnAnzQS), no la de arriba.
+    var _qsBase = __cnAnzQS(entidad, nivel, periodo);
+    var qsEj = _qsBase + (_qsBase ? "&" : "?") + "pulir=false";
 
     var pDesemp = __cnDesempCache[key] ? Promise.resolve(__cnDesempCache[key]) :
       fetch("/api/analisis/desempeno" + qs).then(function (r) { return r.json(); }).then(function (dd) {
