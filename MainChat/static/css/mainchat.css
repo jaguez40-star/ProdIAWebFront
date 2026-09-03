@@ -203,3 +203,81 @@ body:has(.mc-shell) .main-content {
     min-height: 0;
     padding: 16px 0;
 }
+
+/* ── Modal Admin ────────────────────────────────────────────────────── */
+
+/* [2026-09-03] Dos columnas dentro de modal-body: nav de secciones (izquierda, ancho fijo)
+   + contenido (derecha, flex:1). padding:0 en el body porque cada columna pone el suyo —
+   si no, quedaría un doble margen entre el borde del modal y el fondo de la nav. */
+.mc-admin-body {
+    display: flex;
+    padding: 0;
+    height: min(560px, 70vh);
+}
+
+.mc-admin-nav {
+    flex: 0 0 220px;
+    border-right: 1px solid var(--mc-border);
+    background: #fafafa;
+    padding: 12px;
+    gap: 4px;
+    overflow-y: auto;
+}
+
+.mc-admin-nav__item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--mc-navy);
+    font-size: 13px;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+}
+
+.mc-admin-nav__item i {
+    font-size: 16px;
+    color: var(--mc-muted);
+    flex: 0 0 auto;
+}
+
+.mc-admin-nav__item:hover {
+    background: var(--mc-lime-soft);
+}
+
+/* Bootstrap Tab pone .active en el disparador al seleccionarlo (ver mainchat_layout.html,
+   data-bs-toggle="pill"): mismo mecanismo que .mc-acceso:hover, pero fijo mientras esté
+   seleccionado en vez de solo al pasar el mouse. */
+.mc-admin-nav__item.active {
+    background: var(--mc-primary);
+    color: #fff;
+}
+
+.mc-admin-nav__item.active i {
+    color: var(--mc-lime);
+}
+
+.mc-admin-content {
+    flex: 1;
+    min-width: 0;
+    padding: 20px 24px;
+    overflow-y: auto;
+}
+
+.mc-admin-panel__title {
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--mc-navy);
+    margin: 0 0 8px;
+}
+
+.mc-admin-panel__placeholder {
+    font-size: 13px;
+    color: var(--mc-muted);
+    margin: 0;
+}

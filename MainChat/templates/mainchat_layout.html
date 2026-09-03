@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('mainchat.static', filename='css/mainchat.css') }}?v=20260825h">
+    <link rel="stylesheet" href="{{ url_for('mainchat.static', filename='css/mainchat.css') }}?v=20260903a">
     <!-- Estilos del shell de multitab_shell.js (prefijo rb-cp / cn- / colapsable-layout):
          MainChat no lo cargaba porque hasta ahora no montaba el shell dentro de sí misma. -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/colapsable.css') }}?v=20260831a">
@@ -79,11 +79,11 @@
                 <i class="bi bi-graph-up-arrow" style="color:#15794C"></i>
                 <span>Análisis</span>
             </button>
-            <!-- [2026-09-03] Ítem visual del módulo Admin, sin destino todavía a propósito
-                 (decisión del usuario): ni data-tab ni data-ruta, así que el clic no hace nada.
-                 Sigue sin existir /admin ni control de roles (ver nota de 2026-08-25 más abajo);
-                 cuando se defina el destino, añadir aquí data-tab="admin" o data-ruta="...". -->
-            <button type="button" class="mc-acceso" role="menuitem" id="mc-acceso-admin">
+            <!-- [2026-09-03] Admin abre el modal #mc-admin-modal (data-modal), tercera clase de
+                 destino junto a data-tab/data-ruta — ver mainchat.js. Sigue sin existir control de
+                 roles (ver nota de 2026-08-25 más abajo): el modal es visible para cualquier
+                 usuario autenticado, igual que el resto del waffle. -->
+            <button type="button" class="mc-acceso" role="menuitem" id="mc-acceso-admin" data-modal="mc-admin-modal">
                 <i class="bi bi-shield-lock" style="color:#92400E"></i>
                 <span>Admin</span>
             </button>
@@ -114,6 +114,59 @@
             <i class="bi bi-box-arrow-right"></i>
             <span>Cerrar sesión</span>
         </button>
+    </div>
+</div>
+
+<!-- [2026-09-03] Modal del módulo Admin. Vive FUERA de .mc-shell, como #mc-menu (ver el
+     comentario de línea 43-49): position:fixed de Bootstrap ya escapa los overflow:hidden
+     de la cadena de ancestros, y así tampoco lo destruye el innerHTML='' de
+     acordeon.js/historial.js al colapsar o repintar. Dos columnas: nav de secciones
+     (izquierda) + panel de contenido (derecha), usando el plugin Tab de Bootstrap
+     (data-bs-toggle="pill") para el cambio de sección — cero JS propio para eso. -->
+<div class="modal fade" id="mc-admin-modal" tabindex="-1" aria-labelledby="mc-admin-modal-label" aria-hidden="true">
+    <!-- [2026-09-03] SIN modal-dialog-scrollable a propósito (ver plan §1B/R2): el scroll lo
+         gestionan las dos columnas internas (.mc-admin-nav y .mc-admin-content) por separado,
+         no el .modal-body como un todo. -->
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="mc-admin-modal-label">
+                    <i class="bi bi-shield-lock" aria-hidden="true" style="color:#92400E"></i>
+                    Admin
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body mc-admin-body">
+                <div class="nav flex-column mc-admin-nav" role="tablist" aria-orientation="vertical">
+                    <button class="mc-admin-nav__item active" data-bs-toggle="pill" data-bs-target="#mc-admin-pane-grupos" type="button" role="tab" aria-controls="mc-admin-pane-grupos" aria-selected="true">
+                        <i class="bi bi-diagram-3" aria-hidden="true"></i>
+                        <span>Grupos</span>
+                    </button>
+                    <button class="mc-admin-nav__item" data-bs-toggle="pill" data-bs-target="#mc-admin-pane-usuarios" type="button" role="tab" aria-controls="mc-admin-pane-usuarios" aria-selected="false">
+                        <i class="bi bi-people" aria-hidden="true"></i>
+                        <span>Usuarios</span>
+                    </button>
+                    <button class="mc-admin-nav__item" data-bs-toggle="pill" data-bs-target="#mc-admin-pane-usuarios-uso" type="button" role="tab" aria-controls="mc-admin-pane-usuarios-uso" aria-selected="false">
+                        <i class="bi bi-bar-chart-line" aria-hidden="true"></i>
+                        <span>Usuarios Uso</span>
+                    </button>
+                </div>
+                <div class="tab-content mc-admin-content">
+                    <div class="tab-pane fade show active mc-admin-panel" id="mc-admin-pane-grupos" role="tabpanel" aria-labelledby="mc-admin-pane-grupos">
+                        <h6 class="mc-admin-panel__title">Grupos</h6>
+                        <p class="mc-admin-panel__placeholder">Sección en construcción.</p>
+                    </div>
+                    <div class="tab-pane fade mc-admin-panel" id="mc-admin-pane-usuarios" role="tabpanel" aria-labelledby="mc-admin-pane-usuarios">
+                        <h6 class="mc-admin-panel__title">Usuarios</h6>
+                        <p class="mc-admin-panel__placeholder">Sección en construcción.</p>
+                    </div>
+                    <div class="tab-pane fade mc-admin-panel" id="mc-admin-pane-usuarios-uso" role="tabpanel" aria-labelledby="mc-admin-pane-usuarios-uso">
+                        <h6 class="mc-admin-panel__title">Usuarios Uso</h6>
+                        <p class="mc-admin-panel__placeholder">Sección en construcción.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -152,7 +205,7 @@
      DOMContentLoaded, que de todas formas dispara después de que todo lo diferido
      termine. -->
 <script defer src="{{ url_for('static', filename='js/multitab_shell.js') }}?v=20260831j"></script>
-<script defer src="{{ url_for('mainchat.static', filename='js/mainchat.js') }}?v=20260825i"></script>
+<script defer src="{{ url_for('mainchat.static', filename='js/mainchat.js') }}?v=20260903a"></script>
 <script defer src="{{ url_for('mainchat.static', filename='js/acordeon.js') }}?v=20260830a"></script>
 <!-- Después de acordeon.js: historial.js se registra en window.MainChatHistorial y
      pinta por su cuenta al final de su IIFE, porque el primer render() del acordeón

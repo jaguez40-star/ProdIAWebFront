@@ -93,11 +93,16 @@
         });
     }
 
-    // Accesos del waffle. Dos clases de destino:
+    // Accesos del waffle. Tres clases de destino:
     //   data-tab   -> pestaña del panel de multitab_shell.js: se abre in-situ, sin navegar.
     //   data-ruta  -> [2026-08-25] WAFFLE-NAV: navega de verdad. Solo quedan aquí rutas que
     //                 existen (Clásico, Colapsable); las que no existían (Admin/Config/Ayuda)
     //                 se retiraron del markup en vez de dejarlas con un aviso en consola.
+    //   data-modal -> [2026-09-03] abre un modal de Bootstrap (bundle ya cargado por
+    //                 base.html, disponible aquí: ver el comentario de más abajo, líneas
+    //                 149-153, sobre el orden defer vs. bootstrap.bundle.min.js) y cierra el
+    //                 popover del waffle — igual que data-tab, porque el botón vive DENTRO
+    //                 de #mc-menu y el listener de "clic fuera" no lo cerraría solo.
     menu.querySelectorAll('.mc-acceso').forEach(function (acceso) {
         acceso.addEventListener('click', function () {
             const tab = acceso.dataset.tab;
@@ -111,7 +116,20 @@
                 return;
             }
             const ruta = acceso.dataset.ruta;
-            if (ruta) window.location.href = ruta;
+            if (ruta) {
+                window.location.href = ruta;
+                return;
+            }
+            const modalId = acceso.dataset.modal;
+            if (modalId) {
+                const el = document.getElementById(modalId);
+                if (el && typeof window.bootstrap !== 'undefined' && window.bootstrap.Modal) {
+                    window.bootstrap.Modal.getOrCreateInstance(el).show();
+                    abrir(false);
+                } else {
+                    console.warn('MainChat: modal "' + modalId + '" no disponible');
+                }
+            }
         });
     });
 
