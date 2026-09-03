@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('mainchat.static', filename='css/mainchat.css') }}?v=20260903c">
+    <link rel="stylesheet" href="{{ url_for('mainchat.static', filename='css/mainchat.css') }}?v=20260903d">
     <!-- Estilos del shell de multitab_shell.js (prefijo rb-cp / cn- / colapsable-layout):
          MainChat no lo cargaba porque hasta ahora no montaba el shell dentro de sí misma. -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/colapsable.css') }}?v=20260831a">
@@ -161,7 +161,10 @@
                     </div>
                     <div class="tab-pane fade mc-admin-panel" id="mc-admin-pane-usuarios" role="tabpanel" aria-labelledby="mc-admin-pane-usuarios">
                         <h6 class="mc-admin-panel__title">Usuarios</h6>
-                        <p class="mc-admin-panel__placeholder">Sección en construcción.</p>
+                        <!-- [2026-09-03] Lista blanca. La sirve /auth/authorized-emails, que ya existía. -->
+                        <div id="mc-admin-usuarios" class="mc-admin-usuarios">
+                            <p class="mc-admin-panel__placeholder">Cargando usuarios…</p>
+                        </div>
                     </div>
                     <div class="tab-pane fade mc-admin-panel" id="mc-admin-pane-usuarios-uso" role="tabpanel" aria-labelledby="mc-admin-pane-usuarios-uso">
                         <h6 class="mc-admin-panel__title">Usuarios Uso</h6>
@@ -214,7 +217,7 @@
      DOMContentLoaded, que de todas formas dispara después de que todo lo diferido
      termine. -->
 <script defer src="{{ url_for('static', filename='js/multitab_shell.js') }}?v=20260831j"></script>
-<script defer src="{{ url_for('mainchat.static', filename='js/mainchat.js') }}?v=20260903c"></script>
+<script defer src="{{ url_for('mainchat.static', filename='js/mainchat.js') }}?v=20260903d"></script>
 <script defer src="{{ url_for('mainchat.static', filename='js/acordeon.js') }}?v=20260830a"></script>
 <!-- Después de acordeon.js: historial.js se registra en window.MainChatHistorial y
      pinta por su cuenta al final de su IIFE, porque el primer render() del acordeón

@@ -233,6 +233,59 @@
             });
     }
 
+    // [2026-09-03] Admin > Usuarios: la lista blanca de correos autorizados.
+    // Listener propio: el de Usuarios Uso tiene un return temprano por su guard.
+    if (modalAdmin) {
+        let usuariosCargado = false;
+
+        modalAdmin.addEventListener('shown.bs.modal', function () {
+            if (usuariosCargado) return;
+            usuariosCargado = true;
+            cargarUsuariosLista();
+        });
+    }
+
+    function cargarUsuariosLista() {
+        const caja = document.getElementById('mc-admin-usuarios');
+        if (!caja) return;
+
+        fetch('/auth/authorized-emails', { credentials: 'same-origin' })
+            .then(function (r) {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.json();
+            })
+            .then(function (data) {
+                const lista = (data.authorized_emails || []).slice().sort();
+
+                if (!lista.length) {
+                    caja.innerHTML = '<p class="mc-admin-panel__placeholder">' +
+                        'La lista blanca está vacía.</p>';
+                    return;
+                }
+
+                let filas = '';
+                for (let i = 0; i < lista.length; i++) {
+                    filas += '<tr>' +
+                        '<td class="mc-uso-num">' + (i + 1) + '</td>' +
+                        '<td>' + escapar(lista[i]) + '</td>' +
+                        '</tr>';
+                }
+
+                caja.innerHTML = '<div class="mc-uso-bloque">' +
+                    '<h6 class="mc-uso-titulo mc-uso-titulo--ok">Lista blanca</h6>' +
+                    '<p class="mc-lb-resumen">' + escapar(lista.length) +
+                    ' correos autorizados</p>' +
+                    '<table class="mc-uso-tabla"><thead><tr>' +
+                    '<th>#</th><th>Correo</th>' +
+                    '</tr></thead><tbody>' + filas + '</tbody></table></div>';
+            })
+            .catch(function (err) {
+                console.error('MainChat: error cargando la lista blanca', err);
+                caja.innerHTML = '<p class="mc-admin-panel__placeholder">' +
+                    'No se pudo cargar la lista de usuarios autorizados.</p>';
+            });
+    }
+
     const salir = document.getElementById('mc-logout');
     if (salir) {
         salir.addEventListener('click', function () {
