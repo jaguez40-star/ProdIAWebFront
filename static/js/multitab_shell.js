@@ -3602,7 +3602,13 @@
     } else {
       var mes = dat.mes || {};
       realLbl = "Producción " + (mes.nombre || "") + " " + (mes.anio || "");
-      corte = mes.completo ? "mes cerrado"
+      // [2026-09-03 · MES-CERRADO] Se rotula por `cerrado`, no por `completo`. `completo` mide
+      // la cobertura del reporte DIARIO: un mes ya cerrado con huecos en el diario (medido:
+      // CASTILLA mayo 2026, 17/31 días) salía como «proyección · 17/31 días», llamando
+      // provisional a una cifra definitiva. El `!= null` conserva el comportamiento si el
+      // backend aún no manda el campo (despliegues a medias).
+      var _cerrado = (mes.cerrado != null) ? mes.cerrado : mes.completo;
+      corte = _cerrado ? "mes cerrado"
             : ("proyección · " + (mes.dias_con_data || 0) + "/" + (mes.dias_del_mes || 0) + " días");
     }
     var avisos = (dat.avisos || []).map(function (a) {
