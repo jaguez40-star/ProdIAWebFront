@@ -4000,6 +4000,11 @@
     // (faltante/excedente, valores NEGATIVOS) sigue en la lista __cnCuantRankHtml, sin tocar.
     var body = (panel.tipo === "cuant_serie")    ? __cnCuantSerieHtml(d)
              : (panel.tipo === "cuant_var")      ? __cnCuantVarHtml(d)
+             // [2026-09-03 · CURVA-ACUMULADA] N2 = el KPI de siempre + la curva del acumulado.
+             // 🔑 Sin este ramal NO se rompe nada: `cuant_acum` caería al fallback
+             //    `__cnCuantCardHtml` (:3989) y pintaría el gauge correcto... SIN la curva. Un
+             //    fallo silencioso, que es peor que uno ruidoso (v2/H13).
+             : (panel.tipo === "cuant_acum")     ? __cnCuantAcumHtml(d)
              : (panel.tipo === "cuant_rank")     ? (d.metrica === "real" ? __cnRankDotHtml(d) : __cnCuantRankHtml(d))
              // [2026-08-25] "cuant_dia" (Grano DÍA, plan QV2-GRANO-DIA): registrada ANTES del
              // fallback por la MISMA razón que "p50_vp" arriba — el fallback __cnCuantCardHtml
@@ -4098,7 +4103,7 @@
     // [2026-08-25] QV2-PANEL-MES · N3/N4: mismo patrón, pero SIN fetch (los datos ya vienen en
     // panel.datos). Se difiere igual para que el pintor encuentre el host ya insertado, y el
     // guardián de __cnPanelMesCargar cubre el caso del DocumentFragment (pestaña oculta).
-    if (panel.tipo === "cuant_serie" || panel.tipo === "cuant_var") __cnPanelMesCargar(blk, d, panel.tipo);
+    if (panel.tipo === "cuant_serie" || panel.tipo === "cuant_var" || panel.tipo === "cuant_acum") __cnPanelMesCargar(blk, d, panel.tipo);
   }
 
   // [2026-08-11] NO-OP desde que análisis y pila conviven en un scroll único (.cn-col): ya no hay
@@ -4143,6 +4148,90 @@
 
   function __cnCuantSerieHtml(d) { return __cnPanelMesHtml(d, "cn-serie-mes"); }
 
+  // [2026-09-03 · CURVA-ACUMULADA] N2 = el KPI de siempre + la curva creciente del acumulado.
+  // 🔑 El gauge NO se sustituye: en N2 el porcentaje es correcto (acumulado real vs acumulado
+  //    de presupuesto, ambos de meses CERRADOS) y quitarlo perdería información que ya sirve.
+  //    Se CONCATENA el markup de __cnCuantCardHtml (:3438) con el envoltorio mensual (:4086),
+  //    que ya sabe montar un host para Plotly.
+  // 🔑 v2/H12 — LOS AVISOS VAN SOLO EN EL KPI. __cnCuantCardHtml los pinta (:3463) y
+  //    __cnPanelMesHtml TAMBIÉN (:4088). Pasarle el mismo `d` a las dos duplicaría el aviso
+  //    «⚠️ El mes de agosto sigue en curso…» en la misma tarjeta. Al envoltorio se le pasa una
+  //    copia SIN `avisos`; se quedan donde el usuario ya los conoce, bajo "Corte".
+  // 🔑 Sin `serie_acum` (p.ej. un solo mes cerrado) cae al KPI solo: nunca un hueco.
+  function __cnCuantAcumHtml(d) {
+    var kpi = __cnCuantCardHtml(d);
+    if (!d.serie_acum || !d.serie_acum.length) return kpi;
+    var dSinAvisos = {};
+    for (var k in d) { if (Object.prototype.hasOwnProperty.call(d, k)) dSinAvisos[k] = d[k]; }
+    dSinAvisos.avisos = [];
+    return kpi + __cnPanelMesHtml(dSinAvisos, "cn-acum-mes");
+  }
+
+  // Curva ACUMULADA: dos series crecientes (REAL y PPTO). Molde = __cnFilSeriePlot (:1386),
+  // que es el único pintor mensual de VARIAS trazas; __cnSerieMesPlot (:2273) no vale porque
+  // su referencia es un ESCALAR dibujado como línea horizontal, y aquí el presupuesto acumulado
+  // es otra curva que sube.
+  function __cnAcumMesInto(hostEl, d) {
+    var serie = d.serie_acum || [];
+    var prod = String(d.producto || "");
+    var nombre = prod.charAt(0).toUpperCase() + prod.slice(1).toLowerCase();
+    var unidad = d.unidad || "bbl";
+    var hd = esc(nombre) + ' · acumulado ' + (d.anio || "") + ' vs presupuesto';
+    hostEl.innerHTML =
+      '<div class="cn-ins__card"><div class="cn-ins__card-hd"><i class="bi bi-graph-up-arrow"></i> ' + hd + '</div>' +
+      '<div class="cn-ins__plot" data-p></div>' +
+      '<div class="cn-ins__cap" data-cap></div></div>';
+    var elp = hostEl.querySelector("[data-p]");
+    if (!serie.length) {
+      elp.innerHTML = '<div class="p-2 text-muted small">Sin acumulado mensual para este producto.</div>';
+      return;
+    }
+    if (!window.Plotly) { elp.innerHTML = '<div class="text-muted small p-2">(Plotly no disponible)</div>'; return; }
+    // El gas se grafica en MSCF (÷1e6) y el hover formatea el valor ORIGINAL con __cnGasM (que
+    // ya divide) — nunca el ya escalado: ese doble escalado es el bug documentado en :3650-3652.
+    var esGas = String(prod).toUpperCase() === "GAS";
+    var fmtD = esGas ? __cnGasM : function (v) { return __cnMilesEC(Math.round(v)); };
+    var esc1 = function (v) { return (v == null) ? null : (esGas ? v / 1e6 : v); };
+    var meses = serie.map(function (p) { return p.mes; });
+    var col = __cnProdCol(prod);
+    var traces = [{
+      x: meses, y: serie.map(function (p) { return esc1(p.real_acum); }),
+      name: "Real acumulado", type: "scatter", mode: "lines+markers",
+      line: { color: col, width: 2.5, shape: "spline", smoothing: 0.8 },
+      marker: { color: col, size: 7 },
+      customdata: serie.map(function (p) { return fmtD(p.real_acum); }),
+      hovertemplate: "%{x}<br>Real acum.: %{customdata}" + (unidad ? " " + unidad : "") + "<extra></extra>"
+    }];
+    // La curva de PPTO solo se dibuja si HAY presupuesto. `ppto_acum: null` significa "no hay
+    // PPTO cargado", que es distinto de "el PPTO es cero" — pintar ceros afirmaría lo segundo.
+    if (serie.some(function (p) { return p.ppto_acum != null; })) {
+      traces.push({
+        x: meses, y: serie.map(function (p) { return esc1(p.ppto_acum); }),
+        name: "Presupuesto acumulado", type: "scatter", mode: "lines",
+        line: { color: "#8a978f", width: 2, dash: "dot" }, connectgaps: false,
+        customdata: serie.map(function (p) { return p.ppto_acum == null ? "—" : fmtD(p.ppto_acum); }),
+        hovertemplate: "%{x}<br>PPTO acum.: %{customdata}" + (unidad ? " " + unidad : "") + "<extra></extra>"
+      });
+    }
+    window.Plotly.newPlot(elp, traces, {
+      margin: { l: 62, r: 18, t: 22, b: 30 }, height: 260, hovermode: "x unified",
+      showlegend: true, legend: { orientation: "h", y: -0.18, x: 0, font: { size: 11 } },
+      xaxis: { title: { text: "Mes", font: { size: 11 } }, tickfont: { size: 11 }, showgrid: false },
+      yaxis: {
+        title: { text: "Acumulado (" + (esGas ? "MSCF" : unidad) + ")", font: { size: 11 } },
+        tickfont: { size: 10 }, rangemode: "tozero", separatethousands: true,
+        gridcolor: "#eef1ef", zeroline: false
+      },
+      plot_bgcolor: "#fff", paper_bgcolor: "#fff"
+    }, { displayModeBar: false, responsive: true });
+    var cap = hostEl.querySelector("[data-cap]");
+    if (cap) {
+      var ult = serie[serie.length - 1];
+      cap.innerHTML = 'Suma corrida de los <b>' + serie.length + '</b> meses cerrados de ' +
+        esc(String(d.anio || "")) + '. El mes en curso no entra en el acumulado.';
+    }
+  }
+
   // Rellena el panel mensual una vez el bloque está en el DOM. Gemela de __cnCompProdCargar
   // (:3300) en el guardián, pero SIN fetch: los datos ya viajan en panel.datos.
   // ⚠️ Ese guardián es imprescindible aunque no haya fetch: si el usuario preguntó y se fue a otra
@@ -4173,6 +4262,9 @@
       // markup y __cnEbBindHover añade listeners por cada <rect>, o sea toca el DOM. Misma
       // separación que mantiene el resto de la pila (:3368-3371).
       __cnEbBindHover(hv);
+    } else if (tipo === "cuant_acum") {
+      var ha = blk.querySelector(".cn-acum-mes");
+      if (ha) __cnAcumMesInto(ha, d);
     }
   }
 
