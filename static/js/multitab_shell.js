@@ -1106,7 +1106,13 @@
         "¿Cuánto crudo produjo el campo …?",
         "¿Cuál es la producción del activo …?",
         "¿Cuál es el acumulado del año de …?",
-        "¿Cuánto produjo … el mes pasado?"
+        "¿Cuánto ha producido … en lo que va del año?",
+        "¿Cuál es el acumulado de gas de …?",
+        "¿Cuánto produjo … el mes pasado?",
+        "¿Cómo va … frente al presupuesto este mes?",
+        "¿Cuánto produjo … en … vs el operativo?",
+        "¿Cuánto produjo … en … contra el contable?",
+        "¿Cómo va … frente al promedio del año?"
       ]
     },
     {
