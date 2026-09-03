@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('mainchat.static', filename='css/mainchat.css') }}?v=20260903d">
+    <link rel="stylesheet" href="{{ url_for('mainchat.static', filename='css/mainchat.css') }}?v=20260903e">
     <!-- Estilos del shell de multitab_shell.js (prefijo rb-cp / cn- / colapsable-layout):
          MainChat no lo cargaba porque hasta ahora no montaba el shell dentro de sí misma. -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/colapsable.css') }}?v=20260831a">
@@ -187,96 +187,93 @@
      lleva data-modal, se abre por JS.
      Va FUERA de #mc-chat-body, igual que #mc-admin-modal y por el mismo motivo: el acordeón y
      el historial repintan ese contenedor y se llevarían el modal por delante.
-     Las secciones son ESTÁTICAS (el orden debe coincidir con el array __cnHistSeed de
-     multitab_shell.js); lo único que se rellena por JS son las listas de botones. -->
+     Las 7 categorías de catálogo son ESTÁTICAS: su orden y sus iconos deben coincidir con el
+     array __cnHistSeed de multitab_shell.js, porque el JS rellena #mc-preg-cat-N buscando por
+     ÍNDICE. Lo que se pinta por JS: el total de la cabecera, los conteos del sidebar, la ficha
+     (#mc-preg-catbar), las listas de filas y el pie.
+     La pestaña "Histórico" NO forma parte del catálogo: son las preguntas que el usuario ya
+     hizo en ESTA conversación (dato de sesión, no plantillas). Por eso conserva su propio
+     título/hint fijos y se queda fuera de la ficha compartida y del filtro — la ficha y el pie
+     nacen con `hidden` justamente porque Histórico es la pestaña activa por defecto. -->
 <div class="modal fade" id="mc-preguntas-modal" tabindex="-1" aria-labelledby="mc-preguntas-modal-label" aria-hidden="true">
-    <!-- Sin modal-dialog-scrollable, mismo criterio que Admin: el scroll lo llevan las dos
-         columnas por separado (.mc-preg-nav y .mc-preg-content). -->
     <div class="modal-dialog modal-xl modal-dialog-centered mc-preg-dialog">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="mc-preguntas-modal-label">
-                    <i class="bi bi-chat-square-text" aria-hidden="true" style="color:#15794C"></i>
-                    Preguntas
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            <div class="modal-header mc-preg-head">
+                <i class="bi bi-patch-question-fill mc-preg-head__icon" aria-hidden="true"></i>
+                <h5 class="modal-title mc-preg-head__title" id="mc-preguntas-modal-label">Preguntas</h5>
+                <span class="mc-preg-head__total" id="mc-preg-total"></span>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
             <div class="modal-body mc-preg-body">
                 <div class="nav flex-column mc-preg-nav" role="tablist" aria-orientation="vertical">
                     <button class="mc-preg-nav__item active" data-bs-toggle="pill" data-bs-target="#mc-preg-pane-hist" type="button" role="tab" aria-controls="mc-preg-pane-hist" aria-selected="true">
-                        <i class="bi bi-clock-history" aria-hidden="true"></i>
-                        <span>Histórico</span>
+                        <span class="mc-preg-nav__tile"><i class="bi bi-clock-history" aria-hidden="true"></i></span>
+                        <span class="mc-preg-nav__label">Histórico</span>
+                        <span class="mc-preg-nav__count" id="mc-preg-navcount-hist"></span>
                     </button>
                     <button class="mc-preg-nav__item" data-bs-toggle="pill" data-bs-target="#mc-preg-pane-0" type="button" role="tab" aria-controls="mc-preg-pane-0" aria-selected="false">
-                        <i class="bi bi-graph-up-arrow" aria-hidden="true"></i>
-                        <span>Diagnóstico de causas</span>
+                        <span class="mc-preg-nav__tile"><i class="bi bi-graph-up-arrow" aria-hidden="true"></i></span>
+                        <span class="mc-preg-nav__label">Diagnóstico de causas</span>
+                        <span class="mc-preg-nav__count" id="mc-preg-navcount-0"></span>
                     </button>
                     <button class="mc-preg-nav__item" data-bs-toggle="pill" data-bs-target="#mc-preg-pane-1" type="button" role="tab" aria-controls="mc-preg-pane-1" aria-selected="false">
-                        <i class="bi bi-123" aria-hidden="true"></i>
-                        <span>Cifras de producción</span>
+                        <span class="mc-preg-nav__tile"><i class="bi bi-123" aria-hidden="true"></i></span>
+                        <span class="mc-preg-nav__label">Cifras de producción</span>
+                        <span class="mc-preg-nav__count" id="mc-preg-navcount-1"></span>
                     </button>
                     <button class="mc-preg-nav__item" data-bs-toggle="pill" data-bs-target="#mc-preg-pane-2" type="button" role="tab" aria-controls="mc-preg-pane-2" aria-selected="false">
-                        <i class="bi bi-bullseye" aria-hidden="true"></i>
-                        <span>Cumplimiento vs metas</span>
+                        <span class="mc-preg-nav__tile"><i class="bi bi-bullseye" aria-hidden="true"></i></span>
+                        <span class="mc-preg-nav__label">Cumplimiento vs metas</span>
+                        <span class="mc-preg-nav__count" id="mc-preg-navcount-2"></span>
                     </button>
                     <button class="mc-preg-nav__item" data-bs-toggle="pill" data-bs-target="#mc-preg-pane-3" type="button" role="tab" aria-controls="mc-preg-pane-3" aria-selected="false">
-                        <i class="bi bi-bar-chart-steps" aria-hidden="true"></i>
-                        <span>Rankings y contribución</span>
+                        <span class="mc-preg-nav__tile"><i class="bi bi-bar-chart-steps" aria-hidden="true"></i></span>
+                        <span class="mc-preg-nav__label">Rankings y contribución</span>
+                        <span class="mc-preg-nav__count" id="mc-preg-navcount-3"></span>
                     </button>
                     <button class="mc-preg-nav__item" data-bs-toggle="pill" data-bs-target="#mc-preg-pane-4" type="button" role="tab" aria-controls="mc-preg-pane-4" aria-selected="false">
-                        <i class="bi bi-calendar3" aria-hidden="true"></i>
-                        <span>Evolución en el tiempo</span>
+                        <span class="mc-preg-nav__tile"><i class="bi bi-calendar3" aria-hidden="true"></i></span>
+                        <span class="mc-preg-nav__label">Evolución en el tiempo</span>
+                        <span class="mc-preg-nav__count" id="mc-preg-navcount-4"></span>
                     </button>
                     <button class="mc-preg-nav__item" data-bs-toggle="pill" data-bs-target="#mc-preg-pane-5" type="button" role="tab" aria-controls="mc-preg-pane-5" aria-selected="false">
-                        <i class="bi bi-diagram-3" aria-hidden="true"></i>
-                        <span>Catálogo y jerarquía</span>
+                        <span class="mc-preg-nav__tile"><i class="bi bi-diagram-3" aria-hidden="true"></i></span>
+                        <span class="mc-preg-nav__label">Catálogo y jerarquía</span>
+                        <span class="mc-preg-nav__count" id="mc-preg-navcount-5"></span>
                     </button>
                     <button class="mc-preg-nav__item" data-bs-toggle="pill" data-bs-target="#mc-preg-pane-6" type="button" role="tab" aria-controls="mc-preg-pane-6" aria-selected="false">
-                        <i class="bi bi-tools" aria-hidden="true"></i>
-                        <span>Eventos operativos</span>
+                        <span class="mc-preg-nav__tile"><i class="bi bi-tools" aria-hidden="true"></i></span>
+                        <span class="mc-preg-nav__label">Eventos operativos</span>
+                        <span class="mc-preg-nav__count" id="mc-preg-navcount-6"></span>
                     </button>
                 </div>
-                <div class="tab-content mc-preg-content">
-                    <div class="tab-pane fade show active" id="mc-preg-pane-hist" role="tabpanel">
-                        <h6 class="mc-preg-panel__title">Histórico</h6>
-                        <p class="mc-preg-panel__hint">Preguntas de esta conversación. Clic para reutilizarlas.</p>
-                        <div id="mc-preg-hist"></div>
+                <div class="mc-preg-panel">
+                    <div class="mc-preg-catbar" id="mc-preg-catbar" hidden>
+                        <div class="mc-preg-catbar__tile"><i id="mc-preg-catbar-icon" class="bi" aria-hidden="true"></i></div>
+                        <div class="mc-preg-catbar__text">
+                            <h6 class="mc-preg-catbar__title" id="mc-preg-catbar-title"></h6>
+                            <p class="mc-preg-catbar__hint" id="mc-preg-catbar-hint"></p>
+                        </div>
+                        <div class="mc-preg-catbar__filtro">
+                            <i class="bi bi-search" aria-hidden="true"></i>
+                            <input type="text" id="mc-preg-filtro" placeholder="Filtrar…" aria-label="Filtrar preguntas" autocomplete="off">
+                        </div>
                     </div>
-                    <div class="tab-pane fade" id="mc-preg-pane-0" role="tabpanel">
-                        <h6 class="mc-preg-panel__title">Diagnóstico de causas</h6>
-                        <p class="mc-preg-panel__hint">Edita el «…» antes de enviar.</p>
-                        <div id="mc-preg-cat-0"></div>
+                    <div class="tab-content mc-preg-content">
+                        <div class="tab-pane fade show active" id="mc-preg-pane-hist" role="tabpanel">
+                            <h6 class="mc-preg-panel__title">Histórico</h6>
+                            <p class="mc-preg-panel__hint">Preguntas de esta conversación. Clic para reutilizarlas.</p>
+                            <div id="mc-preg-hist"></div>
+                        </div>
+                        <div class="tab-pane fade" id="mc-preg-pane-0" role="tabpanel"><div id="mc-preg-cat-0"></div></div>
+                        <div class="tab-pane fade" id="mc-preg-pane-1" role="tabpanel"><div id="mc-preg-cat-1"></div></div>
+                        <div class="tab-pane fade" id="mc-preg-pane-2" role="tabpanel"><div id="mc-preg-cat-2"></div></div>
+                        <div class="tab-pane fade" id="mc-preg-pane-3" role="tabpanel"><div id="mc-preg-cat-3"></div></div>
+                        <div class="tab-pane fade" id="mc-preg-pane-4" role="tabpanel"><div id="mc-preg-cat-4"></div></div>
+                        <div class="tab-pane fade" id="mc-preg-pane-5" role="tabpanel"><div id="mc-preg-cat-5"></div></div>
+                        <div class="tab-pane fade" id="mc-preg-pane-6" role="tabpanel"><div id="mc-preg-cat-6"></div></div>
                     </div>
-                    <div class="tab-pane fade" id="mc-preg-pane-1" role="tabpanel">
-                        <h6 class="mc-preg-panel__title">Cifras de producción</h6>
-                        <p class="mc-preg-panel__hint">Edita el «…» antes de enviar.</p>
-                        <div id="mc-preg-cat-1"></div>
-                    </div>
-                    <div class="tab-pane fade" id="mc-preg-pane-2" role="tabpanel">
-                        <h6 class="mc-preg-panel__title">Cumplimiento vs metas</h6>
-                        <p class="mc-preg-panel__hint">Edita el «…» antes de enviar.</p>
-                        <div id="mc-preg-cat-2"></div>
-                    </div>
-                    <div class="tab-pane fade" id="mc-preg-pane-3" role="tabpanel">
-                        <h6 class="mc-preg-panel__title">Rankings y contribución</h6>
-                        <p class="mc-preg-panel__hint">Edita el «…» antes de enviar.</p>
-                        <div id="mc-preg-cat-3"></div>
-                    </div>
-                    <div class="tab-pane fade" id="mc-preg-pane-4" role="tabpanel">
-                        <h6 class="mc-preg-panel__title">Evolución en el tiempo</h6>
-                        <p class="mc-preg-panel__hint">Edita el «…» antes de enviar.</p>
-                        <div id="mc-preg-cat-4"></div>
-                    </div>
-                    <div class="tab-pane fade" id="mc-preg-pane-5" role="tabpanel">
-                        <h6 class="mc-preg-panel__title">Catálogo y jerarquía</h6>
-                        <p class="mc-preg-panel__hint">Edita el «…» antes de enviar.</p>
-                        <div id="mc-preg-cat-5"></div>
-                    </div>
-                    <div class="tab-pane fade" id="mc-preg-pane-6" role="tabpanel">
-                        <h6 class="mc-preg-panel__title">Eventos operativos</h6>
-                        <p class="mc-preg-panel__hint">Edita el «…» antes de enviar.</p>
-                        <div id="mc-preg-cat-6"></div>
-                    </div>
+                    <footer class="mc-preg-foot" id="mc-preg-foot" hidden></footer>
                 </div>
             </div>
         </div>
@@ -317,7 +314,7 @@
      defer) — pero main.js no usa nada del shell fuera de su propio listener
      DOMContentLoaded, que de todas formas dispara después de que todo lo diferido
      termine. -->
-<script defer src="{{ url_for('static', filename='js/multitab_shell.js') }}?v=20260831j"></script>
+<script defer src="{{ url_for('static', filename='js/multitab_shell.js') }}?v=20260903e"></script>
 <script defer src="{{ url_for('mainchat.static', filename='js/mainchat.js') }}?v=20260903d"></script>
 <script defer src="{{ url_for('mainchat.static', filename='js/acordeon.js') }}?v=20260830a"></script>
 <!-- Después de acordeon.js: historial.js se registra en window.MainChatHistorial y

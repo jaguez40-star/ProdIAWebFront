@@ -1091,73 +1091,80 @@
     {
       cat: "Diagnóstico de causas",
       icono: "bi-graph-up-arrow",
+      hint: "Por qué pasó: faltantes y causas del comportamiento",
       items: [
-        "Analiza el comportamiento del producto …",
-        "Analiza el comportamiento de la producción de … en el Campo …",
-        "¿Qué campos explican el faltante de …?",
-        "¿Cuáles son las causas de las diferidas en el campo …?"
+        { t: "Analiza el comportamiento de ", slot: "producto" },
+        { t: "Analiza el comportamiento de la producción de ", slot: "producto", t2: " en ", slot2: "campo" },
+        { t: "¿Qué campos explican el faltante de ", slot: "producto", t2: "?" },
+        { t: "¿Cuáles son las causas de las diferidas en ", slot: "campo", t2: "?" }
       ]
     },
     {
       cat: "Cifras de producción",
       icono: "bi-123",
+      hint: "El cuánto directo: volúmenes y acumulados",
       items: [
-        "¿Cuánto crudo produjo el campo …?",
-        "¿Cuál es la producción del activo …?",
-        "¿Cuál es el acumulado del año de …?",
-        "¿Cuánto ha producido … en lo que va del año?",
-        "¿Cuál es el acumulado de gas de …?",
-        "¿Cuánto produjo … el mes pasado?"
+        { t: "¿Cuánto crudo produjo ", slot: "campo", t2: "?" },
+        { t: "¿Cuál es la producción de ", slot: "activo", t2: "?" },
+        { t: "¿Cuál es el acumulado del año de ", slot: "entidad", t2: "?" },
+        { t: "¿Cuánto ha producido ", slot: "entidad", t2: " en lo que va del año?" },
+        { t: "¿Cuál es el acumulado de gas de ", slot: "entidad", t2: "?" },
+        { t: "¿Cuánto produjo ", slot: "entidad", t2: " el mes pasado?" }
       ]
     },
     {
       cat: "Cumplimiento vs metas",
       icono: "bi-bullseye",
+      hint: "Real contra presupuesto, operativo, contable y promedio",
       items: [
-        "¿Cómo vamos este mes?",
-        "¿Cómo va … frente al presupuesto este mes?",
-        "¿Cuánto produjo … en … vs el operativo?",
-        "¿Cuánto produjo … en … contra el contable?",
-        "¿Cómo va … frente al promedio del año?"
+        { t: "¿Cómo vamos este mes?" },
+        { t: "¿Cómo va ", slot: "entidad", t2: " frente al presupuesto este mes?" },
+        { t: "¿Cuánto produjo ", slot: "entidad", t2: " en ", slot2: "mes", t3: " vs el operativo?" },
+        { t: "¿Cuánto produjo ", slot: "entidad", t2: " en ", slot2: "mes", t3: " contra el contable?" },
+        { t: "¿Cómo va ", slot: "entidad", t2: " frente al promedio del año?" }
       ]
     },
     {
       cat: "Rankings y contribución",
       icono: "bi-bar-chart-steps",
+      hint: "Quién más o menos produce, y cómo se distribuye",
       items: [
-        "¿Cuáles son los 5 campos que más crudo producen?",
-        "¿Cómo se distribuye la producción de crudo, %, entre los campos productores?",
-        "¿Cuáles campos del activo … producen más crudo?",
-        "¿Cuál es el activo que más crudo produce?",
-        "¿Qué campos se quedaron más cortos vs presupuesto?"
+        { t: "¿Cuáles son los 5 campos que más crudo producen?" },
+        { t: "¿Cómo se distribuye la producción de crudo, %, entre los campos productores?" },
+        { t: "¿Cuáles campos de ", slot: "activo", t2: " producen más crudo?" },
+        { t: "¿Cuál es el activo que más crudo produce?" },
+        { t: "¿Qué campos se quedaron más cortos vs presupuesto?" }
       ]
     },
     {
       cat: "Evolución en el tiempo",
       icono: "bi-calendar3",
+      hint: "Día a día, mes a mes y variaciones en el tiempo",
       items: [
-        "Muéstrame la producción del campo …, día a día para el mes de …",
-        "Muéstrame la producción del campo …, mes a mes para el año …",
-        "¿Cuánto produjo … en los últimos 30 días?",
-        "¿Cuál ha sido la variación porcentual de la producción de … mes a mes en 2026, para el campo …?",
-        "¿Cuál fue el mejor día de … este mes?"
+        { t: "Muéstrame la producción de ", slot: "campo", t2: ", día a día en ", slot2: "mes" },
+        { t: "Muéstrame la producción de ", slot: "campo", t2: ", mes a mes en ", slot2: "año" },
+        { t: "¿Cuánto produjo ", slot: "entidad", t2: " en los últimos 30 días?" },
+        { t: "¿Cuál ha sido la variación porcentual de la producción de ", slot: "producto", t2: " mes a mes en 2026, para ", slot2: "campo", t3: "?" },
+        { t: "¿Cuál fue el mejor día de ", slot: "entidad", t2: " este mes?" }
       ]
     },
     {
       cat: "Catálogo y jerarquía",
       icono: "bi-diagram-3",
+      hint: "Campos, activos y a qué gerencia pertenecen",
       items: [
-        "¿Qué campos tiene el activo …?",
-        "¿A qué activo pertenece el campo …?",
-        "¿Cuántos pozos tiene …?"
+        { t: "¿Qué campos tiene ", slot: "activo", t2: "?" },
+        { t: "¿A qué activo pertenece ", slot: "campo", t2: "?" },
+        { t: "¿Cuántos pozos tiene ", slot: "entidad", t2: "?" }
       ]
     },
     {
       cat: "Eventos operativos",
       icono: "bi-tools",
+      hint: "Mantenimientos y diferidas registradas",
       items: [
-        "¿Qué mantenimientos se han realizado en el campo …, en el último mes?",
-        "¿Qué diferidas hubo en …?"
+        { t: "¿Qué mantenimientos se han realizado en ", slot: "campo", t2: ", en el último mes?" },
+        { t: "¿Qué diferidas hubo en ", slot: "entidad", t2: "?" }
       ]
     }
   ];
@@ -1181,28 +1188,127 @@
       'onmouseover="this.style.background=\'#f1f4f1\'" onmouseout="this.style.background=\'none\'">' +
       h + '</button>';
   }
-  // [2026-09-03 · MODAL-PREGUNTAS] Pinta el modal categorizado. Solo existe en MainChat: el
+  // [MODAL-PREGUNTAS · rediseño] Pinta el modal categorizado. Solo existe en MainChat: el
   // markup vive en mainchat_layout.html, fuera de #mc-chat-body para que el repintado del
   // acordeón no lo destruya (mismo criterio que el modal de Admin).
-  // 🔑 ESCAPADO, dos reglas distintas y deliberadas (ver el comentario de 2026-08-26 abajo):
+  // 🔑 ESCAPADO, dos reglas distintas y deliberadas (ver el comentario de 2026-08-26 arriba):
   //    · el historial (b.html) YA viene escapado por __cnBubble -> se inyecta tal cual;
-  //    · las plantillas llegan crudas -> pasan por esc().
-  //    Escapar dos veces el historial rompería tildes y "¿"; no escapar las plantillas sería XSS.
+  //    · las plantillas de __cnHistSeed llegan crudas (t/slot/t2/slot2/t3) -> cada fragmento
+  //      pasa por esc() antes de montar el HTML de la fila (ver __cnPregTextoHTML).
+  //
+  // [MODAL-PREGUNTAS · rediseño] El hueco "…" de cada plantilla ya no es texto libre: cada
+  // pregunta es {t, slot, t2, slot2, t3} y el hueco se resalta como pastilla ámbar
+  // (.mc-preg-slot) en vez de un carácter "…" perdido en medio de la frase. Dos vistas del
+  // mismo dato: __cnPregTextoHTML() arma el HTML con la pastilla (para pintar la fila);
+  // __cnPregTextoPlano() reconstruye el texto plano con "…" real (para el input del chat, el
+  // desplegable clásico y el buscador de filtro) — NO se parsea con regex, se compone desde
+  // los mismos fragmentos con nombre.
+  function __cnPregSlotHTML(nombre) {
+    return '<span class="mc-preg-slot"><i class="bi bi-pencil-fill" aria-hidden="true"></i>' + esc(nombre) + '</span>';
+  }
+  function __cnPregTextoHTML(tpl) {
+    var h = esc(tpl.t);
+    if (tpl.slot) h += __cnPregSlotHTML(tpl.slot);
+    h += esc(tpl.t2 || "");
+    if (tpl.slot2) h += __cnPregSlotHTML(tpl.slot2);
+    h += esc(tpl.t3 || "");
+    return h;
+  }
+  function __cnPregTextoPlano(tpl) {
+    var s = tpl.t;
+    if (tpl.slot) s += "…";
+    s += (tpl.t2 || "");
+    if (tpl.slot2) s += "…";
+    s += (tpl.t3 || "");
+    return s;
+  }
+  // Fila de catálogo (icono de categoría + texto con pastilla(s) + badge de categoría a la
+  // derecha). `data-plano` guarda el texto reconstruido con "…" para insertarlo en el input
+  // al hacer clic (ver __cnHistUsar) — el navegador des-escapa el atributo solo, no hace
+  // falta un unescape manual (mismo mecanismo que ya usa __cnPregItem con b.html).
+  function __cnPregFila(tpl, catLabel, catIcono) {
+    return '<button type="button" class="mc-preg-row" data-plano="' + esc(__cnPregTextoPlano(tpl)) + '" onclick="window.__cnHistUsar(this)">' +
+      '<i class="bi ' + catIcono + ' mc-preg-row__icon" aria-hidden="true"></i>' +
+      '<span class="mc-preg-row__text">' + __cnPregTextoHTML(tpl) + '</span>' +
+      '<span class="mc-preg-row__badge">' + esc(catLabel) + '</span>' +
+      '</button>';
+  }
+  // Pinta la caja mc-preg-cat-IDX filtrando por `q` (substring, sin distinguir mayúsculas).
+  // q="" pinta el catálogo completo de esa categoría. Devuelve cuántas filas quedaron
+  // visibles (lo usa el pie y el conteo del sidebar).
+  function __cnPregFiltrar(idx, q) {
+    var cont = el("mc-preg-cat-" + idx);
+    var cat = __cnHistSeed[idx];
+    if (!cont || !cat) return 0;
+    var qq = (q || "").trim().toLowerCase();
+    var filtrados = qq
+      ? cat.items.filter(function (tpl) { return __cnPregTextoPlano(tpl).toLowerCase().indexOf(qq) !== -1; })
+      : cat.items;
+    cont.innerHTML = filtrados.length
+      ? filtrados.map(function (tpl) { return __cnPregFila(tpl, cat.cat, cat.icono); }).join("")
+      : '<p class="mc-preg-vacio">Sin resultados' + (qq ? ' para «' + esc(q.trim()) + '»' : '') + '.</p>';
+    return filtrados.length;
+  }
+  // Total de plantillas del catálogo (30 hoy), derivado — nunca hardcodeado.
+  function __cnPregTotalCatalogo() {
+    var t = 0;
+    for (var i = 0; i < __cnHistSeed.length; i++) t += __cnHistSeed[i].items.length;
+    return t;
+  }
+  function __cnPregPie(idx, n) {
+    var pie = el("mc-preg-foot");
+    if (!pie) return;
+    var total = __cnPregTotalCatalogo();
+    pie.textContent = n + " de " + total + (total === 1 ? " plantilla" : " plantillas");
+  }
+  // Sincroniza la ficha compartida (icono/nombre/hint) + el filtro + el pie con la pestaña
+  // que esté activa AHORA MISMO (lee el DOM, no guarda estado propio). Si la activa es
+  // Histórico (o cualquier cosa que no matchee "mc-preg-pane-N"), oculta ficha y pie: la
+  // pestaña Histórico no es parte del catálogo, no tiene filtro ni pastillas.
+  function __cnPregCatbarSync() {
+    var barra = el("mc-preg-catbar"), pie = el("mc-preg-foot");
+    if (!barra || !pie) return;
+    var idx = __cnPregIdxActivo();
+    if (idx === -1) {          // Histórico (o nada activo): sin ficha, sin filtro, sin pie
+      barra.hidden = true;
+      pie.hidden = true;
+      return;
+    }
+    var cat = __cnHistSeed[idx];
+    var icono = el("mc-preg-catbar-icon"); if (icono) icono.className = "bi " + cat.icono;
+    var titulo = el("mc-preg-catbar-title"); if (titulo) titulo.textContent = cat.cat;
+    var hint = el("mc-preg-catbar-hint"); if (hint) hint.textContent = cat.hint || "";
+    var filtro = el("mc-preg-filtro"); if (filtro) filtro.value = "";
+    barra.hidden = false;
+    pie.hidden = false;
+    __cnPregPie(idx, __cnPregFiltrar(idx, ""));
+  }
   function __cnPregModalPintar() {
     var cont = el("mc-preg-hist");
+    var qs = [];
     if (cont) {
-      var qs = __cnHistory.filter(function (b) { return b.role === "user"; })
-                          .map(function (b) { return b.html; }).reverse();
+      qs = __cnHistory.filter(function (b) { return b.role === "user"; })
+                       .map(function (b) { return b.html; }).reverse();
       cont.innerHTML = qs.length
         ? qs.map(__cnPregItem).join("")
         : '<p class="mc-preg-vacio">Todavía no has preguntado nada en esta conversación.</p>';
     }
-    // Las categorías son estáticas en el HTML; aquí solo se rellenan sus listas. El índice del
-    // panel coincide con el del array porque el nav se escribe en el mismo orden (ver §3.4).
+    var histCnt = el("mc-preg-navcount-hist");
+    if (histCnt) histCnt.textContent = qs.length;
+    // Las categorías son estáticas en el HTML; aquí se rellenan sus listas + el conteo del
+    // sidebar. El índice del panel coincide con el del array porque el nav se escribe en el
+    // mismo orden (ver mainchat_layout.html).
     for (var i = 0; i < __cnHistSeed.length; i++) {
-      var caja = el("mc-preg-cat-" + i);
-      if (caja) caja.innerHTML = __cnHistSeed[i].items.map(esc).map(__cnPregItem).join("");
+      var n = __cnPregFiltrar(i, "");
+      var cnt = el("mc-preg-navcount-" + i);
+      if (cnt) cnt.textContent = n;
     }
+    var totEl = el("mc-preg-total");
+    if (totEl) {
+      var total = __cnPregTotalCatalogo();
+      totEl.textContent = total + (total === 1 ? " plantilla" : " plantillas");
+    }
+    __cnPregCatbarSync();
   }
 
   function __cnPregItem(h) {
@@ -1228,11 +1334,14 @@
     var cabeceraSeed = '<div style="padding:8px 12px 4px;color:#6E7C75;font-size:11px;' +
       'text-transform:uppercase;letter-spacing:.03em;">Preguntas de ejemplo — edita el "…" ' +
       'antes de enviar</div>';
-    // [2026-09-03] __cnHistSeed ya no es plano: se aplana aquí para el desplegable de la vista
-    // clásica, que sigue siendo una lista sin categorías.
+    // [MODAL-PREGUNTAS · rediseño] __cnHistSeed ya no es plano ni de strings: se aplana aquí
+    // reconstruyendo el texto de cada plantilla con __cnPregTextoPlano, para el desplegable de
+    // la vista clásica, que sigue siendo una lista sin categorías ni pastillas.
     var planas = [];
     for (var i = 0; i < __cnHistSeed.length; i++) {
-      planas = planas.concat(__cnHistSeed[i].items);
+      for (var j = 0; j < __cnHistSeed[i].items.length; j++) {
+        planas.push(__cnPregTextoPlano(__cnHistSeed[i].items[j]));
+      }
     }
     d.innerHTML = qs.map(__cnHistBoton).join("") +
       cabeceraSeed + planas.map(esc).map(__cnHistBoton).join("");
@@ -1240,7 +1349,10 @@
   };
   window.__cnHistUsar = function (btn) {
     var inp = el("cn-input"); if (!inp || !btn) return;
-    inp.value = btn.textContent;
+    // [MODAL-PREGUNTAS · rediseño] Las filas de catálogo cargan su texto plano en
+    // data-plano (con "…" real, ver __cnPregFila); el resto (Histórico real, desplegable
+    // clásico) sigue usando textContent como siempre.
+    inp.value = (btn.dataset && btn.dataset.plano) ? btn.dataset.plano : btn.textContent;
     var d = el("cn-hist-drop"); if (d) d.hidden = true;
     // [2026-09-03 · MODAL-PREGUNTAS] Cierra el modal si el clic vino de ahí. `getInstance`
     // (no `getOrCreateInstance`): si el modal nunca se abrió no hay nada que cerrar y crear
@@ -1251,7 +1363,40 @@
       if (inst) inst.hide();
     }
     inp.focus();
+    // [MODAL-PREGUNTAS · rediseño] Deja seleccionado el primer "…" para que el usuario
+    // escriba encima sin tener que borrarlo a mano.
+    var idxPunto = inp.value.indexOf("…");
+    if (idxPunto !== -1 && inp.setSelectionRange) { inp.setSelectionRange(idxPunto, idxPunto + 1); }
   };
+  // [2026-09-03 · MODAL-PREGUNTAS-REDISEÑO] Dos listeners a nivel `document`, mismo criterio
+  // que el listener de clic de más abajo y por el mismo motivo: se registran una vez al cargar
+  // el script y resuelven los nodos por id EN CADA evento, así que no dependen del orden de
+  // carga ni de que el nodo sobreviva a un repintado. `input` y `shown.bs.tab` burbujean,
+  // así que la delegación los alcanza igual.
+  //   · input        -> filtra SOLO la categoría activa y repinta su pie.
+  //   · shown.bs.tab -> lo dispara Bootstrap al cambiar de pestaña; resincroniza ficha,
+  //                     filtro (lo vacía) y pie. Por eso no hace falta limpiar el filtro
+  //                     en ningún otro sitio.
+  // __cnPregIdxActivo() devuelve el índice de la categoría activa, o -1 si la activa es
+  // Histórico (que no es una categoría del catálogo).
+  function __cnPregIdxActivo() {
+    var activo = document.querySelector("#mc-preguntas-modal .mc-preg-nav__item.active");
+    var destino = activo ? (activo.getAttribute("data-bs-target") || "") : "";
+    var m = destino.match(/^#mc-preg-pane-(\d+)$/);
+    if (!m) return -1;
+    var idx = parseInt(m[1], 10);
+    return __cnHistSeed[idx] ? idx : -1;
+  }
+  document.addEventListener("input", function (ev) {
+    if (!ev.target || ev.target.id !== "mc-preg-filtro") return;
+    var idx = __cnPregIdxActivo();
+    if (idx === -1) return;
+    __cnPregPie(idx, __cnPregFiltrar(idx, ev.target.value));
+  });
+  document.addEventListener("shown.bs.tab", function (ev) {
+    if (!ev.target || !ev.target.closest || !ev.target.closest("#mc-preguntas-modal")) return;
+    __cnPregCatbarSync();
+  });
   // Cierra el desplegable al hacer clic fuera. Un solo listener a nivel documento (se registra
   // una vez al cargar el script): busca los nodos por id en cada clic, así que sigue funcionando
   // aunque renderConsultaBody() reconstruya el DOM al cambiar de pestaña.

@@ -361,58 +361,156 @@ body:has(.mc-shell) .main-content {
     margin: 0 0 10px;
 }
 
-/* [2026-09-03 · MODAL-PREGUNTAS] Modal de preguntas de ejemplo, categorizado.
-   Hereda la maquetación del modal de Admin (.mc-admin-*, :213-292): mismo flex de dos
-   columnas, mismo scroll independiente por columna, mismos estados del nav. Se declaran
-   como selectores hermanos en vez de duplicar reglas — si Admin cambia de ancho o de
-   paleta, este lo sigue. Lo único propio es la lista de preguntas (.mc-preg-item). */
-.mc-preg-dialog { max-width: calc(1140px * 1.05); }
+/* [2026-09-03 · MODAL-PREGUNTAS-REDISEÑO] Cabecera verde + sidebar con conteo + ficha de
+   categoría con filtro + filas con el hueco resaltado en pastilla ámbar.
+   El verde de acento (#15794C) es el que este modal YA usaba antes del rediseño: no es una
+   paleta nueva, es la misma marca; el resto de la escala (#0E5C3A, #1E9E5A, #E9F3EC) la
+   completa alrededor de ese mismo tono. El ámbar (#FBF3DF / #E0C489 / #8A6516) es solo para
+   el hueco editable, y su texto está a ~6,4:1 sobre su propio fondo.
+   Regla de contraste: ningún texto ≤12px usa #6E7C75 (ese gris queda SOLO para iconos);
+   mínimo #3C4A44. Tamaño mínimo de badge/conteo: 10.5px. */
 
-.mc-preg-body { display: flex; gap: 0; padding: 0; min-height: 420px; }
+.mc-preg-dialog { max-width: min(1010px, calc(100% - 3.5rem)); }
+
+.mc-preg-head {
+    display: flex; align-items: center; justify-content: flex-start; gap: 11px;
+    padding: 14px 18px; background: #0E5C3A; border-bottom: 0;
+}
+.mc-preg-head__icon { font-size: 16px; color: #C9962E; }
+.mc-preg-head__title { font-size: 15px; font-weight: 800; color: #fff; letter-spacing: .2px; margin: 0; }
+.mc-preg-head__total {
+    margin-left: auto;
+    font-family: ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+    font-size: 10.5px; color: rgba(255,255,255,.78);
+}
+/* Bootstrap le pone `margin-left:auto` al .btn-close del .modal-header. Con el total
+   llevando OTRO margin-left:auto, los dos se reparten el hueco libre y el total quedaría
+   flotando a media cabecera. Se neutraliza aquí para que total y cerrar queden juntos a la
+   derecha, y el icono + título a la izquierda. */
+.mc-preg-head .btn-close { margin: 0 0 0 4px; }
+
+/* Alto: la cabecera es hermana de este body dentro de .modal-content, así que el tope en vh
+   tiene que dejarle sitio (78vh + ~56px de cabecera ≈ 85vh). Mismo criterio que
+   .mc-admin-body, que ya lo dejó comentado: sin ese margen, con .modal-dialog-centered el
+   diálogo desborda el viewport en pantallas bajas. */
+.mc-preg-body { display: flex; gap: 0; padding: 0; height: min(560px, 78vh); min-height: 0; }
 
 .mc-preg-nav {
-    flex: 0 0 210px;
-    border-right: 1px solid #e5e7eb;
-    padding: 12px 8px;
+    flex: 0 0 216px;
+    background: #F7FAF8;
+    border-right: 1px solid #EEF2EF;
+    padding: 10px 8px;
     overflow-y: auto;
-    max-height: 60vh;
 }
 
 .mc-preg-nav__item {
+    position: relative;
     display: flex; align-items: center; gap: 10px;
     width: 100%; text-align: left;
-    background: none; border: 0; border-radius: 8px;
-    padding: 9px 12px; margin-bottom: 2px;
-    font-size: 14px; color: #374151; cursor: pointer;
+    background: transparent; border: 0; border-radius: 9px;
+    padding: 9px 10px; margin-bottom: 2px;
+    cursor: pointer;
 }
-
-.mc-preg-nav__item i { font-size: 15px; color: #6b7280; }
-.mc-preg-nav__item:hover { background: #f3f4f6; }
-.mc-preg-nav__item.active { background: #ecfdf5; color: #065f46; font-weight: 600; }
-.mc-preg-nav__item.active i { color: #15794C; }
-
-.mc-preg-content { flex: 1 1 auto; padding: 16px 20px; overflow-y: auto; max-height: 60vh; }
-
-.mc-preg-panel__title {
-    font-size: 15px; font-weight: 700; color: #111827;
-    margin: 0 0 4px;
+.mc-preg-nav__item:hover { background: #F3F9F4; }
+.mc-preg-nav__item.active { background: #fff; box-shadow: 0 1px 3px rgba(20,40,30,.07); }
+.mc-preg-nav__item.active::before {
+    content: ""; position: absolute; left: 0; top: 8px; bottom: 8px; width: 3px;
+    border-radius: 3px; background: #1E9E5A;
 }
-
-/* La ayuda del "…": el usuario tiene que editarlo ANTES de enviar. Se dice una vez por
-   panel, no por pregunta, para no repetir 5 veces la misma línea. */
-.mc-preg-panel__hint {
-    font-size: 12px; color: #6b7280; margin: 0 0 12px;
+.mc-preg-nav__tile {
+    flex: 0 0 auto; width: 26px; height: 26px; border-radius: 7px;
+    display: grid; place-items: center;
+    background: #fff; border: 1px solid #E4E9E5;
 }
+.mc-preg-nav__item.active .mc-preg-nav__tile { background: #E9F3EC; border-color: #E9F3EC; }
+.mc-preg-nav__tile i { font-size: 12.5px; color: #6E7C75; }
+.mc-preg-nav__item.active .mc-preg-nav__tile i { color: #15794C; }
+.mc-preg-nav__label {
+    flex: 1; min-width: 0;
+    font-size: 12.5px; font-weight: 600; color: #3C4A44;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.mc-preg-nav__item.active .mc-preg-nav__label { font-weight: 800; color: #1A2A24; }
+.mc-preg-nav__count {
+    flex: 0 0 auto;
+    font-family: ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+    font-size: 10.5px; font-weight: 700; color: #3C4A44;
+}
+.mc-preg-nav__item.active .mc-preg-nav__count { color: #15794C; }
+
+.mc-preg-panel { flex: 1; min-width: 0; display: flex; flex-direction: column; min-height: 0; }
+
+.mc-preg-catbar {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 18px; border-bottom: 1px solid #EEF2EF; flex: 0 0 auto;
+}
+.mc-preg-catbar[hidden] { display: none; }
+.mc-preg-catbar__tile {
+    flex: 0 0 auto; width: 38px; height: 38px; border-radius: 11px;
+    background: #0E5C3A; display: grid; place-items: center;
+}
+.mc-preg-catbar__tile i { font-size: 17px; color: #C9962E; }
+.mc-preg-catbar__text { flex: 1; min-width: 0; }
+.mc-preg-catbar__title { font-size: 15px; font-weight: 800; color: #1A2A24; margin: 0; }
+.mc-preg-catbar__hint { font-size: 11.5px; color: #3C4A44; margin: 1px 0 0; }
+.mc-preg-catbar__filtro { flex: 0 0 auto; width: 196px; position: relative; }
+.mc-preg-catbar__filtro i {
+    position: absolute; left: 11px; top: 10px; font-size: 12px; color: #6E7C75; pointer-events: none;
+}
+.mc-preg-catbar__filtro input {
+    width: 100%; height: 32px; box-sizing: border-box;
+    padding: 0 10px 0 30px; border: 1px solid #E4E9E5; border-radius: 8px;
+    font-size: 12px; color: #3C4A44; background: #fff;
+}
+.mc-preg-catbar__filtro input::placeholder { color: #3C4A44; opacity: 1; }
+
+.mc-preg-content { flex: 1 1 auto; padding: 14px 18px 18px; overflow-y: auto; min-height: 0; }
+
+.mc-preg-panel__title { font-size: 15px; font-weight: 700; color: #111827; margin: 0 0 4px; }
+.mc-preg-panel__hint { font-size: 12px; color: #6b7280; margin: 0 0 12px; }
 
 .mc-preg-item {
     display: block; width: 100%; text-align: left;
     background: #fff; border: 1px solid #e5e7eb; border-radius: 8px;
     padding: 10px 12px; margin-bottom: 6px;
     font-size: 13px; color: #1f2937; cursor: pointer;
-    /* Sin white-space:nowrap (a diferencia del desplegable viejo, :1108): aquí hay ancho de
-       sobra y una pregunta larga se lee entera en vez de cortarse con puntos suspensivos. */
 }
-
 .mc-preg-item:hover { background: #f1f4f1; border-color: #15794C; }
 
+.mc-preg-row {
+    display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; cursor: pointer;
+    border: 1px solid transparent; border-radius: 9px; background: #F7FAF8; padding: 10px 12px;
+    margin-bottom: 6px;
+    transition: border-color .15s, background .15s;
+}
+.mc-preg-row:hover, .mc-preg-row:focus-visible { border-color: #1E9E5A; background: #F3F9F4; }
+.mc-preg-row:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(30,158,90,.35); }
+.mc-preg-row__icon { font-size: 13px; color: #6E7C75; flex: 0 0 auto; }
+.mc-preg-row__text { flex: 1; min-width: 0; font-size: 12px; line-height: 1.55; color: #1A2A24; }
+.mc-preg-row__badge {
+    flex: 0 0 auto; font-size: 10.5px; font-weight: 700; color: #3C4A44;
+    background: #fff; border: 1px solid #E4E9E5; border-radius: 5px; padding: 2px 7px;
+}
+
+.mc-preg-slot {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: #FBF3DF; border: 1px dashed #E0C489; border-radius: 5px;
+    padding: 0 6px; margin: 0 1px;
+    font-family: ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+    font-size: 10.5px; font-weight: 700; color: #8A6516;
+}
+.mc-preg-slot i { color: #A8791F; font-size: 9px; }
+
+.mc-preg-foot {
+    display: flex; align-items: center; padding: 10px 18px;
+    border-top: 1px solid #EEF2EF; background: #F7FAF8; flex: 0 0 auto;
+    font-family: ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+    font-size: 10.5px; color: #3C4A44;
+}
+.mc-preg-foot[hidden] { display: none; }
+
 .mc-preg-vacio { font-size: 13px; color: #6b7280; font-style: italic; }
+
+@media (prefers-reduced-motion: reduce) {
+    .mc-preg-row, .mc-preg-nav__item { transition: none; }
+}
