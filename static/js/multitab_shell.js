@@ -4317,6 +4317,11 @@
              // [2026-09-03 · TENDENCIA] "analiza_tend" (Analizar/tendencia): función pura, sin
              // fetch — los puntos ya viajan en panel.datos, igual que cuant_serie/cuant_var.
              : (panel.tipo === "analiza_tend")    ? __cnAnzTendHtml(d)
+             // [2026-09-03 · COMPARACION-PERIODOS] NCMP y N3P. Registrados ANTES del fallback
+             // por la misma razón que los demás: __cnCuantCardHtml no valida el tipo y pintaría
+             // una tarjeta KPI leyendo campos que estos contratos no tienen (HE6).
+             : (panel.tipo === "cuant_cmp")        ? __cnCuantCmpHtml(d)
+             : (panel.tipo === "cuant_serie_ppto") ? __cnCuantSeriePptoHtml(d)
              : __cnCuantCardHtml(d);
     // Tope silencioso (sin UI, sin aviso): al superarlo se descarta el bloque más antiguo.
     while (stack.children.length >= __CN_STACK_MAX) stack.removeChild(stack.firstChild);
@@ -4387,7 +4392,7 @@
     // [2026-08-25] QV2-PANEL-MES · N3/N4: mismo patrón, pero SIN fetch (los datos ya vienen en
     // panel.datos). Se difiere igual para que el pintor encuentre el host ya insertado, y el
     // guardián de __cnPanelMesCargar cubre el caso del DocumentFragment (pestaña oculta).
-    if (panel.tipo === "cuant_serie" || panel.tipo === "cuant_var" || panel.tipo === "cuant_acum" || panel.tipo === "analiza_tend") __cnPanelMesCargar(blk, d, panel.tipo);
+    if (panel.tipo === "cuant_serie" || panel.tipo === "cuant_var" || panel.tipo === "cuant_acum" || panel.tipo === "analiza_tend" || panel.tipo === "cuant_cmp" || panel.tipo === "cuant_serie_ppto") __cnPanelMesCargar(blk, d, panel.tipo);
   }
 
   // [2026-08-11] NO-OP desde que análisis y pila conviven en un scroll único (.cn-col): ya no hay
@@ -4587,6 +4592,125 @@
     }, { displayModeBar: false, responsive: true });
   }
 
+  // [2026-09-03 · COMPARACION-PERIODOS] NCMP: dos periodos, barras agrupadas Real vs PPTO.
+  // Molde = __cnAcumMesInto (:4452). Barras y no líneas: son DOS puntos, y una línea entre dos
+  // puntos sugiere una evolución continua que no existe — mayo y julio no son consecutivos.
+  function __cnCuantCmpHtml(d) {
+    if (!d || !d.a || !d.b) return "";
+    return __cnPanelMesHtml(d, "cn-cmp-mes");
+  }
+
+  function __cnCmpMesInto(hostEl, d) {
+    var a = d.a || {}, b = d.b || {};
+    var prod = String(d.producto || "");
+    var unidad = d.unidad || "bbl";
+    var nombre = prod.charAt(0).toUpperCase() + prod.slice(1).toLowerCase();
+    hostEl.innerHTML =
+      '<div class="cn-ins__card"><div class="cn-ins__card-hd"><i class="bi bi-bar-chart-line"></i> ' +
+      esc(nombre) + ' · ' + esc(String(a.periodo || "")) + ' vs ' + esc(String(b.periodo || "")) +
+      '</div><div class="cn-ins__plot" data-p></div>' +
+      '<div class="cn-ins__cap" data-cap></div></div>';
+    var elp = hostEl.querySelector("[data-p]");
+    if (!window.Plotly) { elp.innerHTML = '<div class="text-muted small p-2">(Plotly no disponible)</div>'; return; }
+    // El gas se grafica en MSCF (÷1e6) y el hover formatea el valor ORIGINAL con __cnGasM (que
+    // ya divide) — nunca el ya escalado: ese doble escalado es el bug documentado en :3650-3652.
+    var esGas = String(prod).toUpperCase() === "GAS";
+    var fmtD = esGas ? __cnGasM : function (v) { return __cnMilesEC(Math.round(v)); };
+    var esc1 = function (v) { return (v == null) ? null : (esGas ? v / 1e6 : v); };
+    var col = __cnProdCol(prod);
+    // Orden B → A: se lee de izquierda a derecha como "de dónde venía" → "dónde está".
+    var ejes = [String(b.periodo || ""), String(a.periodo || "")];
+    var reales = [b.real, a.real], pptos = [b.ppto, a.ppto];
+    var traces = [{
+      x: ejes, y: reales.map(esc1), name: "Real", type: "bar",
+      marker: { color: col },
+      customdata: reales.map(fmtD),
+      hovertemplate: "%{x}<br>Real: %{customdata} " + unidad + "<extra></extra>"
+    }];
+    // Cada periodo contra SU propio presupuesto. Si ninguno tiene meta, no se dibuja la serie:
+    // barras a cero afirmarían que el presupuesto es cero, que no es lo mismo que no haberlo.
+    if (pptos.some(function (v) { return v; })) {
+      traces.push({
+        x: ejes, y: pptos.map(esc1), name: "Presupuesto", type: "bar",
+        marker: { color: "#c8d2cb" },
+        customdata: pptos.map(function (v) { return v ? fmtD(v) : "—"; }),
+        hovertemplate: "%{x}<br>PPTO: %{customdata} " + unidad + "<extra></extra>"
+      });
+    }
+    window.Plotly.newPlot(elp, traces, {
+      barmode: "group", margin: { l: 62, r: 18, t: 22, b: 30 }, height: 260,
+      hovermode: "x unified", showlegend: true,
+      legend: { orientation: "h", y: -0.18, x: 0, font: { size: 11 } },
+      xaxis: { tickfont: { size: 11 }, showgrid: false },
+      yaxis: {
+        title: { text: "Producción (" + (esGas ? "MSCF" : unidad) + ")", font: { size: 11 } },
+        tickfont: { size: 10 }, rangemode: "tozero", separatethousands: true,
+        gridcolor: "#eef1ef", zeroline: false
+      },
+      plot_bgcolor: "#fff", paper_bgcolor: "#fff"
+    }, { displayModeBar: false, responsive: true });
+  }
+
+  // [2026-09-03 · COMPARACION-PERIODOS] N3P: la serie mensual REAL con la línea del PROGRAMA.
+  function __cnCuantSeriePptoHtml(d) {
+    if (!d || !d.puntos || !d.puntos.length) return "";
+    return __cnPanelMesHtml(d, "cn-seriep-mes");
+  }
+
+  function __cnSeriePptoInto(hostEl, d) {
+    var pts = d.puntos || [];
+    var prod = String(d.producto || "");
+    var unidad = d.unidad || "bbl";
+    var nombre = prod.charAt(0).toUpperCase() + prod.slice(1).toLowerCase();
+    hostEl.innerHTML =
+      '<div class="cn-ins__card"><div class="cn-ins__card-hd"><i class="bi bi-graph-up"></i> ' +
+      esc(nombre) + ' · real vs programa ' + (d.anio || "") +
+      '</div><div class="cn-ins__plot" data-p></div>' +
+      '<div class="cn-ins__cap" data-cap></div></div>';
+    var elp = hostEl.querySelector("[data-p]");
+    if (!pts.length) {
+      elp.innerHTML = '<div class="p-2 text-muted small">Sin serie mensual para este producto.</div>';
+      return;
+    }
+    if (!window.Plotly) { elp.innerHTML = '<div class="text-muted small p-2">(Plotly no disponible)</div>'; return; }
+    var esGas = String(prod).toUpperCase() === "GAS";
+    var fmtD = esGas ? __cnGasM : function (v) { return __cnMilesEC(Math.round(v)); };
+    var esc1 = function (v) { return (v == null) ? null : (esGas ? v / 1e6 : v); };
+    var col = __cnProdCol(prod);
+    var meses = pts.map(function (p) { return p.mes; });
+    var traces = [{
+      x: meses, y: pts.map(function (p) { return esc1(p.real); }),
+      name: "Real", type: "scatter", mode: "lines+markers",
+      line: { color: col, width: 2.5, shape: "spline", smoothing: 0.8 },
+      marker: { color: col, size: 7 },
+      customdata: pts.map(function (p) { return fmtD(p.real); }),
+      hovertemplate: "%{x}<br>Real: %{customdata} " + unidad + "<extra></extra>"
+    }];
+    // `connectgaps:false`: un mes sin presupuesto deja hueco. Unirlo dibujaría una meta que
+    // nadie cargó, justo entre los dos meses que sí la tienen.
+    if (pts.some(function (p) { return p.ppto != null; })) {
+      traces.push({
+        x: meses, y: pts.map(function (p) { return esc1(p.ppto); }),
+        name: "Programa", type: "scatter", mode: "lines+markers", connectgaps: false,
+        line: { color: "#8a978f", width: 2, dash: "dot" },
+        marker: { color: "#8a978f", size: 5 },
+        customdata: pts.map(function (p) { return p.ppto == null ? "—" : fmtD(p.ppto); }),
+        hovertemplate: "%{x}<br>Programa: %{customdata} " + unidad + "<extra></extra>"
+      });
+    }
+    window.Plotly.newPlot(elp, traces, {
+      margin: { l: 62, r: 18, t: 22, b: 30 }, height: 260, hovermode: "x unified",
+      showlegend: true, legend: { orientation: "h", y: -0.18, x: 0, font: { size: 11 } },
+      xaxis: { title: { text: "Mes", font: { size: 11 } }, tickfont: { size: 11 }, showgrid: false },
+      yaxis: {
+        title: { text: "Producción (" + (esGas ? "MSCF" : unidad) + ")", font: { size: 11 } },
+        tickfont: { size: 10 }, rangemode: "tozero", separatethousands: true,
+        gridcolor: "#eef1ef", zeroline: false
+      },
+      plot_bgcolor: "#fff", paper_bgcolor: "#fff"
+    }, { displayModeBar: false, responsive: true });
+  }
+
   // Rellena el panel mensual una vez el bloque está en el DOM. Gemela de __cnCompProdCargar
   // (:3300) en el guardián, pero SIN fetch: los datos ya viajan en panel.datos.
   // ⚠️ Ese guardián es imprescindible aunque no haya fetch: si el usuario preguntó y se fue a otra
@@ -4623,6 +4747,12 @@
     } else if (tipo === "analiza_tend") {
       var ht = blk.querySelector(".cn-tend-mes");
       if (ht) __cnTendMesInto(ht, d);
+    } else if (tipo === "cuant_cmp") {
+      var hc = blk.querySelector(".cn-cmp-mes");
+      if (hc) __cnCmpMesInto(hc, d);
+    } else if (tipo === "cuant_serie_ppto") {
+      var hp = blk.querySelector(".cn-seriep-mes");
+      if (hp) __cnSeriePptoInto(hp, d);
     }
   }
 
