@@ -1172,6 +1172,18 @@
         { t: "¿Qué mantenimientos se han realizado en ", slot: "campo", t2: ", en el último mes?" },
         { t: "¿Qué diferidas hubo en ", slot: "entidad", t2: "?" }
       ]
+    },
+    {
+      cat: "Comparar periodos",
+      icono: "bi-arrow-left-right",
+      hint: "Un periodo contra otro: mes vs mes, interanual y contra el programa",
+      items: [
+        { t: "¿Cuánto produjo ", slot: "campo", t2: " en ", slot2: "mes", t3: " vs ", slot3: "mes", t4: "?" },
+        { t: "Compara ", slot: "mes", t2: " con ", slot2: "mes", t3: " en ", slot3: "campo" },
+        { t: "¿Cuánto produjo ", slot: "campo", t2: " en ", slot2: "mes", t3: " vs el mes pasado?" },
+        { t: "Compara ", slot: "campo", t2: " en ", slot2: "mes", t3: " contra el mismo mes del año pasado" },
+        { t: "Muéstrame la producción de ", slot: "campo", t2: " mes a mes vs el presupuesto" }
+      ]
     }
   ];
 
@@ -1212,12 +1224,18 @@
   function __cnPregSlotHTML(nombre) {
     return '<span class="mc-preg-slot"><i class="bi bi-pencil-fill" aria-hidden="true"></i>' + esc(nombre) + '</span>';
   }
+  // [2026-09-03 · COMPARAR-PERIODOS] Tercer hueco (slot3/t4): las preguntas que comparan
+  // dos periodos tienen TRES variables (la entidad y los dos periodos), y con solo dos
+  // huecos había que dejar un mes escrito a mano — un ejemplo peor. Es aditivo: las
+  // plantillas que no declaran slot3 se comportan exactamente igual que antes.
   function __cnPregTextoHTML(tpl) {
     var h = esc(tpl.t);
     if (tpl.slot) h += __cnPregSlotHTML(tpl.slot);
     h += esc(tpl.t2 || "");
     if (tpl.slot2) h += __cnPregSlotHTML(tpl.slot2);
     h += esc(tpl.t3 || "");
+    if (tpl.slot3) h += __cnPregSlotHTML(tpl.slot3);
+    h += esc(tpl.t4 || "");
     return h;
   }
   function __cnPregTextoPlano(tpl) {
@@ -1226,6 +1244,8 @@
     s += (tpl.t2 || "");
     if (tpl.slot2) s += "…";
     s += (tpl.t3 || "");
+    if (tpl.slot3) s += "…";
+    s += (tpl.t4 || "");
     return s;
   }
   // Fila de catálogo (icono de categoría + texto con pastilla(s) + badge de categoría a la
