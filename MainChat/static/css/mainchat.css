@@ -370,7 +370,7 @@ body:has(.mc-shell) .main-content {
    Regla de contraste: ningún texto ≤12px usa #6E7C75 (ese gris queda SOLO para iconos);
    mínimo #3C4A44. Tamaño mínimo de badge/conteo: 10.5px. */
 
-.mc-preg-dialog { max-width: min(1010px, calc(100% - 3.5rem)); }
+.mc-preg-dialog { max-width: min(1050px, calc(100% - 3.5rem)); }
 
 .mc-preg-head {
     display: flex; align-items: center; justify-content: flex-start; gap: 11px;
@@ -396,7 +396,7 @@ body:has(.mc-shell) .main-content {
 .mc-preg-body { display: flex; gap: 0; padding: 0; height: min(560px, 78vh); min-height: 0; }
 
 .mc-preg-nav {
-    flex: 0 0 216px;
+    flex: 0 0 254px;
     background: #F7FAF8;
     border-right: 1px solid #EEF2EF;
     padding: 10px 8px;
