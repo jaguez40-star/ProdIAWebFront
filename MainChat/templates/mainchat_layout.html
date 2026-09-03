@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('mainchat.static', filename='css/mainchat.css') }}?v=20260903a">
+    <link rel="stylesheet" href="{{ url_for('mainchat.static', filename='css/mainchat.css') }}?v=20260903b">
     <!-- Estilos del shell de multitab_shell.js (prefijo rb-cp / cn- / colapsable-layout):
          MainChat no lo cargaba porque hasta ahora no montaba el shell dentro de sí misma. -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/colapsable.css') }}?v=20260831a">
@@ -126,8 +126,11 @@
 <div class="modal fade" id="mc-admin-modal" tabindex="-1" aria-labelledby="mc-admin-modal-label" aria-hidden="true">
     <!-- [2026-09-03] SIN modal-dialog-scrollable a propósito (ver plan §1B/R2): el scroll lo
          gestionan las dos columnas internas (.mc-admin-nav y .mc-admin-content) por separado,
-         no el .modal-body como un todo. -->
-    <div class="modal-dialog modal-xl">
+         no el .modal-body como un todo.
+         modal-dialog-centered es el mecanismo nativo de Bootstrap para centrar en vertical
+         (align-items:center sobre el alto del viewport); el centrado horizontal ya lo da el
+         margin:auto de .modal-dialog. El ancho +5% sobre modal-xl lo pone .mc-admin-dialog. -->
+    <div class="modal-dialog modal-xl modal-dialog-centered mc-admin-dialog">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="mc-admin-modal-label">

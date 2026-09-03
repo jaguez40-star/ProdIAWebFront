@@ -206,13 +206,23 @@ body:has(.mc-shell) .main-content {
 
 /* ── Modal Admin ────────────────────────────────────────────────────── */
 
+/* [2026-09-03] Ancho: +5% sobre los 1140px que da .modal-xl de Bootstrap = 1197px.
+   max-width y no width porque .modal-dialog ya trae max-width y el margin:auto que lo
+   centra en horizontal; fijar width rompería ese centrado en viewports estrechos.
+   El 100% del calc lo acota a la pantalla menos el margen propio del diálogo. */
+.mc-admin-dialog {
+    max-width: min(1197px, calc(100% - 3.5rem));
+}
+
 /* [2026-09-03] Dos columnas dentro de modal-body: nav de secciones (izquierda, ancho fijo)
    + contenido (derecha, flex:1). padding:0 en el body porque cada columna pone el suyo —
-   si no, quedaría un doble margen entre el borde del modal y el fondo de la nav. */
+   si no, quedaría un doble margen entre el borde del modal y el fondo de la nav.
+   Alto: +5% sobre el min(560px, 70vh) original = min(588px, 73.5vh). El tope en vh evita
+   que con modal-dialog-centered el diálogo desborde el viewport en pantallas bajas. */
 .mc-admin-body {
     display: flex;
     padding: 0;
-    height: min(560px, 70vh);
+    height: min(588px, 73.5vh);
 }
 
 .mc-admin-nav {
