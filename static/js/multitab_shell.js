@@ -4309,6 +4309,9 @@
              // __cnDifPanelHtml. Registrado ANTES del fallback por la misma razón que "p50_vp":
              // __cnCuantCardHtml no valida el tipo y pintaría una tarjeta KPI con campos ajenos.
              : (panel.tipo === "analiza_dif")     ? __cnDifPanelHtml(d)
+             // [2026-09-03 · TENDENCIA] "analiza_tend" (Analizar/tendencia): función pura, sin
+             // fetch — los puntos ya viajan en panel.datos, igual que cuant_serie/cuant_var.
+             : (panel.tipo === "analiza_tend")    ? __cnAnzTendHtml(d)
              : __cnCuantCardHtml(d);
     // Tope silencioso (sin UI, sin aviso): al superarlo se descarta el bloque más antiguo.
     while (stack.children.length >= __CN_STACK_MAX) stack.removeChild(stack.firstChild);
@@ -4379,7 +4382,7 @@
     // [2026-08-25] QV2-PANEL-MES · N3/N4: mismo patrón, pero SIN fetch (los datos ya vienen en
     // panel.datos). Se difiere igual para que el pintor encuentre el host ya insertado, y el
     // guardián de __cnPanelMesCargar cubre el caso del DocumentFragment (pestaña oculta).
-    if (panel.tipo === "cuant_serie" || panel.tipo === "cuant_var" || panel.tipo === "cuant_acum") __cnPanelMesCargar(blk, d, panel.tipo);
+    if (panel.tipo === "cuant_serie" || panel.tipo === "cuant_var" || panel.tipo === "cuant_acum" || panel.tipo === "analiza_tend") __cnPanelMesCargar(blk, d, panel.tipo);
   }
 
   // [2026-08-11] NO-OP desde que análisis y pila conviven en un scroll único (.cn-col): ya no hay
@@ -4516,6 +4519,69 @@
     }
   }
 
+  // [2026-09-03 · TENDENCIA] Panel de la sub-intención `tendencia` de Analizar. Dos trazas:
+  // REAL mensual y media móvil de 3 meses. Molde = __cnAcumMesInto (:4453), el único pintor
+  // mensual multi-traza de la pila.
+  // 🔑 Sin tarjeta KPI: aquí no hay un número único que destacar — la respuesta ES la forma de
+  //    la curva, y el texto del chat ya da dirección y ritmo.
+  function __cnAnzTendHtml(d) {
+    if (!d || !d.valores || d.valores.length < 3) return "";
+    return __cnPanelMesHtml(d, "cn-tend-mes");
+  }
+
+  function __cnTendMesInto(hostEl, d) {
+    var meses = d.meses || [], vals = d.valores || [], mm = d.serie_mm || [];
+    var prod = String(d.producto || "");
+    var unidad = d.unidad || "bbl";
+    var nombre = prod.charAt(0).toUpperCase() + prod.slice(1).toLowerCase();
+    hostEl.innerHTML =
+      '<div class="cn-ins__card"><div class="cn-ins__card-hd"><i class="bi bi-graph-up"></i> ' +
+      esc(nombre) + ' · tendencia mensual ' + (d.anio || "") +
+      '</div><div class="cn-ins__plot" data-p></div>' +
+      '<div class="cn-ins__cap" data-cap></div></div>';
+    var elp = hostEl.querySelector("[data-p]");
+    if (!vals.length) {
+      elp.innerHTML = '<div class="p-2 text-muted small">Sin serie mensual para este producto.</div>';
+      return;
+    }
+    if (!window.Plotly) { elp.innerHTML = '<div class="text-muted small p-2">(Plotly no disponible)</div>'; return; }
+    // El gas se grafica en MSCF (÷1e6) y el hover formatea el valor ORIGINAL con __cnGasM (que
+    // ya divide) — nunca el ya escalado: ese doble escalado es el bug documentado en :3650-3652.
+    var esGas = String(prod).toUpperCase() === "GAS";
+    var fmtD = esGas ? __cnGasM : function (v) { return __cnMilesEC(Math.round(v)); };
+    var esc1 = function (v) { return (v == null) ? null : (esGas ? v / 1e6 : v); };
+    var col = __cnProdCol(prod);
+    var traces = [{
+      x: meses, y: vals.map(esc1), name: "Real mensual",
+      type: "scatter", mode: "lines+markers",
+      line: { color: col, width: 2.5, shape: "spline", smoothing: 0.8 },
+      marker: { color: col, size: 7 },
+      customdata: vals.map(fmtD),
+      hovertemplate: "%{x}<br>Real: %{customdata} " + unidad + "<extra></extra>"
+    }];
+    // La media móvil solo se dibuja si HAY valores. `connectgaps:false` deja el hueco de los
+    // primeros 2 meses en blanco: no existe media de 3 meses ahí, y unirlo la inventaría.
+    if (mm.some(function (v) { return v != null; })) {
+      traces.push({
+        x: meses, y: mm.map(esc1), name: "Media móvil 3M",
+        type: "scatter", mode: "lines", connectgaps: false,
+        line: { color: "#8a978f", width: 2, dash: "dot" },
+        customdata: mm.map(function (v) { return v == null ? "—" : fmtD(v); }),
+        hovertemplate: "%{x}<br>MM3: %{customdata} " + unidad + "<extra></extra>"
+      });
+    }
+    window.Plotly.newPlot(elp, traces, {
+      margin: { l: 62, r: 18, t: 22, b: 30 }, height: 260, hovermode: "x unified",
+      showlegend: true, legend: { orientation: "h", y: -0.18, x: 0, font: { size: 11 } },
+      xaxis: { title: { text: "Mes", font: { size: 11 } }, tickfont: { size: 11 }, showgrid: false },
+      yaxis: {
+        title: { text: "Producción (" + (esGas ? "MSCF" : unidad) + ")", font: { size: 11 } },
+        tickfont: { size: 10 }, separatethousands: true, gridcolor: "#eef1ef", zeroline: false
+      },
+      plot_bgcolor: "#fff", paper_bgcolor: "#fff"
+    }, { displayModeBar: false, responsive: true });
+  }
+
   // Rellena el panel mensual una vez el bloque está en el DOM. Gemela de __cnCompProdCargar
   // (:3300) en el guardián, pero SIN fetch: los datos ya viajan en panel.datos.
   // ⚠️ Ese guardián es imprescindible aunque no haya fetch: si el usuario preguntó y se fue a otra
@@ -4549,6 +4615,9 @@
     } else if (tipo === "cuant_acum") {
       var ha = blk.querySelector(".cn-acum-mes");
       if (ha) __cnAcumMesInto(ha, d);
+    } else if (tipo === "analiza_tend") {
+      var ht = blk.querySelector(".cn-tend-mes");
+      if (ht) __cnTendMesInto(ht, d);
     }
   }
 
