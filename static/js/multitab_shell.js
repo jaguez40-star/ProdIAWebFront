@@ -1073,22 +1073,81 @@
       '</div>';
   }
 
-  // [2026-08-26] Plantillas de arranque (petición del usuario): cuando el chat está VACÍO
-  // (__cnHistory sin preguntas de usuario todavía), el desplegable muestra estas en vez del
-  // aviso "aún no has preguntado nada" — dan un punto de partida a quien no sabe qué preguntar.
-  // Llevan "…" donde va el dato (producto/campo/mes/año): clic RELLENA el input (nunca envía,
-  // mismo contrato que el resto del desplegable), así que el usuario edita el "…" antes de
-  // preguntar. En cuanto hay >=1 pregunta real, estas dejan de mostrarse — no se mezclan con
-  // el historial real (mismo criterio de "una sola fuente a la vez" que ya rige el resto).
+  // [2026-08-26] Plantillas de arranque (petición del usuario): dan un punto de partida a quien
+  // no sabe qué preguntar. Llevan "…" donde va el dato (producto/campo/mes/año): clic RELLENA el
+  // input (nunca envía, mismo contrato que el resto), así que el usuario edita el "…" antes de
+  // preguntar.
+  //
+  // [2026-09-03 · MODAL-PREGUNTAS] De lista plana a CATEGORÍAS. Dos motivos:
+  //   1. El desplegable plano mezclaba 8 plantillas sin jerarquía; con el modal hay sitio para
+  //      agruparlas por lo que el usuario quiere HACER, no por cómo está construido el motor.
+  //   2. Varias capacidades reales NO estaban aquí y por tanto nadie las descubría: distribución
+  //      porcentual, campos de un ACTIVO, ranking de activos y la ventana móvil («últimos 30
+  //      días») se habilitaron entre el 2026-09-01 y el 09-03 y ninguna tenía plantilla.
+  // La estructura es [{cat, icono, items:[...]}, ...]; el orden de este array ES el orden del nav
+  // del modal. "Histórico" NO va aquí: es la primera sección y sale de __cnHistory (ver
+  // __cnPregModalPintar).
   var __cnHistSeed = [
-    "Analiza el comportamiento del producto …",
-    "Analiza el comportamiento de la producción de … en el Campo …",
-    "¿Qué campos explican el faltante de …?",
-    "¿Cuáles son las causas de las diferidas en el campo …?",
-    "¿Qué mantenimientos se han realizado en el campo …, en el último mes?",
-    "Muéstrame la producción del campo …, día a día para el mes de …",
-    "Muéstrame la producción del campo …, mes a mes para el año …",
-    "¿Cuál ha sido la variación porcentual de la producción de … mes a mes en 2026, para el campo …?"
+    {
+      cat: "Análisis",
+      icono: "bi-graph-up-arrow",
+      items: [
+        "Analiza el comportamiento del producto …",
+        "Analiza el comportamiento de la producción de … en el Campo …",
+        "¿Qué campos explican el faltante de …?",
+        "¿Cuáles son las causas de las diferidas en el campo …?",
+        "¿Cómo vamos este mes?"
+      ]
+    },
+    {
+      cat: "Cifras",
+      icono: "bi-123",
+      items: [
+        "¿Cuánto crudo produjo el campo …?",
+        "¿Cuál es la producción del activo …?",
+        "¿Cuál es el acumulado del año de …?",
+        "¿Cuánto produjo … el mes pasado?"
+      ]
+    },
+    {
+      cat: "Comparar y ordenar",
+      icono: "bi-bar-chart-steps",
+      items: [
+        "¿Cuáles son los 5 campos que más crudo producen?",
+        "¿Cómo se distribuye la producción de crudo, %, entre los campos productores?",
+        "¿Cuáles campos del activo … producen más crudo?",
+        "¿Cuál es el activo que más crudo produce?",
+        "¿Qué campos se quedaron más cortos vs presupuesto?"
+      ]
+    },
+    {
+      cat: "En el tiempo",
+      icono: "bi-calendar3",
+      items: [
+        "Muéstrame la producción del campo …, día a día para el mes de …",
+        "Muéstrame la producción del campo …, mes a mes para el año …",
+        "¿Cuánto produjo … en los últimos 30 días?",
+        "¿Cuál ha sido la variación porcentual de la producción de … mes a mes en 2026, para el campo …?",
+        "¿Cuál fue el mejor día de … este mes?"
+      ]
+    },
+    {
+      cat: "Estructura",
+      icono: "bi-diagram-3",
+      items: [
+        "¿Qué campos tiene el activo …?",
+        "¿A qué activo pertenece el campo …?",
+        "¿Cuántos pozos tiene …?"
+      ]
+    },
+    {
+      cat: "Operación",
+      icono: "bi-tools",
+      items: [
+        "¿Qué mantenimientos se han realizado en el campo …, en el último mes?",
+        "¿Qué diferidas hubo en …?"
+      ]
+    }
   ];
 
   // [2026-08-26] Desplegable "Preguntas de esta conversación" (clic = rellena, NO envía —
@@ -1110,7 +1169,46 @@
       'onmouseover="this.style.background=\'#f1f4f1\'" onmouseout="this.style.background=\'none\'">' +
       h + '</button>';
   }
+  // [2026-09-03 · MODAL-PREGUNTAS] Pinta el modal categorizado. Solo existe en MainChat: el
+  // markup vive en mainchat_layout.html, fuera de #mc-chat-body para que el repintado del
+  // acordeón no lo destruya (mismo criterio que el modal de Admin).
+  // 🔑 ESCAPADO, dos reglas distintas y deliberadas (ver el comentario de 2026-08-26 abajo):
+  //    · el historial (b.html) YA viene escapado por __cnBubble -> se inyecta tal cual;
+  //    · las plantillas llegan crudas -> pasan por esc().
+  //    Escapar dos veces el historial rompería tildes y "¿"; no escapar las plantillas sería XSS.
+  function __cnPregModalPintar() {
+    var cont = el("mc-preg-hist");
+    if (cont) {
+      var qs = __cnHistory.filter(function (b) { return b.role === "user"; })
+                          .map(function (b) { return b.html; }).reverse();
+      cont.innerHTML = qs.length
+        ? qs.map(__cnPregItem).join("")
+        : '<p class="mc-preg-vacio">Todavía no has preguntado nada en esta conversación.</p>';
+    }
+    // Las categorías son estáticas en el HTML; aquí solo se rellenan sus listas. El índice del
+    // panel coincide con el del array porque el nav se escribe en el mismo orden (ver §3.4).
+    for (var i = 0; i < __cnHistSeed.length; i++) {
+      var caja = el("mc-preg-cat-" + i);
+      if (caja) caja.innerHTML = __cnHistSeed[i].items.map(esc).map(__cnPregItem).join("");
+    }
+  }
+
+  function __cnPregItem(h) {
+    return '<button type="button" class="mc-preg-item" onclick="window.__cnHistUsar(this)">' +
+      h + '</button>';
+  }
+
   window.__cnHistToggle = function () {
+    // [2026-09-03 · MODAL-PREGUNTAS] Dos caminos a propósito. multitab_shell.js lo montan LAS
+    // DOS interfaces, pero el modal solo existe en /mainchat: si no está en el DOM se cae al
+    // desplegable de siempre, que se conserva íntegro. Sin esta bifurcación el botón del reloj
+    // quedaría muerto en la vista clásica — una regresión en una interfaz que nadie pidió tocar.
+    var m = el("mc-preguntas-modal");
+    if (m && typeof window.bootstrap !== "undefined" && window.bootstrap.Modal) {
+      __cnPregModalPintar();
+      window.bootstrap.Modal.getOrCreateInstance(m).show();
+      return;
+    }
     var d = el("cn-hist-drop"); if (!d) return;
     if (!d.hidden) { d.hidden = true; return; }
     var qs = __cnHistory.filter(function (b) { return b.role === "user"; })
@@ -1118,14 +1216,28 @@
     var cabeceraSeed = '<div style="padding:8px 12px 4px;color:#6E7C75;font-size:11px;' +
       'text-transform:uppercase;letter-spacing:.03em;">Preguntas de ejemplo — edita el "…" ' +
       'antes de enviar</div>';
+    // [2026-09-03] __cnHistSeed ya no es plano: se aplana aquí para el desplegable de la vista
+    // clásica, que sigue siendo una lista sin categorías.
+    var planas = [];
+    for (var i = 0; i < __cnHistSeed.length; i++) {
+      planas = planas.concat(__cnHistSeed[i].items);
+    }
     d.innerHTML = qs.map(__cnHistBoton).join("") +
-      cabeceraSeed + __cnHistSeed.map(esc).map(__cnHistBoton).join("");
+      cabeceraSeed + planas.map(esc).map(__cnHistBoton).join("");
     d.hidden = false;
   };
   window.__cnHistUsar = function (btn) {
     var inp = el("cn-input"); if (!inp || !btn) return;
     inp.value = btn.textContent;
     var d = el("cn-hist-drop"); if (d) d.hidden = true;
+    // [2026-09-03 · MODAL-PREGUNTAS] Cierra el modal si el clic vino de ahí. `getInstance`
+    // (no `getOrCreateInstance`): si el modal nunca se abrió no hay nada que cerrar y crear
+    // una instancia para nada sería un efecto colateral silencioso.
+    var m = el("mc-preguntas-modal");
+    if (m && typeof window.bootstrap !== "undefined" && window.bootstrap.Modal) {
+      var inst = window.bootstrap.Modal.getInstance(m);
+      if (inst) inst.hide();
+    }
     inp.focus();
   };
   // Cierra el desplegable al hacer clic fuera. Un solo listener a nivel documento (se registra

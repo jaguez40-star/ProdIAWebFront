@@ -182,6 +182,98 @@
     </div>
 </div>
 
+<!-- [2026-09-03 · MODAL-PREGUNTAS] Catálogo de preguntas, categorizado. Lo abre el botón del
+     reloj del input del chat (multitab_shell.js -> __cnHistToggle), NO el waffle: por eso no
+     lleva data-modal, se abre por JS.
+     Va FUERA de #mc-chat-body, igual que #mc-admin-modal y por el mismo motivo: el acordeón y
+     el historial repintan ese contenedor y se llevarían el modal por delante.
+     Las secciones son ESTÁTICAS (el orden debe coincidir con el array __cnHistSeed de
+     multitab_shell.js); lo único que se rellena por JS son las listas de botones. -->
+<div class="modal fade" id="mc-preguntas-modal" tabindex="-1" aria-labelledby="mc-preguntas-modal-label" aria-hidden="true">
+    <!-- Sin modal-dialog-scrollable, mismo criterio que Admin: el scroll lo llevan las dos
+         columnas por separado (.mc-preg-nav y .mc-preg-content). -->
+    <div class="modal-dialog modal-xl modal-dialog-centered mc-preg-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="mc-preguntas-modal-label">
+                    <i class="bi bi-chat-square-text" aria-hidden="true" style="color:#15794C"></i>
+                    Preguntas
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body mc-preg-body">
+                <div class="nav flex-column mc-preg-nav" role="tablist" aria-orientation="vertical">
+                    <button class="mc-preg-nav__item active" data-bs-toggle="pill" data-bs-target="#mc-preg-pane-hist" type="button" role="tab" aria-controls="mc-preg-pane-hist" aria-selected="true">
+                        <i class="bi bi-clock-history" aria-hidden="true"></i>
+                        <span>Histórico</span>
+                    </button>
+                    <button class="mc-preg-nav__item" data-bs-toggle="pill" data-bs-target="#mc-preg-pane-0" type="button" role="tab" aria-controls="mc-preg-pane-0" aria-selected="false">
+                        <i class="bi bi-graph-up-arrow" aria-hidden="true"></i>
+                        <span>Análisis</span>
+                    </button>
+                    <button class="mc-preg-nav__item" data-bs-toggle="pill" data-bs-target="#mc-preg-pane-1" type="button" role="tab" aria-controls="mc-preg-pane-1" aria-selected="false">
+                        <i class="bi bi-123" aria-hidden="true"></i>
+                        <span>Cifras</span>
+                    </button>
+                    <button class="mc-preg-nav__item" data-bs-toggle="pill" data-bs-target="#mc-preg-pane-2" type="button" role="tab" aria-controls="mc-preg-pane-2" aria-selected="false">
+                        <i class="bi bi-bar-chart-steps" aria-hidden="true"></i>
+                        <span>Comparar y ordenar</span>
+                    </button>
+                    <button class="mc-preg-nav__item" data-bs-toggle="pill" data-bs-target="#mc-preg-pane-3" type="button" role="tab" aria-controls="mc-preg-pane-3" aria-selected="false">
+                        <i class="bi bi-calendar3" aria-hidden="true"></i>
+                        <span>En el tiempo</span>
+                    </button>
+                    <button class="mc-preg-nav__item" data-bs-toggle="pill" data-bs-target="#mc-preg-pane-4" type="button" role="tab" aria-controls="mc-preg-pane-4" aria-selected="false">
+                        <i class="bi bi-diagram-3" aria-hidden="true"></i>
+                        <span>Estructura</span>
+                    </button>
+                    <button class="mc-preg-nav__item" data-bs-toggle="pill" data-bs-target="#mc-preg-pane-5" type="button" role="tab" aria-controls="mc-preg-pane-5" aria-selected="false">
+                        <i class="bi bi-tools" aria-hidden="true"></i>
+                        <span>Operación</span>
+                    </button>
+                </div>
+                <div class="tab-content mc-preg-content">
+                    <div class="tab-pane fade show active" id="mc-preg-pane-hist" role="tabpanel">
+                        <h6 class="mc-preg-panel__title">Histórico</h6>
+                        <p class="mc-preg-panel__hint">Preguntas de esta conversación. Clic para reutilizarlas.</p>
+                        <div id="mc-preg-hist"></div>
+                    </div>
+                    <div class="tab-pane fade" id="mc-preg-pane-0" role="tabpanel">
+                        <h6 class="mc-preg-panel__title">Análisis</h6>
+                        <p class="mc-preg-panel__hint">Edita el «…» antes de enviar.</p>
+                        <div id="mc-preg-cat-0"></div>
+                    </div>
+                    <div class="tab-pane fade" id="mc-preg-pane-1" role="tabpanel">
+                        <h6 class="mc-preg-panel__title">Cifras</h6>
+                        <p class="mc-preg-panel__hint">Edita el «…» antes de enviar.</p>
+                        <div id="mc-preg-cat-1"></div>
+                    </div>
+                    <div class="tab-pane fade" id="mc-preg-pane-2" role="tabpanel">
+                        <h6 class="mc-preg-panel__title">Comparar y ordenar</h6>
+                        <p class="mc-preg-panel__hint">Edita el «…» antes de enviar.</p>
+                        <div id="mc-preg-cat-2"></div>
+                    </div>
+                    <div class="tab-pane fade" id="mc-preg-pane-3" role="tabpanel">
+                        <h6 class="mc-preg-panel__title">En el tiempo</h6>
+                        <p class="mc-preg-panel__hint">Edita el «…» antes de enviar.</p>
+                        <div id="mc-preg-cat-3"></div>
+                    </div>
+                    <div class="tab-pane fade" id="mc-preg-pane-4" role="tabpanel">
+                        <h6 class="mc-preg-panel__title">Estructura</h6>
+                        <p class="mc-preg-panel__hint">Edita el «…» antes de enviar.</p>
+                        <div id="mc-preg-cat-4"></div>
+                    </div>
+                    <div class="tab-pane fade" id="mc-preg-pane-5" role="tabpanel">
+                        <h6 class="mc-preg-panel__title">Operación</h6>
+                        <p class="mc-preg-panel__hint">Edita el «…» antes de enviar.</p>
+                        <div id="mc-preg-cat-5"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- El "Desempeño del mes" NO lo pinta charts.js: es el shell de multitab_shell.js
      (pestaña Consulta), que pinta en su propio cn-canvas, no en charts-display-area.
      Por eso se carga aquí en vez de charts.js. multitab_shell.js no depende de

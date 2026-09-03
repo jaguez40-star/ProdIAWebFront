@@ -360,3 +360,59 @@ body:has(.mc-shell) .main-content {
     color: var(--mc-muted);
     margin: 0 0 10px;
 }
+
+/* [2026-09-03 · MODAL-PREGUNTAS] Modal de preguntas de ejemplo, categorizado.
+   Hereda la maquetación del modal de Admin (.mc-admin-*, :213-292): mismo flex de dos
+   columnas, mismo scroll independiente por columna, mismos estados del nav. Se declaran
+   como selectores hermanos en vez de duplicar reglas — si Admin cambia de ancho o de
+   paleta, este lo sigue. Lo único propio es la lista de preguntas (.mc-preg-item). */
+.mc-preg-dialog { max-width: calc(1140px * 1.05); }
+
+.mc-preg-body { display: flex; gap: 0; padding: 0; min-height: 420px; }
+
+.mc-preg-nav {
+    flex: 0 0 210px;
+    border-right: 1px solid #e5e7eb;
+    padding: 12px 8px;
+    overflow-y: auto;
+    max-height: 60vh;
+}
+
+.mc-preg-nav__item {
+    display: flex; align-items: center; gap: 10px;
+    width: 100%; text-align: left;
+    background: none; border: 0; border-radius: 8px;
+    padding: 9px 12px; margin-bottom: 2px;
+    font-size: 14px; color: #374151; cursor: pointer;
+}
+
+.mc-preg-nav__item i { font-size: 15px; color: #6b7280; }
+.mc-preg-nav__item:hover { background: #f3f4f6; }
+.mc-preg-nav__item.active { background: #ecfdf5; color: #065f46; font-weight: 600; }
+.mc-preg-nav__item.active i { color: #15794C; }
+
+.mc-preg-content { flex: 1 1 auto; padding: 16px 20px; overflow-y: auto; max-height: 60vh; }
+
+.mc-preg-panel__title {
+    font-size: 15px; font-weight: 700; color: #111827;
+    margin: 0 0 4px;
+}
+
+/* La ayuda del "…": el usuario tiene que editarlo ANTES de enviar. Se dice una vez por
+   panel, no por pregunta, para no repetir 5 veces la misma línea. */
+.mc-preg-panel__hint {
+    font-size: 12px; color: #6b7280; margin: 0 0 12px;
+}
+
+.mc-preg-item {
+    display: block; width: 100%; text-align: left;
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 8px;
+    padding: 10px 12px; margin-bottom: 6px;
+    font-size: 13px; color: #1f2937; cursor: pointer;
+    /* Sin white-space:nowrap (a diferencia del desplegable viejo, :1108): aquí hay ancho de
+       sobra y una pregunta larga se lee entera en vez de cortarse con puntos suspensivos. */
+}
+
+.mc-preg-item:hover { background: #f1f4f1; border-color: #15794C; }
+
+.mc-preg-vacio { font-size: 13px; color: #6b7280; font-style: italic; }
