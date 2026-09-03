@@ -79,6 +79,14 @@
                 <i class="bi bi-graph-up-arrow" style="color:#15794C"></i>
                 <span>Análisis</span>
             </button>
+            <!-- [2026-09-03] Ítem visual del módulo Admin, sin destino todavía a propósito
+                 (decisión del usuario): ni data-tab ni data-ruta, así que el clic no hace nada.
+                 Sigue sin existir /admin ni control de roles (ver nota de 2026-08-25 más abajo);
+                 cuando se defina el destino, añadir aquí data-tab="admin" o data-ruta="...". -->
+            <button type="button" class="mc-acceso" role="menuitem" id="mc-acceso-admin">
+                <i class="bi bi-shield-lock" style="color:#92400E"></i>
+                <span>Admin</span>
+            </button>
             <!-- [2026-08-25] WAFFLE-NAV · retiradas Admin / Configuración / Ayuda: apuntaban a
                  /admin, /settings y /help, que NO EXISTEN (el JS hacía console.info en vez de
                  navegar). Reponerlas cuando las vistas existan. Admin necesitará además control de
