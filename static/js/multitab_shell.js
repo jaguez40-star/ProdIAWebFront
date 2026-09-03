@@ -1118,6 +1118,7 @@
       hint: "Real contra presupuesto, operativo, contable y promedio",
       items: [
         { t: "¿Cómo vamos este mes?" },
+        { t: "¿Vamos a cerrar en meta?" },
         { t: "¿Cómo va ", slot: "entidad", t2: " frente al presupuesto este mes?" },
         { t: "¿Cuánto produjo ", slot: "entidad", t2: " en ", slot2: "mes", t3: " vs el operativo?" },
         { t: "¿Cuánto produjo ", slot: "entidad", t2: " en ", slot2: "mes", t3: " contra el contable?" },
@@ -1139,14 +1140,18 @@
     {
       cat: "Evolución en el tiempo",
       icono: "bi-calendar3",
-      hint: "Día a día, mes a mes y variaciones en el tiempo",
+      hint: "Día a día, mes a mes, tendencia y media móvil",
       items: [
         { t: "Muéstrame la producción de ", slot: "campo", t2: ", día a día en ", slot2: "mes" },
         { t: "Muéstrame la producción de ", slot: "campo", t2: ", mes a mes en ", slot2: "año" },
         { t: "¿Cuánto produjo ", slot: "entidad", t2: " en los últimos 30 días?" },
         { t: "Muéstrame la producción de ", slot: "producto", t2: " de los últimos 3 meses para ", slot2: "campo" },
         { t: "¿Cuál ha sido la variación porcentual de la producción de ", slot: "producto", t2: " mes a mes en 2026, para ", slot2: "campo", t3: "?" },
-        { t: "¿Cuál fue el mejor día de ", slot: "entidad", t2: " este mes?" }
+        { t: "¿Cuál fue el mejor día de ", slot: "entidad", t2: " este mes?" },
+        { t: "¿Cuál es la tendencia de ", slot: "entidad", t2: "?" },
+        { t: "¿A qué ritmo está declinando ", slot: "entidad", t2: "?" },
+        { t: "Muéstrame la media móvil de ", slot: "entidad" },
+        { t: "¿Cuál es la tendencia del gas de ", slot: "entidad", t2: "?" }
       ]
     },
     {
