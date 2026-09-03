@@ -1144,6 +1144,7 @@
         { t: "Muéstrame la producción de ", slot: "campo", t2: ", día a día en ", slot2: "mes" },
         { t: "Muéstrame la producción de ", slot: "campo", t2: ", mes a mes en ", slot2: "año" },
         { t: "¿Cuánto produjo ", slot: "entidad", t2: " en los últimos 30 días?" },
+        { t: "Muéstrame la producción de ", slot: "producto", t2: " de los últimos 3 meses para ", slot2: "campo" },
         { t: "¿Cuál ha sido la variación porcentual de la producción de ", slot: "producto", t2: " mes a mes en 2026, para ", slot2: "campo", t3: "?" },
         { t: "¿Cuál fue el mejor día de ", slot: "entidad", t2: " este mes?" }
       ]
