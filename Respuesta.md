@@ -1,5 +1,11 @@
 ﻿# Resumen de la solicitud
 Quiere que la lógica de generación y renderizado de los mapas ("HEATMAP VARIACION % PRODUCCION: GERENCIAS OPERATIVAS" y "DISTRIBUCIÓN DE LA PRODUCCIÓN: GERENCIAS OPERATIVAS") sea **idéntica** en el proyecto `E:\APLICACIONES\ProdIA\12112025_prodIA`, tomando como fuente los archivos del back `E:\APLICACIONES\ProdIA\21122025_ProdIA_Back`. En concreto, desea reemplazar los archivos del proyecto actual por los del back, para que el pipeline completo (backend + endpoint + frontend) renderice los mapas exactamente igual.
+el pipeline completo (backend + endpoint + frontend) renderice los mapas exactamente igual.
+el pipeline completo (backend + endpoint + frontend) renderice los mapas exactamente igual.
+el pipeline completo (backend + endpoint + frontend) renderice los mapas exactamente igual.
+el pipeline completo (backend + endpoint + frontend) renderice los mapas exactamente igual.
+el pipeline completo (backend + endpoint + frontend) renderice los mapas exactamente igual.
+
 
 # Pipeline actual (proyecto 12112025_prodIA)
 1. **Endpoint**: `routes/api.py` → `@api_bp.route("/generate_fixed_report", methods=["POST"])`.
