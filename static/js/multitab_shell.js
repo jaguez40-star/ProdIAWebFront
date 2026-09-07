@@ -4342,6 +4342,11 @@
              // una tarjeta KPI leyendo campos que estos contratos no tienen (HE6).
              : (panel.tipo === "cuant_cmp")        ? __cnCuantCmpHtml(d)
              : (panel.tipo === "cuant_serie_ppto") ? __cnCuantSeriePptoHtml(d)
+             // [2026-09-07 · PANEL-P50-ANUAL] "p50_anual" (Analizar/referencia, rama GLOBAL):
+             // serie mensual del P50 corporativo. Registrado ANTES del fallback por la misma
+             // razón que "p50_vp": __cnCuantCardHtml NO valida el tipo y pintaría una tarjeta
+             // KPI leyendo campos (estado/cumplimiento_pct/nivel) que este contrato no tiene.
+             : (panel.tipo === "p50_anual")        ? __cnP50AnualHtml(d)
              : __cnCuantCardHtml(d);
     // Tope silencioso (sin UI, sin aviso): al superarlo se descarta el bloque más antiguo.
     while (stack.children.length >= __CN_STACK_MAX) stack.removeChild(stack.firstChild);
@@ -5060,6 +5065,113 @@
       '</div>' +
       '<div class="cn-p50vp__note">Vicepresidencia ' + esc(d.vice || "") + ' · corte del reporte ' +
         esc(d.corte || "") + ' · sin real por vicepresidencia después de ' + esc(mesRealTxt) + '</div>' +
+    '</div>';
+  }
+
+  // [2026-09-07 · PANEL-P50-ANUAL] Serie mensual del compromiso P50 corporativo (12 meses).
+  // Función PURA (devuelve string, no toca el DOM), igual que __cnP50VpHtml — sin fetch, sin
+  // pintor diferido: los puntos ya viajan en panel.datos.
+  //
+  // 🔑 UNA sola línea: core.p50_2026 NO tiene columna `real`, así que aquí no hay chip de
+  // cumplimiento, ni gap, ni línea de corte, ni punto — todo eso vive en __cnP50VpHtml porque
+  // allí SÍ hay REAL contra el que comparar. Inventarlos sería mostrar un dato que no existe.
+  //
+  // 🔑 SIN área bajo la curva. Se retiró deliberadamente de las series el 2026-08-31 (ver
+  // __cnSerieMesPlot): con el eje no anclado en 0 el relleno baja hasta un borde que no es cero
+  // ni ninguna referencia, y pinta una masa de color que no significa nada.
+  function __cnP50AnualHtml(d) {
+    var serie = (d && d.serie) || [];
+    if (!serie.length) return "";
+    var u = (d && d.unidad) || "kboepd";
+    var anio = (d && d.anio) || 2026;
+
+    function fmtV(v) {
+      return Number(v).toLocaleString("es-CO", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+    }
+
+    // Geometría: mismas proporciones que __cnP50VpHtml (:4987), con padB mayor porque aquí se
+    // pintan los 12 rótulos de mes en vez de 5.
+    var W = 320, H = 158, padL = 46, padR = 10, padT = 12, padB = 30;
+    var innerW = W - padL - padR, innerH = H - padT - padB;
+
+    // Eje Y MAXIMIZADO — clonado literal de __cnP50VpHtml:4993-4999. Arranca en el MÍNIMO de los
+    // datos (no en 0) + 8% de margen: con valores 714,9..747,0 el eje va de ~712 a ~750 y la
+    // variación se lee con claridad. Anclado en cero, la curva sería casi una recta.
+    var vals = [];
+    var i;
+    for (i = 0; i < serie.length; i++) {
+      if (serie[i].p50 != null) vals.push(serie[i].p50);
+    }
+    var vmin = vals.length ? Math.min.apply(null, vals) : 0;
+    var vmax = vals.length ? Math.max.apply(null, vals) : 1;
+    if (vmax === vmin) { vmax += 1; vmin -= 1; }   // guard: serie plana no divide por cero
+    var margen = (vmax - vmin) * 0.08;
+    vmin -= margen; vmax += margen;
+
+    var n = serie.length || 1;
+    function xAt(k) { return padL + (n <= 1 ? 0 : (k / (n - 1)) * innerW); }
+    function yAt(v) { return padT + innerH - ((v - vmin) / (vmax - vmin)) * innerH; }
+
+    // Polilínea del P50.
+    var pts = [];
+    for (i = 0; i < serie.length; i++) {
+      if (serie[i].p50 != null) pts.push(xAt(i).toFixed(1) + "," + yAt(serie[i].p50).toFixed(1));
+    }
+    var linea = '<polyline class="cn-p50an__linea" points="' + pts.join(" ") + '"></polyline>';
+
+    // Puntos: 12 marcas pequeñas. Con una sola línea y sin REAL de contraste, los vértices son
+    // lo que deja leer mes a mes en vez de una curva continua sin referencia.
+    var puntos = "";
+    for (i = 0; i < serie.length; i++) {
+      if (serie[i].p50 == null) continue;
+      puntos += '<circle class="cn-p50an__punto" cx="' + xAt(i).toFixed(1) +
+        '" cy="' + yAt(serie[i].p50).toFixed(1) + '" r="2.4"></circle>';
+    }
+
+    // Eje Y: 3 marcas (min, medio, max) con su línea de guía. __cnP50VpHtml NO las pinta pese a
+    // reservar padL=46 — aquí SÍ, porque sin la línea REAL de contraste una serie suelta no se
+    // puede leer sin números.
+    var ejeY = "";
+    var marcas = [vmin + margen, (vmin + vmax) / 2, vmax - margen];
+    for (i = 0; i < marcas.length; i++) {
+      var yv = yAt(marcas[i]);
+      ejeY += '<line class="cn-p50an__guia" x1="' + padL + '" y1="' + yv.toFixed(1) +
+        '" x2="' + (W - padR) + '" y2="' + yv.toFixed(1) + '"></line>' +
+        '<text class="cn-p50an__aytx" x="' + (padL - 6) + '" y="' + (yv + 3).toFixed(1) +
+        '" text-anchor="end">' + fmtV(marcas[i]) + '</text>';
+    }
+
+    // Eje X: los 12 meses. __cnP50VpHtml solo pinta ~5 (pasoEje = round((n-1)/4)), pero en una
+    // serie ANUAL los 12 rótulos son el eje natural y caben con font-size reducido.
+    var ejeX = "";
+    for (i = 0; i < serie.length; i++) {
+      var mIdx = (serie[i].mes || 0) - 1;
+      ejeX += '<text class="cn-p50an__axtx" x="' + xAt(i).toFixed(1) + '" y="' + (H - 9) +
+        '" text-anchor="middle">' + (__cnMesAbr[mIdx] || "") + '</text>';
+    }
+
+    var lo = serie[0], hi = serie[0];
+    for (i = 1; i < serie.length; i++) {
+      if (serie[i].p50 < lo.p50) lo = serie[i];
+      if (serie[i].p50 > hi.p50) hi = serie[i];
+    }
+
+    return '<div class="cn-p50an">' +
+      '<div class="cn-p50an__hd">' +
+        '<span class="cn-p50an__name">Compromiso P50 · ' + esc(String(anio)) + '</span>' +
+      '</div>' +
+      '<svg class="cn-p50an__svg" viewBox="0 0 ' + W + ' ' + H + '" role="img" ' +
+        'aria-label="Serie mensual del compromiso P50 ' + esc(String(anio)) + ' en ' + esc(u) + '">' +
+        ejeY + linea + puntos + ejeX +
+      '</svg>' +
+      '<div class="cn-p50an__foot">' +
+        '<div class="cn-p50an__kv"><span>Máximo</span><b>' + fmtV(hi.p50) + ' ' + esc(u) +
+          ' · ' + esc(hi.mes_nombre) + '</b></div>' +
+        '<div class="cn-p50an__kv"><span>Mínimo</span><b>' + fmtV(lo.p50) + ' ' + esc(u) +
+          ' · ' + esc(lo.mes_nombre) + '</b></div>' +
+      '</div>' +
+      '<div class="cn-p50an__note">Compromiso corporativo, nivel Upstream global. Sin real ' +
+        'mensual asociado: la serie no lleva cumplimiento.</div>' +
     '</div>';
   }
 
