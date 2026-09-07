@@ -4417,7 +4417,9 @@
     // [2026-08-25] QV2-PANEL-MES · N3/N4: mismo patrón, pero SIN fetch (los datos ya vienen en
     // panel.datos). Se difiere igual para que el pintor encuentre el host ya insertado, y el
     // guardián de __cnPanelMesCargar cubre el caso del DocumentFragment (pestaña oculta).
-    if (panel.tipo === "cuant_serie" || panel.tipo === "cuant_var" || panel.tipo === "cuant_acum" || panel.tipo === "analiza_tend" || panel.tipo === "cuant_cmp" || panel.tipo === "cuant_serie_ppto") __cnPanelMesCargar(blk, d, panel.tipo);
+    // [2026-09-07 · PANEL-P50-ANUAL-V2] +p50_anual: paso de SVG puro a Plotly, asi que ahora SI
+    // necesita pintor diferido. Sin esta linea el host queda vacio y no se pinta nada, sin error.
+    if (panel.tipo === "cuant_serie" || panel.tipo === "cuant_var" || panel.tipo === "cuant_acum" || panel.tipo === "analiza_tend" || panel.tipo === "cuant_cmp" || panel.tipo === "cuant_serie_ppto" || panel.tipo === "p50_anual") __cnPanelMesCargar(blk, d, panel.tipo);
   }
 
   // [2026-08-11] NO-OP desde que análisis y pila conviven en un scroll único (.cn-col): ya no hay
@@ -4778,6 +4780,9 @@
     } else if (tipo === "cuant_serie_ppto") {
       var hp = blk.querySelector(".cn-seriep-mes");
       if (hp) __cnSeriePptoInto(hp, d);
+    } else if (tipo === "p50_anual") {
+      var hpa = blk.querySelector(".cn-p50an-mes");
+      if (hpa) __cnP50AnualInto(hpa, d);
     }
   }
 
@@ -5068,111 +5073,89 @@
     '</div>';
   }
 
-  // [2026-09-07 · PANEL-P50-ANUAL] Serie mensual del compromiso P50 corporativo (12 meses).
-  // Función PURA (devuelve string, no toca el DOM), igual que __cnP50VpHtml — sin fetch, sin
-  // pintor diferido: los puntos ya viajan en panel.datos.
+  // [2026-09-07 · PANEL-P50-ANUAL-V2] Serie mensual del compromiso P50 corporativo (12 meses).
   //
-  // 🔑 UNA sola línea: core.p50_2026 NO tiene columna `real`, así que aquí no hay chip de
-  // cumplimiento, ni gap, ni línea de corte, ni punto — todo eso vive en __cnP50VpHtml porque
-  // allí SÍ hay REAL contra el que comparar. Inventarlos sería mostrar un dato que no existe.
+  // 🔑 ANTES era un SVG a mano clonado de __cnP50VpHtml. Se retiro: aquel es una TARJETA de
+  // 320px del panel lateral, y este panel se pinta en el area ancha de Insights (~1000px). El
+  // SVG escalaba x3 y con el la tipografia — los numeros del eje salian gigantes y la linea
+  // basta. Medido contra la captura del usuario, 2026-09-07.
   //
-  // 🔑 SIN área bajo la curva. Se retiró deliberadamente de las series el 2026-08-31 (ver
-  // __cnSerieMesPlot): con el eje no anclado en 0 el relleno baja hasta un borde que no es cero
-  // ni ninguna referencia, y pinta una masa de color que no significa nada.
+  // Molde = __cnAnzTendHtml/__cnTendMesInto (analiza_tend, :4562): serie mensual, una linea
+  // principal, sin tarjeta KPI. Constructor PURO + pintor diferido, como el resto de paneles
+  // mensuales del proyecto.
   function __cnP50AnualHtml(d) {
-    var serie = (d && d.serie) || [];
-    if (!serie.length) return "";
-    var u = (d && d.unidad) || "kboepd";
-    var anio = (d && d.anio) || 2026;
+    if (!d || !d.valores || !d.valores.length) return "";
+    return __cnPanelMesHtml(d, "cn-p50an-mes");
+  }
 
-    function fmtV(v) {
+  // Pintor diferido del panel anual del P50. Se llama DESPUES de insertar el bloque en el DOM
+  // (via __cnPanelMesCargar), porque Plotly necesita un contenedor con ancho real.
+  function __cnP50AnualInto(hostEl, d) {
+    var meses = d.meses || [], vals = d.valores || [];
+    var u = d.unidad || "kboepd";
+    var anio = d.anio || 2026;
+    var meta = (d.meta != null) ? d.meta : null;
+
+    hostEl.innerHTML =
+      '<div class="cn-ins__card"><div class="cn-ins__card-hd"><i class="bi bi-graph-up"></i> ' +
+      'Compromiso P50 · ' + esc(String(anio)) +
+      '</div><div class="cn-ins__plot" data-p></div>' +
+      '<div class="cn-ins__cap" data-cap></div></div>';
+    var elp = hostEl.querySelector("[data-p]");
+    if (!vals.length) {
+      elp.innerHTML = '<div class="p-2 text-muted small">Sin serie anual del P50.</div>';
+      return;
+    }
+    if (!window.Plotly) { elp.innerHTML = '<div class="text-muted small p-2">(Plotly no disponible)</div>'; return; }
+
+    // Verde corporativo. El P50 NO es de ningun producto, asi que no se usa __cnProdCol: ese
+    // accessor colorea por CRUDO/GAS/BLANCOS y devolveria el gris neutro (H5).
+    var col = "#0F6B4C";
+    var fmtV = function (v) {
       return Number(v).toLocaleString("es-CO", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+    };
+
+    var traces = [{
+      x: meses, y: vals, name: "Compromiso P50",
+      type: "scatter", mode: "lines+markers",
+      line: { color: col, width: 2.5, shape: "spline", smoothing: 0.8 },
+      marker: { color: col, size: 7 },
+      customdata: vals.map(fmtV),
+      hovertemplate: "%{x}<br>P50: %{customdata} " + u + "<extra></extra>"
+    }];
+
+    var shapes = [], anns = [];
+    // Linea de META ANUAL. Es el promedio de los 12 meses, calculado en el backend — la misma
+    // cifra que dice el texto de la respuesta (735,3 en 2026, la "Meta 2026" de la lamina).
+    // Punteada y en verde institucional, igual que la referencia de PPTO de __cnDailyPlot:2451.
+    if (meta != null) {
+      shapes.push({ type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: meta, y1: meta,
+        line: { color: "#004236", width: 1.5, dash: "dot" } });
+      anns.push({ x: 1, y: meta, xref: "paper", yref: "y", xanchor: "right", yanchor: "bottom",
+        text: "meta " + anio + " · " + fmtV(meta) + " " + u,
+        showarrow: false, font: { size: 10, color: "#004236" } });
     }
 
-    // Geometría: mismas proporciones que __cnP50VpHtml (:4987), con padB mayor porque aquí se
-    // pintan los 12 rótulos de mes en vez de 5.
-    var W = 320, H = 158, padL = 46, padR = 10, padT = 12, padB = 30;
-    var innerW = W - padL - padR, innerH = H - padT - padB;
+    // 🔑 SIN `rangemode: "tozero"`: el autoescalado de Plotly ajusta el eje a la banda real de los
+    // datos (714,9..747,0) y la variacion se lee. Anclado en cero la curva seria casi una recta —
+    // que es justo lo que el usuario rechazo del primer intento.
+    window.Plotly.newPlot(elp, traces, {
+      margin: { l: 62, r: 18, t: 22, b: 30 }, height: 260, hovermode: "x unified",
+      showlegend: false,
+      shapes: shapes, annotations: anns,
+      xaxis: { title: { text: "Mes", font: { size: 11 } }, tickfont: { size: 11 }, showgrid: false },
+      yaxis: {
+        title: { text: "Compromiso (" + u + ")", font: { size: 11 } },
+        tickfont: { size: 10 }, separatethousands: true, gridcolor: "#eef1ef", zeroline: false
+      },
+      plot_bgcolor: "#fff", paper_bgcolor: "#fff"
+    }, { displayModeBar: false, responsive: true });
 
-    // Eje Y MAXIMIZADO — clonado literal de __cnP50VpHtml:4993-4999. Arranca en el MÍNIMO de los
-    // datos (no en 0) + 8% de margen: con valores 714,9..747,0 el eje va de ~712 a ~750 y la
-    // variación se lee con claridad. Anclado en cero, la curva sería casi una recta.
-    var vals = [];
-    var i;
-    for (i = 0; i < serie.length; i++) {
-      if (serie[i].p50 != null) vals.push(serie[i].p50);
+    var cap = hostEl.querySelector("[data-cap]");
+    if (cap) {
+      cap.innerHTML = 'Compromiso corporativo, nivel Upstream global. Sin real mensual asociado: ' +
+        'la serie no lleva cumplimiento.';
     }
-    var vmin = vals.length ? Math.min.apply(null, vals) : 0;
-    var vmax = vals.length ? Math.max.apply(null, vals) : 1;
-    if (vmax === vmin) { vmax += 1; vmin -= 1; }   // guard: serie plana no divide por cero
-    var margen = (vmax - vmin) * 0.08;
-    vmin -= margen; vmax += margen;
-
-    var n = serie.length || 1;
-    function xAt(k) { return padL + (n <= 1 ? 0 : (k / (n - 1)) * innerW); }
-    function yAt(v) { return padT + innerH - ((v - vmin) / (vmax - vmin)) * innerH; }
-
-    // Polilínea del P50.
-    var pts = [];
-    for (i = 0; i < serie.length; i++) {
-      if (serie[i].p50 != null) pts.push(xAt(i).toFixed(1) + "," + yAt(serie[i].p50).toFixed(1));
-    }
-    var linea = '<polyline class="cn-p50an__linea" points="' + pts.join(" ") + '"></polyline>';
-
-    // Puntos: 12 marcas pequeñas. Con una sola línea y sin REAL de contraste, los vértices son
-    // lo que deja leer mes a mes en vez de una curva continua sin referencia.
-    var puntos = "";
-    for (i = 0; i < serie.length; i++) {
-      if (serie[i].p50 == null) continue;
-      puntos += '<circle class="cn-p50an__punto" cx="' + xAt(i).toFixed(1) +
-        '" cy="' + yAt(serie[i].p50).toFixed(1) + '" r="2.4"></circle>';
-    }
-
-    // Eje Y: 3 marcas (min, medio, max) con su línea de guía. __cnP50VpHtml NO las pinta pese a
-    // reservar padL=46 — aquí SÍ, porque sin la línea REAL de contraste una serie suelta no se
-    // puede leer sin números.
-    var ejeY = "";
-    var marcas = [vmin + margen, (vmin + vmax) / 2, vmax - margen];
-    for (i = 0; i < marcas.length; i++) {
-      var yv = yAt(marcas[i]);
-      ejeY += '<line class="cn-p50an__guia" x1="' + padL + '" y1="' + yv.toFixed(1) +
-        '" x2="' + (W - padR) + '" y2="' + yv.toFixed(1) + '"></line>' +
-        '<text class="cn-p50an__aytx" x="' + (padL - 6) + '" y="' + (yv + 3).toFixed(1) +
-        '" text-anchor="end">' + fmtV(marcas[i]) + '</text>';
-    }
-
-    // Eje X: los 12 meses. __cnP50VpHtml solo pinta ~5 (pasoEje = round((n-1)/4)), pero en una
-    // serie ANUAL los 12 rótulos son el eje natural y caben con font-size reducido.
-    var ejeX = "";
-    for (i = 0; i < serie.length; i++) {
-      var mIdx = (serie[i].mes || 0) - 1;
-      ejeX += '<text class="cn-p50an__axtx" x="' + xAt(i).toFixed(1) + '" y="' + (H - 9) +
-        '" text-anchor="middle">' + (__cnMesAbr[mIdx] || "") + '</text>';
-    }
-
-    var lo = serie[0], hi = serie[0];
-    for (i = 1; i < serie.length; i++) {
-      if (serie[i].p50 < lo.p50) lo = serie[i];
-      if (serie[i].p50 > hi.p50) hi = serie[i];
-    }
-
-    return '<div class="cn-p50an">' +
-      '<div class="cn-p50an__hd">' +
-        '<span class="cn-p50an__name">Compromiso P50 · ' + esc(String(anio)) + '</span>' +
-      '</div>' +
-      '<svg class="cn-p50an__svg" viewBox="0 0 ' + W + ' ' + H + '" role="img" ' +
-        'aria-label="Serie mensual del compromiso P50 ' + esc(String(anio)) + ' en ' + esc(u) + '">' +
-        ejeY + linea + puntos + ejeX +
-      '</svg>' +
-      '<div class="cn-p50an__foot">' +
-        '<div class="cn-p50an__kv"><span>Máximo</span><b>' + fmtV(hi.p50) + ' ' + esc(u) +
-          ' · ' + esc(hi.mes_nombre) + '</b></div>' +
-        '<div class="cn-p50an__kv"><span>Mínimo</span><b>' + fmtV(lo.p50) + ' ' + esc(u) +
-          ' · ' + esc(lo.mes_nombre) + '</b></div>' +
-      '</div>' +
-      '<div class="cn-p50an__note">Compromiso corporativo, nivel Upstream global. Sin real ' +
-        'mensual asociado: la serie no lleva cumplimiento.</div>' +
-    '</div>';
   }
 
   // [2026-08-11] Dona de PARTICIPACIÓN (top N + "Otros"), en % sobre la producción total. SVG
