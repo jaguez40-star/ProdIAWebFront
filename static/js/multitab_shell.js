@@ -6167,6 +6167,7 @@
         var C = __CN_SENDA_COL;
         var meses = [], ecp = [], fil = [], p50 = [], totTxt = [];
         var colEcp = [], colFil = [], patEcp = [], patFil = [], tickCol = [];
+        var ecpTxt = [], filTxt = [], ecpTxtCol = [], filTxtCol = [];
         var primerProyIdx = -1, minVal = null, maxVal = null;
 
         d.serie.forEach(function (m, i) {
@@ -6178,6 +6179,13 @@
           // Etiqueta del TOTAL encima de la barra, como la muestra. Sin total (mes sin dato)
           // no se escribe nada: un "0" ahí se leería como producción cero.
           totTxt.push(m.total === null || m.total === undefined ? "" : __cnKbpe(m.total));
+          // Etiqueta DENTRO de cada segmento. El color se elige por contraste con su fondo:
+          // los verdes del real son oscuros -> texto blanco; los ámbar de proyección son
+          // claros -> texto oscuro. Un solo color fijo dejaría la mitad de las cifras ilegibles.
+          ecpTxt.push(m.ecopetrol === null || m.ecopetrol === undefined ? "" : __cnKbpe(m.ecopetrol));
+          filTxt.push(m.filiales === null || m.filiales === undefined ? "" : __cnKbpe(m.filiales));
+          ecpTxtCol.push(proy ? "#FFFFFF" : "#FFFFFF");
+          filTxtCol.push(proy ? "#7A5310" : "#0B3D24");
           colEcp.push(proy ? C.ecpProy : C.ecpReal);
           colFil.push(proy ? C.filProy : C.filReal);
           patEcp.push(proy ? "/" : "");
@@ -6198,16 +6206,27 @@
         var trazaEcp = {
           x: meses, y: ecp, name: "Real Ecopetrol", type: "bar",
           marker: { color: colEcp, pattern: { shape: patEcp, fgcolor: C.ecpProy, size: 4 } },
+          text: ecpTxt, textposition: "inside", insidetextanchor: "middle",
+          textfont: { size: 10, color: ecpTxtCol },
           hovertemplate: "Ecopetrol %{y:.1f}<extra></extra>"
         };
         var trazaFil = {
           x: meses, y: fil, name: "Real filiales", type: "bar",
           marker: { color: colFil, pattern: { shape: patFil, fgcolor: C.ecpProy, size: 4 } },
-          // El total va como texto de la traza de ARRIBA del apilado: así Plotly lo coloca
-          // sobre la cima de la barra completa, no sobre el segmento.
-          text: totTxt, textposition: "outside", cliponaxis: false,
-          textfont: { size: 11, color: "#131C1A" },
+          text: filTxt, textposition: "inside", insidetextanchor: "middle",
+          textfont: { size: 10, color: filTxtCol },
           hovertemplate: "Filiales %{y:.1f}<extra></extra>"
+        };
+        // El TOTAL va en una traza propia de altura CERO, no como texto de la de filiales:
+        // esa ya rotula su segmento por dentro, y Plotly admite un solo `text` por traza.
+        // Barra invisible sobre la cima del apilado -> el total queda encima de la columna
+        // completa y sin robarle el sitio a la etiqueta de filiales.
+        var trazaTot = {
+          x: meses, y: meses.map(function () { return 0; }),
+          name: "Total", type: "bar", showlegend: false, hoverinfo: "skip",
+          marker: { color: "rgba(0,0,0,0)" },
+          text: totTxt, textposition: "outside", cliponaxis: false,
+          textfont: { size: 11, color: "#131C1A" }
         };
         var trazaP50 = {
           x: meses, y: p50, name: "Meta P50", type: "scatter", mode: "lines+markers+text",
@@ -6248,6 +6267,10 @@
 
         var layout = {
           barmode: "stack", bargap: 0.35,
+          // Sin esto Plotly encoge la cifra hasta hacerla ilegible cuando el segmento es
+          // estrecho (filiales es ~1/5 de la barra). Preferimos tamaño constante y, si de
+          // verdad no cabe, que la oculte -- una cifra de 5px no la lee nadie.
+          uniformtext: { mode: "hide", minsize: 9 },
           xaxis: { tickfont: { size: 11, color: C.tick }, showgrid: false, zeroline: false },
           yaxis: {
             title: { text: (d.unidad || "kboepd").toUpperCase(), font: { size: 10, color: C.tick } },
@@ -6261,7 +6284,7 @@
           hovermode: "x unified", height: 340
         };
 
-        window.Plotly.newPlot(plotNode, [trazaEcp, trazaFil, trazaP50], layout,
+        window.Plotly.newPlot(plotNode, [trazaEcp, trazaFil, trazaTot, trazaP50], layout,
           { displayModeBar: false, responsive: true });
       })
       .catch(function () {
