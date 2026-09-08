@@ -3530,6 +3530,22 @@
   function __cnGasM(v, dec) { return __cnBeq(v, dec); }
   // [BEQ-2026-09-08] Rotulo por producto: los liquidos son barriles de petroleo (kbopd);
   // el gas se convierte con el factor 5,7, asi que es EQUIVALENTE (kbepd).
+  // [2026-09-08] Widget del gap: es la conclusion de la tarjeta (cuanto falta o sobra contra el
+  // compromiso), no una fila mas del detalle. Se saca del listado y se le da fondo, flecha de
+  // direccion y cifra grande, para que se lea de un vistazo.
+  // `val` en la unidad de la tarjeta; null -> no se pinta (sin P50 no hay gap que mostrar).
+  function __cnGapWidget(val, unidad) {
+    if (val == null) { return ""; }
+    var pos = val >= 0;
+    return '<div class="cp-p50__gapw ' + (pos ? "cp-p50__gapw--pos" : "cp-p50__gapw--neg") + '">' +
+      '<span class="cp-p50__gapw-k">Gap vs P50</span>' +
+      '<span class="cp-p50__gapw-v">' +
+        '<i class="bi bi-arrow-' + (pos ? "up" : "down") + '-short"></i>' +
+        (pos ? "+" : "−") + __cnBeq(Math.abs(val)) +
+        (unidad ? ' <span class="cp-p50__gapw-u">' + esc(unidad) + '</span>' : '') +
+      '</span></div>';
+  }
+
   function __cnUniProd(prod) {
     var p = String(prod || "").toUpperCase();
     if (p === "GAS") { return "kbepd"; }        // equivalente (factor 5,7)
@@ -3763,9 +3779,9 @@
         fila("Proyección cierre", __cnKb(p.proy_mes)) +
         fila("Programa día", __cnKb(p.programa_dia)) +
         fila("Real día", __cnKb(p.real_dia)) +
-        '<div class="cp-p50__r cp-p50__r--gap"><span class="cp-p50__k">Gap vs P50</span>' +
-          '<span class="cp-p50__v' + gapCls + '">' + gapTxt + '</span></div>' +
       '</div>' +
+      // [2026-09-08] El gap sale del listado y pasa a widget: es la conclusion de la tarjeta.
+      __cnGapWidget(gap, __cnUniProd(PROD)) +
       '</div>';
   }
 
@@ -5942,12 +5958,8 @@
         (p50 != null ? fila("Compromiso = P50", __cnBeq(p50), true) : "") +
         (ecp != null ? fila("Ecopetrol", __cnBeq(ecp)) : "") +
         (fil != null ? fila("Filiales", __cnBeq(fil)) : "") +
-        (gap != null
-          ? '<div class="cp-p50__r cp-p50__r--gap"><span class="cp-p50__k">Gap vs P50</span>' +
-            '<span class="cp-p50__v cp-p50__v--' + (gap >= 0 ? "pos" : "neg") + '">' +
-            (gap >= 0 ? "+" : "−") + __cnBeq(Math.abs(gap)) + '</span></div>'
-          : "") +
       '</div>' +
+      __cnGapWidget(gap, "kbepd") +
     '</div>';
   }
 

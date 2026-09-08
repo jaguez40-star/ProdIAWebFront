@@ -1845,6 +1845,26 @@
 .cp-p50__r--gap .cp-p50__k { color: #17241E; font-weight: 600; }
 .cp-p50__v--neg { color: #C5311E; }
 .cp-p50__v--pos { color: #1E9E5A; }
+
+/* [2026-09-08] Widget del gap. Cierra la tarjeta: es la conclusion, no una fila mas del
+   detalle. Fondo teñido del estado + flecha de direccion, para leerlo de un vistazo.
+   `margin-top:auto` lo pega abajo, asi que queda a la misma altura en las cinco tarjetas. */
+.cp-p50__gapw { display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  margin-top: auto; padding: 8px 11px; border-radius: 8px; border: 1px solid transparent; }
+.cp-p50__gapw-k { font-size: 11.5px; font-weight: 600; }
+.cp-p50__gapw-v { font-size: 15px; font-weight: 800; letter-spacing: -.3px; white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 3px;
+  font-variant-numeric: tabular-nums; }
+.cp-p50__gapw-v i { font-size: 15px; margin-right: -2px; }
+.cp-p50__gapw-u { font-size: 10.5px; font-weight: 600; opacity: .75; }
+.cp-p50__gapw--neg { background: #FDF0EE; border-color: #F6D9D3; }
+.cp-p50__gapw--neg .cp-p50__gapw-k { color: #93372A; }
+.cp-p50__gapw--neg .cp-p50__gapw-v { color: #C5311E; }
+.cp-p50__gapw--pos { background: #ECF7F1; border-color: #CFE9DC; }
+.cp-p50__gapw--pos .cp-p50__gapw-k { color: #1B6B44; }
+.cp-p50__gapw--pos .cp-p50__gapw-v { color: #1E9E5A; }
+/* El bloque de filas ya no absorbe el sobrante: ahora lo hace el widget. */
+.cp-p50 .cp-p50__rows { margin-bottom: 9px; }
 @media (prefers-reduced-motion: reduce) { .cp-mes__kpi * { transition: none !important; } }
 
 /* ===== [2026-07-24] Fase 2 · Focos master-detail (anal.md §8-§9) ===== */
