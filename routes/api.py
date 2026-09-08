@@ -705,10 +705,14 @@ def diferidas_frecuencia():
 
     # ---- Impacto por causa (N4): VOLUMEN perdido por tipo, top-6 + Otros, por producto ----
     # Crudo = ACEITE_PERDIDO (bbl). Gas = GAS_PERDIDO (misma unidad que la producción — verificado: la
-    # fracción perdido/producido da ~0,4-0,8%, la misma banda que el crudo → el frontend lo muestra en
-    # MSCF con ÷1e6). Blancos NO tiene columna de volumen (el frontend conserva "Pozos afectados").
+    # fracción perdido/producido da ~0,4-0,8%, la misma banda que el crudo).
+    # [BEQ-2026-09-08] El gas se entrega ya en barriles equivalentes (÷5,7, mismo factor que el
+    # backend en app/core/unidades.py — Flask no puede importarlo, se replica la constante).
+    # Blancos NO tiene columna de volumen (el frontend conserva "Pozos afectados").
+    _FACTOR_GAS_BEQ = 5.7
     def _impacto(idx):
-        vals = [((r[0] or "Sin clasificar"), float(r[idx] or 0)) for r in imp_rows]
+        _k = _FACTOR_GAS_BEQ if idx == 2 else 1.0
+        vals = [((r[0] or "Sin clasificar"), float(r[idx] or 0) / _k) for r in imp_rows]
         vals = [(n, v) for n, v in vals if v > 0]
         tot = sum(v for _, v in vals)
         if not tot:

@@ -2344,7 +2344,7 @@
     var vd = serie.filter(function (v) { return v != null && v > 0; });
     var promMes = vd.length ? vd.reduce(function (a, b) { return a + b; }, 0) / vd.length : 0;   // media del mes (fallback)
     var ref = prom2026 != null ? prom2026 : promMes;    // referencia: promedio 2026 (REAL mensual) o media del mes
-    var U = { CRUDO: "bbl", GAS: "MSCF", BLANCOS: "bbl" }[prod] || "";
+    var U = "kboepd";   // [BEQ] los tres productos comparten unidad
     // [2026-08-25] El panel «Comportamiento {Producto}» (.cn-compprod__grid) pide más aire sobre
     // la curva y NO lleva pie de texto. Se detecta por el DOM y no por parámetro porque el pintor
     // (__cnPaintFocoStk) es COMPARTIDO con el panel de Focos: así sus dos call sites (:1670, :1688)
@@ -2353,7 +2353,7 @@
     __cnDailyPlot(elp, fechas, serie, ref, U, prod === "GAS", prom2026 != null, __cnProdCol(prod),
                   esCompProd ? 1.30 : undefined,
                   esCompProd ? { x: "Día" + (mesNom ? " de " + mesNom : " del mes"),
-                                 y: "Producción (" + (U || "unidades") + "/día)" } : undefined,
+                                 y: "Producción (" + (U || "kboepd") + ")" } : undefined,
                   pptoDia,
                   // [2026-08-31] 4ª referencia: la media real de ESTE mes, que ya se calculaba para
                   // el pie. Solo se dibuja si hay una referencia anual con la que contrastarla; si
@@ -2372,7 +2372,7 @@
 
   // Texto explicativo bajo la curva diaria: media real del mes vs promedio 2026, con la brecha.
   function __cnDailyCap(promMes, ref, esAnio, unidad, esGas, mesNom, pptoDia) {
-    var fmtD = esGas ? __cnGasM : function (v) { return __cnMilesEC(Math.round(v)); };
+    var fmtD = __cnBeq;   // [BEQ]
     var u = unidad ? (" " + unidad) : "";
     var media = '<b>' + fmtD(promMes) + u + '/día</b>';
     // [2026-08-31] Frase del PPTO: se añade solo si hay dato, y dice si la media va por debajo o por
@@ -2406,11 +2406,11 @@
     if (!elp) return;
     if (!window.Plotly) { elp.innerHTML = '<div class="text-muted small p-2">(Plotly no disponible)</div>'; return; }
     var uni = unidad ? (" " + unidad) : "";
-    var fmtD = esGas ? __cnGasM : function (v) { return __cnMilesEC(Math.round(v)); };
-    var yPlot = esGas ? valores.map(function (v) { return v == null ? null : v / 1e6; }) : valores;
-    var refPlot = esGas ? ref / 1e6 : ref;
-    var pptoPlot = (pptoDia != null) ? (esGas ? pptoDia / 1e6 : pptoDia) : null;
-    var promMesPlot = (promMesRef != null && promMesRef > 0) ? (esGas ? promMesRef / 1e6 : promMesRef) : null;
+    var fmtD = __cnBeq;   // [BEQ]
+    var yPlot = valores;   // [BEQ] backend ya entrega kboepd
+    var refPlot = ref;   // [BEQ]
+    var pptoPlot = (pptoDia != null) ? pptoDia : null;   // [BEQ]
+    var promMesPlot = (promMesRef != null && promMesRef > 0) ? promMesRef : null;   // [BEQ]
     // Eje X categórico = número de día del mes ("2026-05-01" → "1"). El hover conserva la fecha completa.
     var xcat = fechas.map(function (f) {
       var s = String(f).slice(0, 10).split("-");   // ["2026","05","01"]
@@ -2427,7 +2427,7 @@
     // nada en el área del gráfico. Cuando no hay leyenda, se emiten las anotaciones de siempre.
     var trazasLey = [];
     function refLeyenda(nombre, valor, color, patron) {
-      trazasLey.push({ x: [null], y: [null], type: "scatter", mode: "lines", name: nombre + " · " + fmtD(valor) + uni + "/día",
+      trazasLey.push({ x: [null], y: [null], type: "scatter", mode: "lines", name: nombre + " · " + fmtD(valor) + uni,
                        line: { color: color, width: 1.5, dash: patron }, hoverinfo: "skip", showlegend: true });
     }
     if (refPlot) {
@@ -2436,7 +2436,7 @@
       var refNom = refEsAnio ? "promedio diario 2026" : "promedio del mes";
       if (conLeyenda) refLeyenda(refNom, ref, "#BA7517", "dash");
       else anns.push({ x: 0, y: refPlot, xref: "paper", yref: "y", xanchor: "left", yanchor: "bottom",
-        text: refNom + " · " + fmtD(ref) + uni + "/día",
+        text: refNom + " · " + fmtD(ref) + uni,
         showarrow: false, font: { size: 10, color: "#BA7517" } });
     }
     // [2026-08-31] PPTO diario: línea sólida azul, para no confundirse con la punteada ámbar del
@@ -2451,7 +2451,7 @@
         line: { color: "#004236", width: 1.5, dash: "dot" } });
       if (conLeyenda) refLeyenda("PPTO diario", pptoDia, "#004236", "dot");
       else anns.push({ x: 1, y: pptoPlot, xref: "paper", yref: "y", xanchor: "right", yanchor: "bottom",
-        text: "PPTO · " + fmtD(pptoDia) + uni + "/día",
+        text: "PPTO · " + fmtD(pptoDia) + uni,
         showarrow: false, font: { size: 10, color: "#004236" } });
     }
     // [2026-08-31] Media real de ESTE mes. Gris azulado: verde y ámbar ya están tomados por las
@@ -2464,7 +2464,7 @@
         line: { color: "#5A6B7A", width: 1.5, dash: "dashdot" } });
       if (conLeyenda) refLeyenda("media del mes", promMesRef, "#5A6B7A", "dashdot");
       else anns.push({ x: 0.5, y: promMesPlot, xref: "paper", yref: "y", xanchor: "center", yanchor: "bottom",
-        text: "media del mes · " + fmtD(promMesRef) + uni + "/día",
+        text: "media del mes · " + fmtD(promMesRef) + uni,
         showarrow: false, font: { size: 10, color: "#5A6B7A" } });
     }
     // Eje Y desde 0, con techo = max(curva, referencia) + holgura → la referencia queda con aire.
@@ -2517,7 +2517,7 @@
       marker: { color: lineCol, size: 4 },
       name: "producción real", showlegend: !!conLeyenda,
       customdata: cd,
-      hovertemplate: "%{customdata[0]}<br>%{customdata[1]}" + uni + "/día<extra></extra>" }].concat(trazasLey), {
+      hovertemplate: "%{customdata[0]}<br>%{customdata[1]}" + uni + "<extra></extra>" }].concat(trazasLey), {
       autosize: true, margin: mrg, shapes: shapes, annotations: anns,
       // [2026-08-25] showlegend:false — este plot tiene UN solo trace y sin `name`, así que la
       // leyenda solo podía decir "trace 0": no aportaba nada y el encabezado de la tarjeta ya
@@ -2590,11 +2590,11 @@
     if (!elp) return;
     if (!window.Plotly) { elp.innerHTML = '<div class="text-muted small p-2">(Plotly no disponible)</div>'; return; }
     var uni = unidad ? (" " + unidad) : "";
-    var fmtD = esGas ? __cnGasM : function (v) { return __cnMilesEC(Math.round(v)); };
+    var fmtD = __cnBeq;   // [BEQ]
     // El gas se grafica en MSCF (÷1e6); el hover formatea el valor ORIGINAL con __cnGasM (que ya
     // divide), nunca el ya escalado — ese doble escalado es el bug documentado en :3650-3652.
-    var yPlot = esGas ? valores.map(function (v) { return v == null ? null : v / 1e6; }) : valores;
-    var refPlot = (esGas && ref) ? ref / 1e6 : ref;
+    var yPlot = valores;   // [BEQ] backend ya entrega kboepd
+    var refPlot = ref;   // [BEQ]
     // Índice del mes EN CURSO = el punto que es proyección de cierre (HE4/AF-3.3). Llega por
     // número de mes desde el backend: el nombre viene abreviado ("Ago") y invertirlo en JS sería
     // un mapa duplicado y frágil.
@@ -2602,13 +2602,13 @@
     var cd = valores.map(function (v, i) {
       return [fmtD(v), (i === idxProy) ? " · proyección de cierre" : ""];
     });
-    var hoverMes = "%{x}<br>%{customdata[0]}" + uni + "/mes%{customdata[1]}<extra></extra>";
+    var hoverMes = "%{x}<br>%{customdata[0]}" + uni + "%{customdata[1]}<extra></extra>";
     var shapes = [], anns = [];
     if (refPlot) {
       shapes.push({ type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: refPlot, y1: refPlot,
         line: { color: "#BA7517", width: 1.5, dash: "dash" } });
       anns.push({ x: 0, y: refPlot, xref: "paper", yref: "y", xanchor: "left", yanchor: "bottom",
-        text: (refTxt || "promedio mensual") + " · " + fmtD(ref) + uni + "/mes",
+        text: (refTxt || "promedio mensual") + " · " + fmtD(ref) + uni,
         showarrow: false, font: { size: 10, color: "#BA7517" } });
     }
     var lineCol = col || "#1f6b4a";
@@ -2665,7 +2665,7 @@
   //     __cnGasM lo dividiría otra vez, que es el bug documentado en :3795-3797.
   function __cnVarWaterfallSVG(serie, deltas, esGas, col, proyMes, W, H) {
     var VML = 58, VMR = 12, VMT = 30, VMB = 38;
-    var esc1 = esGas ? 1e6 : 1;
+    var esc1 = 1;   // [BEQ] backend ya entrega kboepd
     function fmt(v) {
       var a = Math.abs(v);
       if (esGas) return (v < 0 ? "-" : "") + a.toFixed(a >= 1 ? 1 : 2).replace(".", ",");
@@ -2834,7 +2834,7 @@
                      d.mes_actual, d.promedio,
                      "promedio mensual " + (d.anio || ""), unidad, esGas,
                      __cnProdCol(prod),
-                     { x: "Mes", y: "Producción (" + unidad + "/mes)" });
+                     { x: "Mes", y: "Producción (" + unidad + ")" });
   }
 
   // ============ Sección "Diferidas" del acordeón (histórico de frecuencia por causa) ============
@@ -2887,7 +2887,7 @@
     var prod = (host.dataset.prod || "").toUpperCase();
     var esGas = (prod === "GAS"), esBlancos = (prod === "BLANCOS");
     var conImpacto = !esBlancos;   // impacto solo donde hay dato de volumen (crudo/gas)
-    var uni = esGas ? "MSCF" : "bbl";
+    var uni = "bbl-eq";   // [BEQ] diferidas: volumen perdido en barriles equivalentes
     var cardImpacto = '<div class="cn-dif__c"><div class="cn-dif__ct">Pérdida por causa (NV04)</div>' +
       '<div class="cn-dif__note">Volumen perdido · ' + uni + ' · histórico 2023–25</div>' +
       '<div class="cn-dif__impacto"></div></div>';
@@ -3007,8 +3007,8 @@
       return;
     }
     var esGas = (prod === "GAS");
-    var uni = esGas ? "MSCF" : "bbl";
-    var fmt = esGas ? function (v) { return __cnGasM(v); } : function (v) { return __cnMilesEC(Math.round(v)); };
+    var uni = "bbl-eq";   // [BEQ] diferidas: volumen perdido en barriles equivalentes
+    var fmt = function (v) { return __cnMilesEC(Math.round(v)); };   // [BEQ] diferidas: bbl-eq enteros
     var max = causas.reduce(function (a, c) { return Math.max(a, c.vol || 0); }, 0) || 1;
     var rows = causas.map(function (c) {
       var w = (Math.max(c.vol || 0, 0) / max * 100).toFixed(1);
@@ -3113,7 +3113,7 @@
     var g = (ed && ed.gap_por_producto && ed.gap_por_producto[prod]) || null;
     var dets = (g && g.detractores) || [];
     var nombre = prod.charAt(0).toUpperCase() + prod.slice(1).toLowerCase();
-    var U = { CRUDO: "bbl", GAS: "MSCF", BLANCOS: "bbl" }[prod] || "";   // gas MSCF · crudo/blancos bbl
+    var U = "kboepd";   // [BEQ]
     var esGas = (prod === "GAS");
     var mesN = (dd && dd.mes && dd.mes.nombre) || "";                    // mes dinámico = último mes cargado
     // [2026-07-25] Gas en MSCF = millones de pies³ (÷1e6, 2 dec, coma es-CO) — SIN cambios.
@@ -3121,7 +3121,7 @@
     // se leía como "0,26 bbl". La unidad la fija el producto (gas MSCF · crudo/blancos bbl).
     var fmtN = function (v) {
       var n = Math.abs(Number(v) || 0);
-      return esGas ? (n / 1e6).toFixed(2).replace(".", ",") : __cnMilesEC(Math.round(n));
+      return __cnBeq(n);   // [BEQ] mismo formato para los tres productos
     };
     var fmtU = function (v) { return fmtN(v) + " " + U; };
     var prodLbl = "Producido" + (mesN ? " " + esc(mesN) : "");   // "Producido Mayo" (mes dinámico)
@@ -3246,20 +3246,20 @@
     var nums = rm.meses_num || [];
     var prom = (rm.promedio_mes || {})[producto];          // promedio MENSUAL de meses cerrados (= 3,3M)
     var mesActual = rm.mes_actual;
-    var U = { CRUDO: "bbl", GAS: "MSCF", BLANCOS: "bbl" }[producto] || "";
+    var U = "kboepd";   // [BEQ]
     var esGas = producto === "GAS";
-    var fmtV = esGas ? __cnGasM : __cnFmtKpi;   // GAS en MSCF (÷1e6)
-    var yPlot = esGas ? y.map(function (v) { return v == null ? null : v / 1e6; }) : y;
-    var promPlot = (esGas && prom) ? prom / 1e6 : prom;
+    var fmtV = __cnBeq;   // [BEQ] kboepd
+    var yPlot = y;   // [BEQ]
+    var promPlot = prom;   // [BEQ]
     var colores = x.map(function (_, i) { return (nums[i] === mesActual) ? "#7fb59a" : "#1f6b4a"; });
     var esProy = x.map(function (_, i) { return (nums[i] === mesActual) ? " · proyección de cierre" : ""; });
-    var cd = x.map(function (_, i) { return [fmtV(y[i]) + " " + U + "/mes", esProy[i]]; });
+    var cd = x.map(function (_, i) { return [fmtV(y[i]) + " " + U, esProy[i]]; });
     var shapes = [], anns = [];
     if (promPlot) {
       shapes.push({ type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: promPlot, y1: promPlot,
         line: { color: "#BA7517", width: 1.5, dash: "dash" } });
       anns.push({ x: 0, y: promPlot, xref: "paper", yref: "y", xanchor: "left", yanchor: "bottom",
-        text: "promedio mensual " + ((d.mes && d.mes.anio) || "") + " (" + fmtV(prom) + " " + U + "/mes)",
+        text: "promedio mensual " + ((d.mes && d.mes.anio) || "") + " (" + fmtV(prom) + " " + U + ")",
         showarrow: false, font: { size: 10, color: "#BA7517" } });
     }
     // Línea+área para los meses cerrados; segmento punteado hacia el mes en curso (proyección de
@@ -3509,11 +3509,20 @@
   // GAS en MSCF = millones de pies cúbicos estándar: el volumen crudo de la BD se divide entre 1e6.
   // (CRUDO/BLANCOS siguen en bbl con su formato normal.) Sin esto la diaria "82.951 MSCF/día" quedaba
   // por encima de la mensual "3,3M MSCF" — misma unidad, escalas distintas. Con ÷1e6: 0,08 vs 3,3.
-  function __cnGasM(v, dec) {
-    var m = (Number(v) || 0) / 1e6, a = Math.abs(m);
-    var d = (dec != null) ? dec : (a >= 1 ? 1 : 2);   // 3,3 · 72,3 · 0,08 (default 1 decimal ≥1)
-    return m.toFixed(d).replace(".", ",");
+  // [BEQ-2026-09-08] El backend YA entrega kboepd (y kbbl-eq en acumulados). Aqui NO se escala:
+  // solo se formatea es-CO con punto de miles y coma decimal: "492,4" · "52.430,9" · "0,2".
+  // Sustituye a __cnGasM (÷1e6 para MSCF), __cnFmtKpi y __cnFmtBopd en todos los paneles de
+  // produccion. __cnGasM se conserva como alias para no romper call sites.
+  function __cnBeq(v, dec) {
+    var n = Number(v) || 0;
+    var d = (dec != null) ? dec : 1;
+    var s = Math.abs(n).toFixed(d);
+    var partes = s.split(".");
+    var ent = partes[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    var out = ent + (partes.length > 1 ? "," + partes[1] : "");
+    return (n < 0 ? "-" : "") + out;
   }
+  function __cnGasM(v, dec) { return __cnBeq(v, dec); }
   var __cnKpiLabel = { alineado: "alineado", ajustado: "ajustado", actuar: "actuar" };
 
   // ===== [2026-07-24] Rediseño A+C · Fase 1: anillo de % cumplimiento + estado color-codeado =====
@@ -3616,9 +3625,9 @@
     var yearWord = (periodo && String(periodo).split(" ")[1]) ? String(periodo).split(" ")[1] : "el año";
     return tarjetas.map(function (k) {
       var esGas = k.producto === "GAS";
-      var fmtV = esGas ? __cnGasM : __cnFmtKpi;                          // volumen mensual
-      var fmtR = esGas ? function (v) { return __cnGasM(v, 2); } : __cnFmtBopd;  // ritmo diario
-      var unidad = k.unidad ? (" " + esc(k.unidad) + "/mes") : "";
+      var fmtV = __cnBeq;                                                 // [BEQ] kboepd
+      var fmtR = __cnBeq;                                                 // [BEQ] kboepd
+      var unidad = k.unidad ? (" " + esc(k.unidad)) : "";   // [BEQ]
       var nombre = k.producto.charAt(0).toUpperCase() + k.producto.slice(1).toLowerCase();
       var prodI = __cnProdId(k.producto);   // identidad de producto — SIEMPRE por el accessor (H5)
       var prodIcon = (prodI || {}).icon || "circle";
@@ -3629,7 +3638,7 @@
       var ringPct, figLbl, figVal, pptoLbl, pptoVal;
       if (k.bopd && k.bopd.requerido) {                     // CRUDO / GAS: ritmo diario real vs PPTO
         ringPct = Math.round(k.bopd.real / k.bopd.requerido * 100);
-        var duni = k.unidad === "bbl" ? "BOPD" : (k.unidad === "MSCF" ? "MSCFD" : (k.unidad ? k.unidad + "/d" : "/d"));
+        var duni = k.unidad || "kboepd";   // [BEQ] la unidad YA es caudal diario: sin sufijo
         figLbl = "Producción actual diaria";
         figVal = fmtR(k.bopd.real) + ' <span class="cp-mes__kpi-unit">' + duni + '</span>';
         pptoLbl = "PPTO"; pptoVal = fmtR(k.bopd.requerido);
@@ -3637,7 +3646,7 @@
         var hist = k.hist_prom || 0, may = k.proyectado_cierre || 0;
         ringPct = hist ? Math.round(may / hist * 100) : (k.meta_mes ? Math.round(may / k.meta_mes * 100) : 0);
         figLbl = "Producción de " + esc(mesWord);
-        figVal = fmtV(may) + ' <span class="cp-mes__kpi-unit">' + esc(k.unidad || "") + '/mes</span>';
+        figVal = fmtV(may) + ' <span class="cp-mes__kpi-unit">' + esc(k.unidad || "") + '</span>';
         pptoLbl = "Promedio " + esc(yearWord); pptoVal = hist ? fmtV(hist) : "—";
       }
 
@@ -3763,8 +3772,7 @@
     var refCorta = ({ PPTO: "PPTO", OPERATIVO: "OPER", CONTABLE: "CONT", promedio_anio: "PROM" })[dat.referencia] || "PPTO";
     // Fase 2: GAS se muestra en MSCF (÷1e6, mirror del panel __cnGasM); CRUDO/BLANCOS raw + bbl.
     var esGas = (dat.producto === "gas");
-    var fmtV = esGas ? function (v) { return __cnGasM(v); }
-                     : function (v) { return __cnMilesEC(Math.round(v)); };
+    var fmtV = __cnBeq;   // [BEQ]
     // HE6: N1 (un mes) vs N2 (acumulado) tienen etiqueta y corte propios — sin `mes` sintético.
     var realLbl, corte;
     if (dat.nivel === "N2") {
@@ -3811,8 +3819,7 @@
   function __cnCuantDiaHtml(dat) {
     var unidad = dat.unidad || "bbl";
     var esGas = (dat.producto === "gas");
-    var fmtV = esGas ? function (v) { return __cnGasM(v); }
-                     : function (v) { return __cnMilesEC(Math.round(v)); };
+    var fmtV = __cnBeq;   // [BEQ]
     var esSel = (dat.nivel === "N1DSEL");
     var realLbl = esSel
       ? (((dat.orden === "min") ? "Peor" : "Mejor") + " día · " + (dat.mes_label || ""))
@@ -4509,8 +4516,8 @@
     // El gas se grafica en MSCF (÷1e6) y el hover formatea el valor ORIGINAL con __cnGasM (que
     // ya divide) — nunca el ya escalado: ese doble escalado es el bug documentado en :3650-3652.
     var esGas = String(prod).toUpperCase() === "GAS";
-    var fmtD = esGas ? __cnGasM : function (v) { return __cnMilesEC(Math.round(v)); };
-    var esc1 = function (v) { return (v == null) ? null : (esGas ? v / 1e6 : v); };
+    var fmtD = __cnBeq;   // [BEQ]
+    var esc1 = function (v) { return v; };   // [BEQ]
     var meses = serie.map(function (p) { return p.mes; });
     var col = __cnProdCol(prod);
     var traces = [{
@@ -4542,7 +4549,7 @@
       showlegend: true, legend: { orientation: "h", y: -0.18, x: 0, font: { size: 11 } },
       xaxis: { title: { text: "Mes", font: { size: 11 } }, tickfont: { size: 11 }, showgrid: false },
       yaxis: {
-        title: { text: "Acumulado (" + (esGas ? "MSCF" : unidad) + ")", font: { size: 11 } },
+        title: { text: "Acumulado (kbbl-eq)", font: { size: 11 } },   // [BEQ] volumen
         tickfont: { size: 10 }, rangemode: "tozero", separatethousands: true,
         gridcolor: "#eef1ef", zeroline: false
       },
@@ -4585,8 +4592,8 @@
     // El gas se grafica en MSCF (÷1e6) y el hover formatea el valor ORIGINAL con __cnGasM (que
     // ya divide) — nunca el ya escalado: ese doble escalado es el bug documentado en :3650-3652.
     var esGas = String(prod).toUpperCase() === "GAS";
-    var fmtD = esGas ? __cnGasM : function (v) { return __cnMilesEC(Math.round(v)); };
-    var esc1 = function (v) { return (v == null) ? null : (esGas ? v / 1e6 : v); };
+    var fmtD = __cnBeq;   // [BEQ]
+    var esc1 = function (v) { return v; };   // [BEQ]
     var col = __cnProdCol(prod);
     var traces = [{
       x: meses, y: vals.map(esc1), name: "Real mensual",
@@ -4612,7 +4619,7 @@
       showlegend: true, legend: { orientation: "h", y: -0.18, x: 0, font: { size: 11 } },
       xaxis: { title: { text: "Mes", font: { size: 11 } }, tickfont: { size: 11 }, showgrid: false },
       yaxis: {
-        title: { text: "Producción (" + (esGas ? "MSCF" : unidad) + ")", font: { size: 11 } },
+        title: { text: "Producción (kboepd)", font: { size: 11 } },   // [BEQ]
         tickfont: { size: 10 }, separatethousands: true, gridcolor: "#eef1ef", zeroline: false
       },
       plot_bgcolor: "#fff", paper_bgcolor: "#fff"
@@ -4642,8 +4649,8 @@
     // El gas se grafica en MSCF (÷1e6) y el hover formatea el valor ORIGINAL con __cnGasM (que
     // ya divide) — nunca el ya escalado: ese doble escalado es el bug documentado en :3650-3652.
     var esGas = String(prod).toUpperCase() === "GAS";
-    var fmtD = esGas ? __cnGasM : function (v) { return __cnMilesEC(Math.round(v)); };
-    var esc1 = function (v) { return (v == null) ? null : (esGas ? v / 1e6 : v); };
+    var fmtD = __cnBeq;   // [BEQ]
+    var esc1 = function (v) { return v; };   // [BEQ]
     var col = __cnProdCol(prod);
     // Orden B → A: se lee de izquierda a derecha como "de dónde venía" → "dónde está".
     var ejes = [String(b.periodo || ""), String(a.periodo || "")];
@@ -4670,7 +4677,7 @@
       legend: { orientation: "h", y: -0.18, x: 0, font: { size: 11 } },
       xaxis: { tickfont: { size: 11 }, showgrid: false },
       yaxis: {
-        title: { text: "Producción (" + (esGas ? "MSCF" : unidad) + ")", font: { size: 11 } },
+        title: { text: "Producción (kboepd)", font: { size: 11 } },   // [BEQ]
         tickfont: { size: 10 }, rangemode: "tozero", separatethousands: true,
         gridcolor: "#eef1ef", zeroline: false
       },
@@ -4701,8 +4708,8 @@
     }
     if (!window.Plotly) { elp.innerHTML = '<div class="text-muted small p-2">(Plotly no disponible)</div>'; return; }
     var esGas = String(prod).toUpperCase() === "GAS";
-    var fmtD = esGas ? __cnGasM : function (v) { return __cnMilesEC(Math.round(v)); };
-    var esc1 = function (v) { return (v == null) ? null : (esGas ? v / 1e6 : v); };
+    var fmtD = __cnBeq;   // [BEQ]
+    var esc1 = function (v) { return v; };   // [BEQ]
     var col = __cnProdCol(prod);
     var meses = pts.map(function (p) { return p.mes; });
     var traces = [{
@@ -4730,7 +4737,7 @@
       showlegend: true, legend: { orientation: "h", y: -0.18, x: 0, font: { size: 11 } },
       xaxis: { title: { text: "Mes", font: { size: 11 } }, tickfont: { size: 11 }, showgrid: false },
       yaxis: {
-        title: { text: "Producción (" + (esGas ? "MSCF" : unidad) + ")", font: { size: 11 } },
+        title: { text: "Producción (kboepd)", font: { size: 11 } },   // [BEQ]
         tickfont: { size: 10 }, rangemode: "tozero", separatethousands: true,
         gridcolor: "#eef1ef", zeroline: false
       },
@@ -4794,7 +4801,7 @@
   // igual que N1-N4 (HD5). Reusa __cnGasM/__cnMilesEC/esc ya existentes; molde = __cnCuantSerieHtml.
   function __cnCuantRankHtml(d) {
     var esGas = (d.producto === "gas");
-    var fmtV = esGas ? function (v) { return __cnGasM(v); } : function (v) { return __cnMilesEC(Math.round(v)); };
+    var fmtV = __cnBeq;   // [BEQ]
     var unidad = d.unidad || "bbl";
     var nivelTxt = (d.nivel_ranking === "activo") ? "Activos" : "Campos";
     var proyChip = d.es_proyeccion ? ' <span class="cn-rank__badge cn-rank__badge--proy">cierre proyectado</span>' : "";
@@ -4833,7 +4840,7 @@
   // define sobre el ancestro .cn-stk.
   function __cnRankDotHtml(d) {
     var esGas = (d.producto === "gas");
-    var fmtV = esGas ? function (v) { return __cnGasM(v); } : function (v) { return __cnMilesEC(Math.round(v)); };
+    var fmtV = __cnBeq;   // [BEQ]
     var unidad = d.unidad || "bbl";
     var nivelTxt = (d.nivel_ranking === "activo") ? "Activos" : "Campos";
     var proyChip = d.es_proyeccion ? ' <span class="cn-dot__chip">cierre proyectado</span>' : "";
@@ -4978,7 +4985,7 @@
     var esGas = (d.producto === "gas");
     var fmtV = esVp
       ? function (v) { return Number(v).toLocaleString("es-CO", { minimumFractionDigits: 1, maximumFractionDigits: 1 }); }
-      : (esGas ? function (v) { return __cnGasM(v); } : function (v) { return __cnMilesEC(Math.round(v)); });
+      : __cnBeq);   // [BEQ]
     var unidad = d.unidad || "bbl";
     var prodInfo = __cnProdId(d.producto);   // accessor obligatorio (H4) — d.producto en minúsculas
     var prodLbl = d.producto ? (d.producto.charAt(0).toUpperCase() + d.producto.slice(1)) : "";
@@ -6850,7 +6857,7 @@
       s2 += ".";
       var tj = ((ed && ed.tarjetas) || []).filter(function (k) { return k.producto === a0.PROD; })[0];
       if (tj && tj.brecha_abs) {
-        var bt = (a0.PROD === "GAS") ? __cnGasM(tj.brecha_abs) : __cnFmtKpi(tj.brecha_abs);
+        var bt = __cnBeq(tj.brecha_abs);   // [BEQ]
         var uni = tj.unidad ? (" " + tj.unidad) : " bbl";
         s2 += " Si el ritmo no cambia, " + esc(a0.nom) + " cerraría unos " + bt + uni +
               " por debajo del presupuesto.";
@@ -7854,11 +7861,11 @@
   // chat y el tablero digan cosas distintas del mismo número. A4: null NO se concatena como "null".
   function __daNum(v, prod) {
     if (v == null) return "—";
-    return (String(prod).toUpperCase() === "GAS") ? __cnGasM(v) : __cnMilesEC(Math.round(v));
+    return __cnBeq(v);   // [BEQ]
   }
   function __daUni(prod, porMes) {
-    var u = (String(prod).toUpperCase() === "GAS") ? "MSCF" : "bbl";
-    return porMes ? (u + "/mes") : u;
+    var u = "kboepd";   // [BEQ]
+    return u;   // [BEQ] caudal: sin sufijo
   }
   // A5 · "vivo" = produjo, o tiene curva diaria, o TIENE META (real=0 con meta es el peor caso
   // posible — ARAUCA/gas, PAUTO SUR/blancos — y debe verse, no desaparecer).
@@ -7993,7 +8000,7 @@
       '<div class="da__big"><b>' + __daNum(bigVal, t.producto) + '</b>' +
         '<span>' + __daUni(t.producto, false) + ' de ' + esc(String(t.producto).toLowerCase()) + '</span></div>' +
       (t.bopd_avg != null
-        ? '<div class="da__ritmo">ritmo promedio <b>' + __cnMilesEC(t.bopd_avg) + '</b> BOPD-avg</div>'
+        ? '<div class="da__ritmo">ritmo promedio <b>' + __cnBeq(t.bopd_avg) + '</b> kboepd</div>'   // [BEQ]
         : "") +
       '</div>';
 
