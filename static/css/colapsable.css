@@ -1215,7 +1215,11 @@
 .cn-ins__chip-top { font-size: .64rem; font-weight: 700; letter-spacing: .04em; color: #6b7a72; text-transform: uppercase; }
 .cn-ins__chip-bot { font-size: .74rem; color: #2f3d36; }
 
-.cn-kpi__row { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; padding: 8px 10px; }
+/* [2026-09-08] 4 columnas: los 3 productos + Filiales. `align-items:stretch` (default del
+   grid) ya iguala la altura de las tarjetas; lo que faltaba era que la de Filiales, con una
+   fila menos, empujara su bloque de filas hasta abajo -> ver .cp-p50__rows en :1821. */
+.cn-kpi__row { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; padding: 8px 10px; }
+@media (max-width: 1200px) { .cn-kpi__row { grid-template-columns: repeat(2,1fr); } }
 @media (max-width: 900px) { .cn-kpi__row { grid-template-columns: 1fr; } }
 /* [2026-07-27 · opción A] encabezado = compromiso P50 + tarjeta operativa dentro de cada foco */
 /* [2026-07-28] el tope de 360px era de cuando esta tarjeta era una fila suelta de ancho completo;
@@ -1819,6 +1823,12 @@
 .cp-p50__realval { font-size: 20px; font-weight: 800; color: #17241E; letter-spacing: -.4px; line-height: 1.15; }
 .cp-p50__reallbl { font-size: 11px; color: #98A69E; margin-top: 1px; }
 .cp-p50__rows { border-top: 1px solid #EEF2EF; padding-top: 3px; }
+/* [2026-09-08] Filiales trae 3 filas donde los productos traen 4: sin esto su tarjeta
+   quedaba visiblemente mas corta. La tarjeta ya es flex-column, asi que basta con que el
+   bloque de filas absorba el sobrante y quede alineado con el de las demas. */
+.cp-p50 { justify-content: flex-start; }
+.cp-p50 .cp-p50__rows,
+.cp-p50 > .cp-p50__r:first-of-type { margin-top: auto; }
 .cp-p50__r { display: flex; align-items: center; justify-content: space-between; gap: 10px;
   padding: 6px 0; font-size: 12px; border-bottom: 1px dashed #EEF2EF; }
 .cp-p50__r:last-child { border-bottom: 0; }
