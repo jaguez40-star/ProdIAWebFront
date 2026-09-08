@@ -2188,7 +2188,7 @@
         topG.innerHTML =
           '<div class="cn-ejec-body">' +
           '  <div class="cn-p50hd__lbl"><i class="bi bi-flag-fill"></i> ECP · Cumplimiento del compromiso corporativo ' +
-          '  <b>(P50)</b> <span class="cn-p50hd__u">· promedio del mes en kbpe</span></div>' +
+          '  <b>(P50)</b> <span class="cn-p50hd__u">· promedio del mes en kboepd</span></div>' +
           '  <div class="cn-kpi__row" id="cn-p50-row"><div class="cn-p50hd__load">Cargando compromiso P50…</div></div>' +
           '</div>';
       }
@@ -3740,7 +3740,7 @@
       '</div>' +
       '<div class="cp-p50__ring">' + __cnRing(cumpl, S.color, 96, "REAL / P50", 1) + '</div>' +
       '<div class="cp-p50__real">' +
-        '<div class="cp-p50__realval">' + __cnKb(real) + ' <span class="cp-mes__kpi-unit">kbpe</span></div>' +
+        '<div class="cp-p50__realval">' + __cnKb(real) + ' <span class="cp-mes__kpi-unit">kboepd</span></div>' +
         '<div class="cp-p50__reallbl">Real del mes</div>' +
       '</div>' +
       '<div class="cp-p50__rows">' +
@@ -6390,7 +6390,7 @@
       ? '<div class="cn-kpi__row">' + __cnTarjetasKpiHtml(d.tarjetas || [], m.periodo) + '</div>'
       : (__cnPanelEntidad ? ""
         : '<div class="cn-p50hd__lbl"><i class="bi bi-flag-fill"></i> ECP · Cumplimiento del compromiso corporativo ' +
-          '<b>(P50)</b> <span class="cn-p50hd__u">· promedio del mes en kbpe</span></div>' +
+          '<b>(P50)</b> <span class="cn-p50hd__u">· promedio del mes en kboepd</span></div>' +
           '<div class="cn-kpi__row" id="cn-p50-row"><div class="cn-p50hd__load">Cargando compromiso P50…</div></div>');
     var head =
       '<div class="cn-ejec__hd"><span class="cn-ejec__hd-ic"><i class="bi bi-stars"></i></span>' +
