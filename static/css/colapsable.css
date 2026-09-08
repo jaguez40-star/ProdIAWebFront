@@ -1234,6 +1234,13 @@
   color: #46554D; background-color: #FFF; cursor: pointer; }
 .cn-p50hd__sel:focus { border-color: #0E5C3A; box-shadow: 0 0 0 .15rem rgba(14, 92, 58, .15); }
 /* Un solo mes cargado: no hay desplegable, se rotula el mes y ya. */
+/* [2026-09-08] Tarjeta de Filiales en el panel P50. Es una EMPRESA, no un producto: se
+   distingue con un borde superior propio y un chip que declara de donde sale la cifra. */
+.cp-p50--fil { border-top: 3px solid #2E7D5B; }
+.cp-p50--fil .cp-mes__kpi-chip { background: #E8F3ED; color: #2E7D5B; }
+.cp-p50__fte { font-size: .68rem; font-weight: 500; color: #6E7C75;
+  background: #F1F4F1; border: none; text-transform: none; letter-spacing: 0; }
+
 .cn-p50hd__mes { margin-left: auto; font-size: .82rem; font-weight: 600; color: #46554D;
   background: #F1F4F1; border-radius: 6px; padding: 3px 10px; }
 .cn-p50hd__load, .cn-p50hd__na { grid-column: 1 / -1; padding: 14px 12px; color: #8A968E;

@@ -5861,6 +5861,51 @@
       '</section>';
   }
 
+  // [2026-09-08] Tarjeta de FILIALES para el panel P50. Molde de __cnP50CardHtml, con dos
+  // diferencias: no es un producto físico (icono de edificio, sin __cnProdId) y su unidad es
+  // kbepd, porque el agregado de una filial lleva gas convertido.
+  // `emp.fuente` distingue de dónde sale la cifra: "lamina" para los meses cerrados (ene-ago,
+  // core.p50_2026) y "reporte" para los vivos (sep-dic, REPORTE_PRESIDENT).
+  function __cnP50FilialesHtml(emp) {
+    if (!emp || emp.filiales == null) { return ""; }
+    var real = Number(emp.filiales);
+    var nac = (emp.nacional != null) ? Number(emp.nacional) : null;
+    var ecp = (emp.ecopetrol != null) ? Number(emp.ecopetrol) : null;
+    // Peso de las filiales sobre el nacional: es la lectura de la barra apilada de la lámina.
+    var pct = (nac && nac > 0) ? Math.round(real / nac * 1000) / 10 : null;
+    var S = __CP_STATUS.neutral;   // no hay P50 propio de filiales: sin semáforo, no se inventa
+    var fte = (emp.fuente === "lamina")
+      ? "lámina · mes cerrado"
+      : "reporte diario";
+
+    function fila(k, v) {
+      return '<div class="cp-p50__r"><span class="cp-p50__k">' + k + '</span>' +
+             '<span class="cp-p50__v">' + v + '</span></div>';
+    }
+    return '<div class="cp-mes__kpi cp-p50 cp-p50--fil" style="--cp-st:' + S.color +
+        ';--cp-st-soft:' + S.soft + '">' +
+      '<div class="cp-mes__kpi-hd">' +
+        '<span class="cp-mes__kpi-chip"><i class="bi bi-buildings"></i></span>' +
+        '<span class="cp-mes__kpi-name">Filiales</span>' +
+        '<span class="cp-mes__kpi-badge cp-p50__fte">' + esc(fte) + '</span>' +
+      '</div>' +
+      '<div class="cp-p50__ring">' +
+        (pct != null ? __cnRing(pct, "#2E7D5B", 96, "DEL NACIONAL", 1) : "") +
+      '</div>' +
+      '<div class="cp-p50__real">' +
+        '<div class="cp-p50__realval">' + __cnBeq(real) +
+        ' <span class="cp-mes__kpi-unit">kbepd</span></div>' +
+        '<div class="cp-p50__reallbl">Real del mes</div>' +
+      '</div>' +
+      (ecp != null ? fila("Ecopetrol", __cnBeq(ecp)) : "") +
+      (nac != null ? fila("Nacional (ECP + filiales)", '<b>' + __cnBeq(nac) + '</b>') : "") +
+      (emp.p50 != null && nac != null
+        ? fila("Gap vs P50", '<span class="cp-p50__v--' + (nac - emp.p50 >= 0 ? "pos" : "neg") + '">' +
+               (nac - emp.p50 >= 0 ? "+" : "−") + __cnBeq(Math.abs(nac - emp.p50)) + '</span>')
+        : "") +
+    '</div>';
+  }
+
   // [2026-09-08] Mes activo del panel P50. null = el más reciente (lo elige el backend).
   var __cnP50Mes = null;
 
@@ -5908,7 +5953,12 @@
           row2.innerHTML = '<div class="cn-p50hd__na">Compromiso P50 no disponible · falta ingerir REPORTE_PRESIDENT en este entorno.</div>';
           return;
         }
-        row2.innerHTML = d.productos.map(__cnP50CardHtml).join("");
+        // [2026-09-08] Cuarta tarjeta: FILIALES. La lámina apila REAL NACIONAL (Ecopetrol) y
+        // REAL FILIALES; el panel solo mostraba los tres productos y ese corte faltaba.
+        // Va DESPUÉS de los productos y con su propia clase: no es un producto físico, es una
+        // empresa, así que no lleva anillo Real/P50 por producto sino la comparación contra su
+        // propio P50. Si el backend no manda `empresas` (versión anterior), no se pinta nada.
+        row2.innerHTML = d.productos.map(__cnP50CardHtml).join("") + __cnP50FilialesHtml(d.empresas);
         // La guía de corte solo la pinta el mes por defecto: con un mes elegido a mano, la fecha
         // de corte del tablero no cambia y repintarla anunciaría un mes que no es el suyo.
         if (!mes) { __cnPintarGuia(d.corte); }
