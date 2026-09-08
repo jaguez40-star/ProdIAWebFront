@@ -251,6 +251,18 @@ def _analisis_proxy_cacheado(ruta, params, timeout):
 # ---- fin caché de análisis -----------------------------------------------------------------------
 
 
+@api_bp.route("/analisis/president/meses")
+def analisis_president_meses():
+    """Proxy: meses con hoja REPORTE_PRESIDENT, para el selector del panel P50.
+
+    Caché larga (600s): la lista solo cambia cuando se ingiere un reporte de un mes nuevo.
+    """
+    try:
+        return _analisis_proxy_cacheado("/analisis/president/meses", {}, 600)
+    except requests.RequestException as e:
+        return jsonify({"error": f"INGESTA no disponible: {e}"}), 502
+
+
 @api_bp.route("/analisis/president")
 def analisis_president():
     """Proxy: tarjeta P50 por producto (REPORTE_PRESIDENT, escala kbpe corporativa) desde INGESTA."""

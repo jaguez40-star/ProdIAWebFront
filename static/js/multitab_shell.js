@@ -2188,7 +2188,10 @@
         topG.innerHTML =
           '<div class="cn-ejec-body">' +
           '  <div class="cn-p50hd__lbl"><i class="bi bi-flag-fill"></i> ECP · Cumplimiento del compromiso corporativo ' +
-          '  <b>(P50)</b> <span class="cn-p50hd__u">· promedio del mes en kbepd</span></div>' +
+          '  <b>(P50)</b> <span class="cn-p50hd__u">· promedio del mes en kbepd</span>' +
+          '  <select id="cn-p50-sel" class="form-select form-select-sm cn-p50hd__sel"' +
+          '          onchange="window.__cnP50CambiarMes(this.value)"' +
+          '          aria-label="Mes del compromiso P50"></select></div>' +
           '  <div class="cn-kpi__row" id="cn-p50-row"><div class="cn-p50hd__load">Cargando compromiso P50…</div></div>' +
           '</div>';
       }
@@ -5856,9 +5859,46 @@
       '</section>';
   }
 
-  function __cnPaintP50Header() {
+  // [2026-09-08] Mes activo del panel P50. null = el más reciente (lo elige el backend).
+  var __cnP50Mes = null;
+
+  // Meses con hoja REPORTE_PRESIDENT cargada. Sale de la BD, no de un calendario fijo: ofrecer
+  // los 12 meses haría que el usuario eligiera uno sin datos y el panel dijera "no disponible".
+  function __cnP50Selector(activo) {
+    if (!el("cn-p50-sel")) { return; }
+    fetch("/api/analisis/president/meses")
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        var sel = el("cn-p50-sel");
+        if (!sel || !d || !d.meses || !d.meses.length) { return; }
+        var act = activo || d.default;
+        // Un solo mes cargado: un desplegable de una opción no aporta nada, se rotula y ya.
+        if (d.meses.length < 2) {
+          sel.outerHTML = '<span class="cn-p50hd__mes">' + esc(d.meses[0].label) + '</span>';
+          return;
+        }
+        sel.innerHTML = d.meses.map(function (m) {
+          return '<option value="' + esc(m.periodo) + '"' +
+                 (m.periodo === act ? ' selected="selected"' : '') + '>' + esc(m.label) + '</option>';
+        }).join("");
+        sel.value = act;   // por si el navegador ignora el atributo al reinyectar el HTML
+      })
+      .catch(function () { /* sin lista, el panel sigue mostrando el mes por defecto */ });
+  }
+
+  // Handler del <select>. Repinta SOLO el panel P50 (decisión del usuario 2026-09-08): el resto
+  // del tablero sigue en su mes, y cada bloque declara el suyo en su encabezado.
+  window.__cnP50CambiarMes = function (v) {
+    __cnPaintP50Header(v || null);
+  };
+
+  function __cnPaintP50Header(periodo) {
     var row = el("cn-p50-row"); if (!row) return;
-    fetch("/api/analisis/president")
+    var mes = (periodo !== undefined) ? periodo : __cnP50Mes;
+    __cnP50Mes = mes || null;
+    __cnP50Selector(__cnP50Mes);
+    row.innerHTML = '<div class="cn-p50hd__load">Cargando compromiso P50…</div>';
+    fetch("/api/analisis/president" + (mes ? "?periodo=" + encodeURIComponent(mes) : ""))
       .then(function (r) { return r.json(); })
       .then(function (d) {
         var row2 = el("cn-p50-row"); if (!row2) return;
@@ -5867,7 +5907,9 @@
           return;
         }
         row2.innerHTML = d.productos.map(__cnP50CardHtml).join("");
-        __cnPintarGuia(d.corte);
+        // La guía de corte solo la pinta el mes por defecto: con un mes elegido a mano, la fecha
+        // de corte del tablero no cambia y repintarla anunciaría un mes que no es el suyo.
+        if (!mes) { __cnPintarGuia(d.corte); }
       })
       .catch(function () {
         var row2 = el("cn-p50-row");
@@ -6398,7 +6440,10 @@
       ? '<div class="cn-kpi__row">' + __cnTarjetasKpiHtml(d.tarjetas || [], m.periodo) + '</div>'
       : (__cnPanelEntidad ? ""
         : '<div class="cn-p50hd__lbl"><i class="bi bi-flag-fill"></i> ECP · Cumplimiento del compromiso corporativo ' +
-          '<b>(P50)</b> <span class="cn-p50hd__u">· promedio del mes en kbepd</span></div>' +
+          '<b>(P50)</b> <span class="cn-p50hd__u">· promedio del mes en kbepd</span>' +
+          '<select id="cn-p50-sel" class="form-select form-select-sm cn-p50hd__sel"' +
+          ' onchange="window.__cnP50CambiarMes(this.value)"' +
+          ' aria-label="Mes del compromiso P50"></select></div>' +
           '<div class="cn-kpi__row" id="cn-p50-row"><div class="cn-p50hd__load">Cargando compromiso P50…</div></div>');
     var head =
       '<div class="cn-ejec__hd"><span class="cn-ejec__hd-ic"><i class="bi bi-stars"></i></span>' +

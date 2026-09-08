@@ -1226,6 +1226,16 @@
 .cn-p50hd__lbl b { color: #0E5C3A; }
 .cn-p50hd__lbl i { color: #0E5C3A; }
 .cn-p50hd__u { font-weight: 500; color: #8A968E; }
+/* [2026-09-08] Selector de mes del panel P50. El .cn-p50hd__lbl ya es flex, así que basta con
+   empujarlo a la derecha (margin-left:auto) y acotar su ancho: sin eso el form-select de
+   Bootstrap ocupa el 100% y desplaza el título. */
+.cn-p50hd__sel { margin-left: auto; width: auto; min-width: 150px; max-width: 190px;
+  font-size: .82rem; padding: 2px 26px 2px 8px; height: 28px; border-color: #D6DEDA;
+  color: #46554D; background-color: #FFF; cursor: pointer; }
+.cn-p50hd__sel:focus { border-color: #0E5C3A; box-shadow: 0 0 0 .15rem rgba(14, 92, 58, .15); }
+/* Un solo mes cargado: no hay desplegable, se rotula el mes y ya. */
+.cn-p50hd__mes { margin-left: auto; font-size: .82rem; font-weight: 600; color: #46554D;
+  background: #F1F4F1; border-radius: 6px; padding: 3px 10px; }
 .cn-p50hd__load, .cn-p50hd__na { grid-column: 1 / -1; padding: 14px 12px; color: #8A968E;
   font-size: 12.5px; font-style: italic; }
 .cp-foco__kpihd { display: flex; align-items: center; gap: 6px; padding: 2px 2px 8px;
