@@ -6182,9 +6182,16 @@
           // Etiqueta DENTRO de cada segmento. El color se elige por contraste con su fondo:
           // los verdes del real son oscuros -> texto blanco; los ámbar de proyección son
           // claros -> texto oscuro. Un solo color fijo dejaría la mitad de las cifras ilegibles.
-          ecpTxt.push(m.ecopetrol === null || m.ecopetrol === undefined ? "" : __cnKbpe(m.ecopetrol));
-          filTxt.push(m.filiales === null || m.filiales === undefined ? "" : __cnKbpe(m.filiales));
-          ecpTxtCol.push(proy ? "#FFFFFF" : "#FFFFFF");
+          // Negrita en los proyectados vía <b>: Plotly no admite `weight` por punto dentro de
+          // textfont, pero sí interpreta un subconjunto de HTML en `text`.
+          ecpTxt.push(m.ecopetrol === null || m.ecopetrol === undefined ? ""
+                      : (proy ? "<b>" + __cnKbpe(m.ecopetrol) + "</b>" : __cnKbpe(m.ecopetrol)));
+          filTxt.push(m.filiales === null || m.filiales === undefined ? ""
+                      : (proy ? "<b>" + __cnKbpe(m.filiales) + "</b>" : __cnKbpe(m.filiales)));
+          // [2026-09-08] El proyectado NO lleva texto blanco: su relleno ámbar es CLARO y la
+          // cifra desaparecía (medido en sep-dic, donde la de Ecopetrol no se leía). Café
+          // oscuro sobre ámbar, blanco solo sobre el verde saturado del real.
+          ecpTxtCol.push(proy ? "#5C3D0A" : "#FFFFFF");
           filTxtCol.push(proy ? "#7A5310" : "#0B3D24");
           colEcp.push(proy ? C.ecpProy : C.ecpReal);
           colFil.push(proy ? C.filProy : C.filReal);
