@@ -6072,9 +6072,22 @@
   // __cnP50FilialesHtml/__cnP50TotalHtml (:6015-6016): componer nunca revienta.
   function __cnSendaHtml(d) {
     if (!d || !d.serie || !d.serie.length) { return ""; }
-    return '<div class="cn-p50hd__lbl"><i class="bi bi-graph-up-arrow"></i> Senda de producción · real y proyección a diciembre</div>' +
+    return '<div class="cn-p50hd__lbl"><i class="bi bi-graph-up-arrow"></i> Producción equivalente G.E. ' +
+           esc(String(d.anio || "")) + ' <span class="cn-p50hd__u">· real cerrado, proyectado y meta P50</span></div>' +
            '<div id="cn-p50-senda-plot"></div>';
   }
+
+  // Paleta de la muestra aprobada (artifact 2026-09-08). Verde ECP sólido abajo, verde claro
+  // filiales encima; los meses proyectados repiten esa jerarquía en ámbar — el color es lo que
+  // separa real de proyección, el rayado solo lo refuerza.
+  var __CN_SENDA_COL = {
+    ecpReal: "#00874A", filReal: "#6FBF93",
+    ecpProy: "#C77F1B", filProy: "#F0DCBC",
+    p50: "#1B2A2E", grid: "#CBD5CD", tick: "#75847F"
+  };
+
+  var __CN_MES_ABR = ["", "Ene", "Feb", "Mar", "Abr", "May", "Jun",
+                      "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
 
   // 🟢 Plotly YA está vendorizado y cargado global (base.html:33) — NUNCA descargar ni crear
   // otro <script>, H5/H12 del plan.
@@ -6095,53 +6108,97 @@
         // es el mismo riesgo de fuga que el comentario del contenedor advierte.
         try { window.Plotly.purge(plotNode); } catch (e) { /* nodo nuevo: nada que purgar */ }
 
-        var meses = [], ecp = [], fil = [], p50 = [], patronEcp = [], patronFil = [];
-        var primerProyIdx = -1;
+        var C = __CN_SENDA_COL;
+        var meses = [], ecp = [], fil = [], p50 = [], totTxt = [];
+        var colEcp = [], colFil = [], patEcp = [], patFil = [], tickCol = [];
+        var primerProyIdx = -1, minVal = null, maxVal = null;
+
         d.serie.forEach(function (m, i) {
-          meses.push(m.mes_nombre);
+          var proy = !m.es_real;
+          meses.push(__CN_MES_ABR[m.mes] || m.mes_nombre);
           ecp.push(m.ecopetrol);
           fil.push(m.filiales);
           p50.push(m.p50);
-          var rayado = !m.es_real;
-          patronEcp.push(rayado ? "/" : "");
-          patronFil.push(rayado ? "/" : "");
-          if (rayado && primerProyIdx === -1) { primerProyIdx = i; }
+          // Etiqueta del TOTAL encima de la barra, como la muestra. Sin total (mes sin dato)
+          // no se escribe nada: un "0" ahí se leería como producción cero.
+          totTxt.push(m.total === null || m.total === undefined ? "" : __cnKbpe(m.total));
+          colEcp.push(proy ? C.ecpProy : C.ecpReal);
+          colFil.push(proy ? C.filProy : C.filReal);
+          patEcp.push(proy ? "/" : "");
+          patFil.push(proy ? "/" : "");
+          tickCol.push(proy ? C.ecpProy : C.tick);
+          if (proy && primerProyIdx === -1) { primerProyIdx = i; }
+          [m.total, m.p50].forEach(function (v) {
+            if (v === null || v === undefined) { return; }
+            if (minVal === null || v < minVal) { minVal = v; }
+            if (maxVal === null || v > maxVal) { maxVal = v; }
+          });
         });
 
-        // Ecopetrol ABAJO, Filiales ENCIMA (decisión del usuario, 2026-09-08): Ecopetrol es
-        // ~5x filiales y con el eje en cero (obligatorio, ver yaxis abajo) debe verse mayor.
+        // Ecopetrol ABAJO, Filiales ENCIMA. Con el eje recortado (ver yaxis) el apilado sigue
+        // siendo fiel: lo que se recorta es el zócalo común de TODAS las barras, no una sola.
+        // El bug original era otro -- se dibujaba la franja de Ecopetrol desde el piso del eje
+        // en vez de desde cero, y por eso salía más corta que filiales.
         var trazaEcp = {
-          x: meses, y: ecp, name: "Ecopetrol", type: "bar",
-          marker: { color: "#00874A", pattern: { shape: patronEcp } }
+          x: meses, y: ecp, name: "Real Ecopetrol", type: "bar",
+          marker: { color: colEcp, pattern: { shape: patEcp, fgcolor: C.ecpProy, size: 4 } },
+          hovertemplate: "Ecopetrol %{y:.1f}<extra></extra>"
         };
         var trazaFil = {
-          x: meses, y: fil, name: "Filiales", type: "bar",
-          marker: { color: "#5FD198", pattern: { shape: patronFil } }
+          x: meses, y: fil, name: "Real filiales", type: "bar",
+          marker: { color: colFil, pattern: { shape: patFil, fgcolor: C.ecpProy, size: 4 } },
+          // El total va como texto de la traza de ARRIBA del apilado: así Plotly lo coloca
+          // sobre la cima de la barra completa, no sobre el segmento.
+          text: totTxt, textposition: "outside", cliponaxis: false,
+          textfont: { size: 11, color: "#131C1A" },
+          hovertemplate: "Filiales %{y:.1f}<extra></extra>"
         };
         var trazaP50 = {
-          x: meses, y: p50, name: "Meta P50", type: "scatter", mode: "lines+markers",
-          line: { color: "#1B2A2E", width: 2 }, marker: { size: 6 }
+          x: meses, y: p50, name: "Meta P50", type: "scatter", mode: "lines+markers+text",
+          line: { color: C.p50, width: 2 },
+          marker: { size: 7, color: "#FFFFFF", line: { color: C.p50, width: 2 } },
+          text: p50.map(function (v) { return v === null ? "" : __cnKbpe(v); }),
+          textposition: "top center", textfont: { size: 10, color: C.p50 },
+          hovertemplate: "P50 %{y:.1f}<extra></extra>"
         };
 
-        var shapes = [];
+        // Eje recortado como la muestra (550-790 con los datos de 2026): el interés está en
+        // comparar meses entre sí y contra el P50, y desde cero esas diferencias (~700 vs ~730)
+        // se vuelven invisibles. El zócalo se recorta a TODAS las barras por igual, así que el
+        // apilado sigue leyéndose bien -- el bug original no era el eje, era dibujar la franja
+        // de Ecopetrol desde el piso en vez de desde cero.
+        // El margen inferior es amplio (~145) a propósito: deja el mismo aire bajo las barras
+        // que el diseño aprobado; con un recorte ajustado quedaban demasiado cortas.
+        var lo = Math.round(((minVal === null ? 690 : minVal) - 143) / 50) * 50;
+        var hi = Math.ceil(((maxVal === null ? 750 : maxVal) + 43) / 10) * 10;
+
+        var shapes = [], annotations = [];
         if (primerProyIdx > 0) {
           shapes.push({
             type: "line", xref: "x", yref: "paper",
-            x0: meses[primerProyIdx], x1: meses[primerProyIdx], y0: 0, y1: 1,
-            line: { color: "#E8A33D", width: 1, dash: "dot" }
+            x0: primerProyIdx - 0.5, x1: primerProyIdx - 0.5, y0: 0, y1: 1,
+            line: { color: C.ecpProy, width: 1, dash: "dot" }
+          });
+          annotations.push({
+            x: primerProyIdx - 0.4, y: 1, xref: "x", yref: "paper",
+            text: "PROYECTADO", showarrow: false, xanchor: "left", yanchor: "bottom",
+            font: { size: 10, color: C.ecpProy }
           });
         }
 
         var layout = {
-          barmode: "stack",
-          // 🔴 rangemode 'tozero' NO es negociable (bug medido en la propuesta original): con
-          // el eje truncado, Ecopetrol (~593) se veía MÁS PEQUEÑO que Filiales (~122) porque
-          // solo se dibujaba lo que sobresalía del piso. Un apilado exige base en cero.
-          yaxis: { title: d.unidad || "kboepd", rangemode: "tozero" },
-          margin: { t: 10, r: 10, b: 30, l: 50 },
-          legend: { orientation: "h" },
-          shapes: shapes,
-          height: 280
+          barmode: "stack", bargap: 0.35,
+          xaxis: { tickfont: { size: 11, color: C.tick }, showgrid: false, zeroline: false },
+          yaxis: {
+            title: { text: (d.unidad || "kboepd").toUpperCase(), font: { size: 10, color: C.tick } },
+            range: [lo, hi], gridcolor: C.grid, griddash: "dot",
+            zeroline: false, tickfont: { size: 11, color: C.tick }
+          },
+          margin: { t: 28, r: 16, b: 30, l: 56 },
+          legend: { orientation: "h", y: -0.16, x: 0.5, xanchor: "center", font: { size: 11 } },
+          shapes: shapes, annotations: annotations,
+          plot_bgcolor: "rgba(0,0,0,0)", paper_bgcolor: "rgba(0,0,0,0)",
+          hovermode: "x unified", height: 340
         };
 
         window.Plotly.newPlot(plotNode, [trazaEcp, trazaFil, trazaP50], layout,
