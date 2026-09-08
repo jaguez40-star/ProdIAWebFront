@@ -5866,11 +5866,15 @@
   // kbepd, porque el agregado de una filial lleva gas convertido.
   // `emp.fuente` distingue de dónde sale la cifra: "lamina" para los meses cerrados (ene-ago,
   // core.p50_2026) y "reporte" para los vivos (sep-dic, REPORTE_PRESIDENT).
+  //
+  // 🔑 SIN filas de detalle y SIN gap: el P50 se pacta a nivel Upstream, NO por empresa. Una fila
+  // "Gap vs P50" aquí compararía el nacional contra el compromiso total y se leería como si las
+  // filiales tuvieran meta propia. La tarjeta dice lo que sí es suyo: cuánto aportan y qué peso
+  // tienen sobre el nacional.
   function __cnP50FilialesHtml(emp) {
     if (!emp || emp.filiales == null) { return ""; }
     var real = Number(emp.filiales);
     var nac = (emp.nacional != null) ? Number(emp.nacional) : null;
-    var ecp = (emp.ecopetrol != null) ? Number(emp.ecopetrol) : null;
     // Peso de las filiales sobre el nacional: es la lectura de la barra apilada de la lámina.
     var pct = (nac && nac > 0) ? Math.round(real / nac * 1000) / 10 : null;
     var S = __CP_STATUS.neutral;   // no hay P50 propio de filiales: sin semáforo, no se inventa
@@ -5878,10 +5882,6 @@
       ? "lámina · mes cerrado"
       : "reporte diario";
 
-    function fila(k, v) {
-      return '<div class="cp-p50__r"><span class="cp-p50__k">' + k + '</span>' +
-             '<span class="cp-p50__v">' + v + '</span></div>';
-    }
     return '<div class="cp-mes__kpi cp-p50 cp-p50--fil" style="--cp-st:' + S.color +
         ';--cp-st-soft:' + S.soft + '">' +
       '<div class="cp-mes__kpi-hd">' +
@@ -5897,12 +5897,57 @@
         ' <span class="cp-mes__kpi-unit">kbepd</span></div>' +
         '<div class="cp-p50__reallbl">Real del mes</div>' +
       '</div>' +
-      (ecp != null ? fila("Ecopetrol", __cnBeq(ecp)) : "") +
-      (nac != null ? fila("Nacional (ECP + filiales)", '<b>' + __cnBeq(nac) + '</b>') : "") +
-      (emp.p50 != null && nac != null
-        ? fila("Gap vs P50", '<span class="cp-p50__v--' + (nac - emp.p50 >= 0 ? "pos" : "neg") + '">' +
-               (nac - emp.p50 >= 0 ? "+" : "−") + __cnBeq(Math.abs(nac - emp.p50)) + '</span>')
-        : "") +
+    '</div>';
+  }
+
+  // [2026-09-08] Tarjeta del TOTAL del mes: el nacional (ECP + filiales) contra el compromiso P50.
+  // A diferencia de Filiales, esta SÍ tiene P50 propio — es el nivel al que se pacta el compromiso,
+  // así que lleva anillo de cumplimiento, semáforo y el gap, igual que las de producto.
+  function __cnP50TotalHtml(emp) {
+    if (!emp || emp.nacional == null) { return ""; }
+    var nac = Number(emp.nacional);
+    var p50 = (emp.p50 != null) ? Number(emp.p50) : null;
+    var gap = (p50 != null) ? (nac - p50) : null;
+    var cumpl = (p50 && p50 > 0) ? Math.round(nac / p50 * 1000) / 10 : null;
+    // Mismo criterio que __cnP50CardHtml: el verde exige que el real ALCANCE el P50 (gap >= 0),
+    // no un porcentaje "cerca de 100". Ámbar desde 93%, la banda de las tarjetas de foco.
+    var statusKey = (gap == null) ? "neutral"
+                  : (gap >= 0 ? "ok" : (cumpl >= 93 ? "ajustado" : "actuar"));
+    var S = __CP_STATUS[statusKey] || __CP_STATUS.neutral;
+    var ecp = (emp.ecopetrol != null) ? Number(emp.ecopetrol) : null;
+    var fil = (emp.filiales != null) ? Number(emp.filiales) : null;
+
+    function fila(k, v, marca) {
+      return '<div class="cp-p50__r"><span class="cp-p50__k">' +
+        (marca ? '<i class="cp-p50__mk"></i>' : "") + k + '</span>' +
+        '<span class="cp-p50__v">' + v + '</span></div>';
+    }
+    return '<div class="cp-mes__kpi cp-p50 cp-p50--tot cp-mes__kpi--' + statusKey +
+        '" style="--cp-st:' + S.color + ';--cp-st-soft:' + S.soft + '">' +
+      '<div class="cp-mes__kpi-hd">' +
+        '<span class="cp-mes__kpi-chip"><i class="bi bi-flag-fill"></i></span>' +
+        '<span class="cp-mes__kpi-name">Total mes</span>' +
+        (S.label ? '<span class="cp-mes__kpi-badge"><i class="bi bi-' + S.icon + '"></i> ' +
+                   S.label + '</span>' : '') +
+      '</div>' +
+      '<div class="cp-p50__ring">' +
+        (cumpl != null ? __cnRing(cumpl, S.color, 96, "REAL / P50", 1) : "") +
+      '</div>' +
+      '<div class="cp-p50__real">' +
+        '<div class="cp-p50__realval">' + __cnBeq(nac) +
+        ' <span class="cp-mes__kpi-unit">kbepd</span></div>' +
+        '<div class="cp-p50__reallbl">Nacional del mes</div>' +
+      '</div>' +
+      '<div class="cp-p50__rows">' +
+        (p50 != null ? fila("Compromiso = P50", __cnBeq(p50), true) : "") +
+        (ecp != null ? fila("Ecopetrol", __cnBeq(ecp)) : "") +
+        (fil != null ? fila("Filiales", __cnBeq(fil)) : "") +
+        (gap != null
+          ? '<div class="cp-p50__r cp-p50__r--gap"><span class="cp-p50__k">Gap vs P50</span>' +
+            '<span class="cp-p50__v cp-p50__v--' + (gap >= 0 ? "pos" : "neg") + '">' +
+            (gap >= 0 ? "+" : "−") + __cnBeq(Math.abs(gap)) + '</span></div>'
+          : "") +
+      '</div>' +
     '</div>';
   }
 
@@ -5958,7 +6003,8 @@
         // Va DESPUÉS de los productos y con su propia clase: no es un producto físico, es una
         // empresa, así que no lleva anillo Real/P50 por producto sino la comparación contra su
         // propio P50. Si el backend no manda `empresas` (versión anterior), no se pinta nada.
-        row2.innerHTML = d.productos.map(__cnP50CardHtml).join("") + __cnP50FilialesHtml(d.empresas);
+        row2.innerHTML = d.productos.map(__cnP50CardHtml).join("") +
+                         __cnP50FilialesHtml(d.empresas) + __cnP50TotalHtml(d.empresas);
         // La guía de corte solo la pinta el mes por defecto: con un mes elegido a mano, la fecha
         // de corte del tablero no cambia y repintarla anunciaría un mes que no es el suyo.
         if (!mes) { __cnPintarGuia(d.corte); }
