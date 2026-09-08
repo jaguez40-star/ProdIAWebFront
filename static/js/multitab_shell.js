@@ -6254,10 +6254,14 @@
         // 🔑 `hi` sigue mirando totales Y P50: si el techo saliera solo de las barras, una
         // meta por encima del total más alto quedaría fuera del lienzo (pasó el 2026-09-08
         // cuando el backend devolvió p50 en null y el eje se quedó en 750 con la meta en 747).
-        // El +6% deja sitio para la etiqueta del total y la del P50 sobre la barra más alta,
-        // sin dejar una franja muerta arriba que aplaste las columnas.
-        var lo = 0;
-        var hi = Math.ceil(((maxVal === null ? 750 : maxVal) * 1.06) / 25) * 25;
+        // [2026-09-08 · decisión del usuario] Eje desde 500, no desde cero: con base en cero
+        // la diferencia entre el total del mes y su P50 (~10-40 sobre ~730) se comprimía tanto
+        // que no se distinguía, y comparar esas dos cosas es para lo que existe este gráfico.
+        // ⚠️ Contrapartida asumida: la franja de Ecopetrol pasa de ~588 a ~88 unidades
+        // visibles, así que su cifra queda apretada. Por eso `uniformtext` va en `show` --
+        // en `hide` Plotly la borraría, que es el fallo que se corrigió el mismo día.
+        var lo = 500;
+        var hi = Math.ceil(((maxVal === null ? 750 : maxVal) + 30) / 25) * 25;
 
         var shapes = [], annotations = [];
         if (primerProyIdx > 0) {
