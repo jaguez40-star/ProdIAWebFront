@@ -3956,35 +3956,71 @@
   //    que no existe.
   // 🔑 El P50 MANDA sobre el PPTO cuando existe (VP/global): es la regla de nivel ya establecida
   //    (plan PANEL-N1-ENRIQUECIDO, H-05) — el P50 no está definido por campo.
-  function __cnN1ExtraHtml(extra) {
+  function __cnN1TarjetaHtml(extra, prod) {
     if (!extra) return "";
     var fmtV = __cnBeq;                                             // [BEQ]
-    var uni = extra.unidad ? (" " + esc(extra.unidad)) : "";
+    var uni = extra.unidad ? esc(extra.unidad) : "";
     var conP50 = !!(extra.p50 && extra.p50.valor != null);
     var refVal = conP50 ? extra.p50.valor : extra.ppto;
-    var refLbl = conP50 ? "P50"
+    var refLbl = conP50 ? "Compromiso = P50"
       : (extra.referencia_label
           ? extra.referencia_label.charAt(0).toUpperCase() + extra.referencia_label.slice(1)
           : "Referencia");
+    var anilloLbl = conP50 ? "REAL / P50" : "REAL / PPTO";
+    // Estado: el mismo criterio de __cnKpiStatus (el backend ya lo calculó con su banda ámbar).
+    var st = (extra.estado === "Alineado" || extra.estado === "En meta") ? "ok"
+           : (extra.estado === "Ajustado") ? "ajustado"
+           : (extra.estado ? "actuar" : "neutral");
+    var S = __CP_STATUS[st] || __CP_STATUS.neutral;
+    var prodI = __cnProdId(prod) || {};
+    var nombre = String(prod || "").charAt(0).toUpperCase() + String(prod || "").slice(1).toLowerCase();
+    var chip = st === "neutral" ? ""
+      : '<span class="cp-mes__kpi-badge"><i class="bi bi-' + S.icon + '"></i> ' + S.label + '</span>';
+
+    // --- las filas del diseño, en el orden aprobado ---
+    function fila(k, v, marca) {
+      return '<div class="cp-n1__r"><span class="cp-n1__k">' +
+        (marca ? '<i class="cp-n1__mk" style="background:' + marca + '"></i>' : "") + esc(k) +
+        '</span><span class="cp-n1__v">' + v + '</span></div>';
+    }
     var filas = "";
-    // Sin referencia (entidad sin PPTO ni promedio) -> se omite la fila, NUNCA se inventa un "—".
-    if (refVal != null) {
-      filas += '<div class="cp-foco__extra-r"><span>' + esc(refLbl) + '</span><b>' +
-        fmtV(refVal) + uni + '</b></div>';
-    }
-    if (extra.dias_con_dato != null && extra.dias_del_mes) {
-      filas += '<div class="cp-foco__extra-r"><span>Días reportados</span><b>' +
-        extra.dias_con_dato + ' / ' + extra.dias_del_mes + '</b></div>';
-    }
-    if (!filas) return "";
+    if (refVal != null) filas += fila(refLbl, fmtV(refVal), conP50 ? "#BA7517" : "#1E9E5A");
+    if (extra.promedio_anio != null) filas += fila("Promedio " + (extra.anio || "2026"),
+                                                   fmtV(extra.promedio_anio), "#BA7517");
+    if (extra.media_mes != null) filas += fila("Media del mes", fmtV(extra.media_mes), "#5A6B7A");
+    if (extra.proyeccion != null) filas += fila("Proyección cierre", fmtV(extra.proyeccion));
+    // 🔑 «Días reportados» SOLO si el mes tiene tabla diaria. Un mes cerrado sin diario da
+    //    dias_con_data=0, y pintar «0 / 30» sobre una cifra DEFINITIVA sería una afirmación
+    //    falsa — es exactamente lo que niveles.py:188-194 se cuida de no decir con
+    //    `diario_disponible`. Sin el dato, la fila no se pinta.
+    if (extra.dias_con_dato) filas += fila("Días reportados",
+      extra.dias_con_dato + ' <span class="cp-n1__u">/ ' + extra.dias_del_mes + '</span>');
+
     var gapHtml = "";
     if (refVal != null && extra.real != null) {
       var gap = extra.real - refVal;
       var pos = gap >= 0;
-      gapHtml = '<div class="cp-foco__extra-gap' + (pos ? " cp-foco__extra-gap--pos" : " cp-foco__extra-gap--neg") + '">' +
-        '<span>GAP ' + esc(refLbl) + '</span><b>' + (pos ? "+" : "") + fmtV(gap) + uni + '</b></div>';
+      gapHtml = '<div class="cp-n1__gap' + (pos ? " cp-n1__gap--pos" : " cp-n1__gap--neg") + '">' +
+        '<span class="cp-n1__gap-k">GAP ' + (conP50 ? "P50" : esc(refLbl)) + '</span>' +
+        '<span class="cp-n1__gap-v">' + (pos ? "+" : "") + fmtV(gap) +
+        (uni ? ' <span class="cp-n1__u">' + uni + '</span>' : "") + '</span></div>';
     }
-    return '<div class="cp-foco__extra">' + filas + gapHtml + '</div>';
+
+    return '<div class="cp-mes__kpi cp-n1" style="--cp-st:' + S.color + ';--cp-st-soft:' + S.soft +
+        ';--cp-prod:' + (prodI.color || "#6E7C75") + ';--cp-prod-soft:' + (prodI.soft || "#F1F4F1") + '">' +
+      '<div class="cp-mes__kpi-hd">' +
+        '<span class="cp-mes__kpi-chip"><i class="bi bi-' + (prodI.icon || "circle") + '"></i></span>' +
+        '<span class="cp-mes__kpi-name">' + esc(nombre) + '</span>' + chip +
+      '</div>' +
+      '<div class="cp-n1__mid">' + __cnRing(extra.cumplimiento, S.color, 104, anilloLbl, 1) +
+        '<div class="cp-n1__fig">' +
+          '<div class="cp-n1__figval">' + fmtV(extra.real) +
+            (uni ? ' <span class="cp-mes__kpi-unit">' + uni + '</span>' : "") + '</div>' +
+          '<div class="cp-n1__figlbl">Real del mes</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="cp-n1__rows">' + filas + '</div>' + gapHtml +
+      '</div>';
   }
 
   function __cnCompProdHtml(focos, meta, tarjetas, sufijo, extra) {
@@ -4002,11 +4038,18 @@
       // :4376, lo pasa condicionado a que la pregunta sea mensual). El bloque va DENTRO de
       // .cp-foco__kpicol, hermano de la tarjeta — nunca dentro de __cnTarjetasKpiHtml, que la
       // comparten otros 5 paneles (H-01).
-      var _extraHtml = __cnN1ExtraHtml(extra);
-      var kpi = tarProd.length
-        ? '<div class="cp-foco__kpicol"><div class="cn-kpi__row cn-kpi__row--solo">' +
-            __cnTarjetasKpiHtml(tarProd, meta.periodo) + '</div>' + _extraHtml + '</div>'
-        : "";
+      // [2026-09-08 · TARJETA-N1] Con `extra` (pregunta MENSUAL, N1) se pinta la tarjeta del
+      // diseño aprobado —anillo REAL/PPTO + Real del mes + las 5 filas + el chip GAP—, que
+      // SUSTITUYE a __cnTarjetasKpiHtml en ESTE panel y solo aquí. Aquella función no se toca:
+      // la comparten otros 5 paneles del tablero de Análisis, que siguen igual.
+      var _n1 = __cnN1TarjetaHtml(extra, prod);
+      var kpi = _n1
+        ? '<div class="cp-foco__kpicol"><div class="cn-kpi__row cn-kpi__row--solo">' + _n1 + '</div></div>'
+        : (tarProd.length
+            ? '<div class="cp-foco__kpicol"><div class="cn-kpi__row cn-kpi__row--solo">' +
+                __cnTarjetasKpiHtml(tarProd, meta.periodo) + '</div></div>'
+            : "");
+      var _extraHtml = _n1;   // el grid crece igual: la tarjeta nueva es más alta
       // 🔑 El modificador --ext va en el GRID porque es el grid quien fija la altura (375px en
       //    la pila, colapsable.css:2529). Solo se añade si HAY bloque extra: N1D/N1DSEL/N1DSER
       //    y el tablero de Análisis se quedan en 375px, intactos (H-05).
@@ -4431,11 +4474,23 @@
       // Cuantificar, lo que arma el TEXTO), NO de `ed`/`ed.tarjetas` (/analisis/ejecutivo): son
       // los que se comparan visualmente contra la cifra del texto y deben ser la MISMA fuente
       // (H-05) — evita el bug de "dos cifras casi iguales que no cuadran".
+      // 🔑 `cumplimiento`, `real`, `ppto` y `estado` salen de `datos` (el ejecutor de
+      //    Cuantificar): son las MISMAS cifras del texto de la respuesta, así que la tarjeta
+      //    nunca puede contradecirlo. `promedio_anio` y `proyeccion` vienen de la tarjeta de
+      //    /analisis/ejecutivo, que es quien los calcula — son contexto, no cifras que el
+      //    texto también afirme.
+      var _tk = (ed.tarjetas || []).filter(function (t) {
+        return String(t.producto || "").toUpperCase() === String((datos.productos || [])[0] || "").toUpperCase();
+      })[0] || {};
       var _extra = _esMes ? {
         real: datos.real, ppto: datos.ppto, unidad: datos.unidad,
+        cumplimiento: datos.cumplimiento_pct, estado: datos.estado,
         referencia_label: datos.referencia_label,
         dias_con_dato: datos.dias_con_dato, dias_del_mes: datos.dias_del_mes,
-        p50: datos.p50
+        p50: datos.p50,
+        anio: (String(datos.periodo || "").split(" ")[1] || ""),
+        promedio_anio: _tk.hist_prom, media_mes: datos.real,
+        proyeccion: _tk.proyectado_cierre
       } : null;
       host.innerHTML = __cnCompProdHtml(focosF, ed.meta, _tarj, sufijo, _extra);
       var edScoped = { focos: focosF };

@@ -1204,14 +1204,28 @@
       scroller dentro de .cn-col: "dos scrollers anidados atrapan la rueda del ratón y dejan la
       pila inalcanzable" (:1480-1481). El alto se resuelve ampliando el contenedor (CSS 2/2),
       nunca metiendo una barra aquí. */
-.cp-foco__extra { flex: 0 0 auto; display: flex; flex-direction: column; gap: 4px;
-  margin-top: 8px; padding-top: 10px; border-top: 1px solid #E5E9E6; font-size: 12px; }
-.cp-foco__extra-r { display: flex; justify-content: space-between; gap: 8px; color: #6E7C75; }
-.cp-foco__extra-r b { color: #1A211E; font-variant-numeric: tabular-nums; font-weight: 600; }
-.cp-foco__extra-gap { display: flex; justify-content: space-between; gap: 8px; margin-top: 2px;
-  padding: 5px 9px; border-radius: 7px; font-weight: 700; font-size: 11.5px; }
-.cp-foco__extra-gap--pos { background: #E9F3EC; color: #1f6b4a; }
-.cp-foco__extra-gap--neg { background: #FBECEA; color: #C5311E; }
+.cp-n1 { display: flex; flex-direction: column; height: 100%; }
+.cp-n1__mid { display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 14px 0 16px; }
+.cp-n1__fig { text-align: center; }
+.cp-n1__figval { font-size: 26px; font-weight: 700; letter-spacing: -.025em;
+  font-variant-numeric: tabular-nums; color: #1A211E; line-height: 1.1; }
+.cp-n1__figlbl { font-size: 11.5px; color: #6E7C75; margin-top: 2px; }
+.cp-n1__rows { margin-top: auto; border-top: 1px solid #E5E9E6; }
+.cp-n1__r { display: flex; align-items: center; gap: 8px; padding: 6.5px 0;
+  border-bottom: 1px solid #EEF1EF; font-size: 12px; }
+.cp-n1__r:last-child { border-bottom: 0; }
+.cp-n1__k { display: flex; align-items: center; gap: 6px; color: #6E7C75; }
+.cp-n1__mk { width: 6px; height: 6px; transform: rotate(45deg); flex: none; border-radius: 1px; }
+.cp-n1__v { margin-left: auto; font-weight: 600; color: #1A211E;
+  font-variant-numeric: tabular-nums; }
+.cp-n1__u { color: #8A978F; font-weight: 500; }
+.cp-n1__gap { display: flex; align-items: center; gap: 8px; margin-top: 10px;
+  padding: 7px 10px; border-radius: 7px; font-size: 12px; }
+.cp-n1__gap-k { font-weight: 700; letter-spacing: .03em; }
+.cp-n1__gap-v { margin-left: auto; font-weight: 700; font-variant-numeric: tabular-nums; }
+.cp-n1__gap--pos { background: #E9F3EC; color: #1f6b4a; }
+.cp-n1__gap--neg { background: #FBECEA; color: #C5311E; }
 /* cuerpo de la tarjeta Real vs Presupuesto: KPIs (izq) | barras (der) */
 .cn-desemp__rvp-body { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: minmax(130px,180px) 1fr; gap: 12px; padding: 6px 8px 8px; }
 .cn-ins { display: flex; flex-direction: column; min-width: 0; border: 1px solid var(--rb-border,#e3e8e5); border-radius: 10px; background: #fff; overflow: hidden; }
