@@ -456,7 +456,10 @@
           // viven como propiedades JS del propio nodo (mismo patrón que elp.__cnRO), sobreviven al
           // moverlo entre el fragment y el DOM.
           _stk.querySelectorAll('[data-pend-paint="1"]').forEach(function (b) {
-            if (b.__cnAnzEd && b.__cnAnzDd) __cnPaintFocoStk(b, b.__cnAnzEd, b.__cnAnzDd, b.__cnAnzSufijo || "");
+            // [2026-09-08 · PANEL-N1] El P50 se guarda en el bloque junto a `ed`/`dd`: sin esto
+            // la línea del compromiso desaparecía al salir de la pestaña y volver — el bloque se
+            // repinta desde aquí, no desde __cnCompProdCargar.
+            if (b.__cnAnzEd && b.__cnAnzDd) __cnPaintFocoStk(b, b.__cnAnzEd, b.__cnAnzDd, b.__cnAnzSufijo || "", b.__cnAnzP50);
             // [2026-08-25] QV2-PANEL-MES: los paneles mensuales (N3/N4) se encolan por la misma
             // vía. No los cubría __cnPaintFocoStk, que solo conoce #cn-foco-day-/#cn-foco-mon-
             // (:1844) — sin esta rama el bloque volvía del fragment con el host vacío.
@@ -2271,12 +2274,15 @@
   // y busca los IDs DENTRO de `blk` (querySelector, no getElementById) para no pisar al tablero ni a
   // otro bloque apilado si ambos tuvieran, por error, el mismo rank+sufijo. `ed`/`dd` = payloads
   // propios de ESTE bloque; `ed.focos` YA viene filtrado por producto (D1) antes de llamar aquí.
-  function __cnPaintFocoStk(blk, ed, dd, sufijo) {
+  // [2026-09-08 · PANEL-N1] +p50Dia: el compromiso P50 del panel, que viaja hasta la curva.
+  // Opcional: los call sites que no lo pasen (el de :459, la repintada al restaurar el DOM)
+  // reciben undefined y el gráfico se dibuja con sus 3 líneas de siempre.
+  function __cnPaintFocoStk(blk, ed, dd, sufijo, p50Dia) {
     if (!blk || !ed || !ed.focos || !dd || !dd.curva) return;
     ed.focos.forEach(function (f) {
       var day = blk.querySelector("#cn-foco-day-" + f.rank + sufijo);
       var mon = blk.querySelector("#cn-foco-mon-" + f.rank + sufijo);
-      if (day) __cnDailyInto(f.producto, day, dd, ed.tarjetas);   // ed.tarjetas → línea de PPTO diario
+      if (day) __cnDailyInto(f.producto, day, dd, ed.tarjetas, p50Dia);   // ed.tarjetas → PPTO diario · p50Dia → compromiso
       if (mon) __cnGapCampoInto(f.producto, mon, ed, dd, f);
     });
   }
@@ -2300,7 +2306,9 @@
     return (s.length >= 10) ? (s.slice(8, 10) + "/" + s.slice(5, 7)) : s;
   }
 
-  function __cnDailyInto(prod, hostEl, d, tarjetas) {
+  // [2026-09-08 · PANEL-N1] +p50Dia: viaja de aquí a __cnDailyPlot. Mismo tratamiento que
+  // `tarjetas` — parámetro opcional al final, y los call sites que no lo tengan pasan undefined.
+  function __cnDailyInto(prod, hostEl, d, tarjetas, p50Dia) {
     var serie = (d.curva && d.curva.series && d.curva.series[prod]) || [];
     var fechas = (d.curva && d.curva.fechas) || [];
     var nombre = prod.charAt(0).toUpperCase() + prod.slice(1).toLowerCase();
@@ -2380,7 +2388,8 @@
                   // Focos (vista por producto), decisión del usuario. Con 4 referencias en un panel
                   // estrecho las etiquetas se montaban: el promedio 2026 (2.852.019) y la media del
                   // mes (2.829.436) distan 0,8% y sus textos se solapaban por completo.
-                  !esCompProd);
+                  !esCompProd,
+                  p50Dia);   // [2026-09-08 · PANEL-N1] 14.º y último: el compromiso P50
     var cap = hostEl.querySelector("[data-cap]");
     if (cap && !esCompProd) {
       cap.innerHTML = __cnDailyCap(promMes, ref, prom2026 != null, U, prod === "GAS", (d.mes && d.mes.nombre) || "El mes", pptoDia);
@@ -2419,7 +2428,13 @@
   // producto. esGas NO cambia de rol — sigue gobernando solo la conversión de unidades a MSCF.
   // [2026-08-31] +pptoDia: 2ª línea de referencia (PPTO diario). Mismo tratamiento de unidades que
   // `ref` — el gas se divide por 1e6 igual. null → no se dibuja (BLANCOS y entidades sin PPTO).
-  function __cnDailyPlot(elp, fechas, valores, ref, unidad, esGas, refEsAnio, col, holgura, ejes, pptoDia, promMesRef, conLeyenda) {
+  // [2026-09-08 · PANEL-N1] +p50Dia: 4ª línea de referencia, el COMPROMISO P50. Entra como
+  // parámetro por la misma razón que `pptoDia` (:2286-2288): viene de un payload distinto al de
+  // la curva y no hay objeto compartido que los una. Va al FINAL de la firma para no correr las
+  // 13 posiciones existentes — es una función posicional con 4 call sites.
+  // 🔑 Llega YA en la escala del gráfico (kbopd): el ÷1000 desde los BPD de la hoja P50 lo hizo
+  //    el backend. Aquí NO se vuelve a escalar (H-04).
+  function __cnDailyPlot(elp, fechas, valores, ref, unidad, esGas, refEsAnio, col, holgura, ejes, pptoDia, promMesRef, conLeyenda, p50Dia) {
     if (!elp) return;
     if (!window.Plotly) { elp.innerHTML = '<div class="text-muted small p-2">(Plotly no disponible)</div>'; return; }
     var uni = unidad ? (" " + unidad) : "";
@@ -2427,6 +2442,12 @@
     var yPlot = valores;   // [BEQ] backend ya entrega kboepd
     var refPlot = ref;   // [BEQ]
     var pptoPlot = (pptoDia != null) ? pptoDia : null;   // [BEQ]
+    // [2026-09-08 · PANEL-N1] Misma proyección que pptoPlot: el P50 se dibuja en el mismo eje y
+    // ya viene en su escala. Se declara AQUÍ, junto a las otras tres referencias y ANTES del
+    // cálculo del rango: con `var`, declararlo después lo dejaría en `undefined` dentro de ese
+    // cálculo por hoisting, y la línea quedaría fuera del área visible sin ningún error — el
+    // mismo fallo silencioso que documenta el guard de `prom2026` en :2336.
+    var p50Plot = (p50Dia != null && p50Dia > 0) ? p50Dia : null;
     var promMesPlot = (promMesRef != null && promMesRef > 0) ? promMesRef : null;   // [BEQ]
     // Eje X categórico = número de día del mes ("2026-05-01" → "1"). El hover conserva la fecha completa.
     var xcat = fechas.map(function (f) {
@@ -2480,9 +2501,29 @@
       shapes.push({ type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: promMesPlot, y1: promMesPlot,
         line: { color: "#5A6B7A", width: 1.5, dash: "dashdot" } });
       if (conLeyenda) refLeyenda("media del mes", promMesRef, "#5A6B7A", "dashdot");
-      else anns.push({ x: 0.5, y: promMesPlot, xref: "paper", yref: "y", xanchor: "center", yanchor: "bottom",
+      // [2026-09-08 · PANEL-N1] Ancla a la DERECHA cuando hay P50: la cuarta línea necesita
+      // sitio y el centro es el hueco más ancho. Sin P50, se queda centrada como siempre.
+      else anns.push({ x: (p50Plot ? 1 : 0.5), y: promMesPlot, xref: "paper", yref: "y",
+        xanchor: (p50Plot ? "right" : "center"), yanchor: "bottom",
         text: "media del mes · " + fmtD(promMesRef) + uni,
         showarrow: false, font: { size: 10, color: "#5A6B7A" } });
+    }
+    // [2026-09-08 · PANEL-N1] COMPROMISO P50 — la 4ª línea. Es la referencia que MANDA cuando
+    // existe (VP y global), así que va en rojo corporativo y con el trazo más grueso de las
+    // cuatro: el resto son contexto, esta es el compromiso.
+    // 🔑 Solo se dibuja si el backend la mandó. En un CAMPO no llega (el P50 no está definido a
+    //    ese nivel — p50_referencia.py:6-7) y el panel se queda con sus tres líneas de siempre.
+    // 🔑 La cifra llega YA en la escala del panel (kbopd): el backend la convirtió desde los BPD
+    //    de la hoja P50. Aquí NO se vuelve a escalar — hacerlo dividiría dos veces.
+    // 🔑 `dash` largo (12 4) para distinguirla del `dash` (8 6) del promedio 2026, del `dashdot`
+    //    de la media y del `dot` del PPTO: las cuatro deben leerse por su trazo en blanco y negro.
+    if (p50Plot) {
+      shapes.push({ type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: p50Plot, y1: p50Plot,
+        line: { color: "#C5311E", width: 2, dash: "12px 4px" } });
+      if (conLeyenda) refLeyenda("compromiso P50", p50Dia, "#C5311E", "dash");
+      else anns.push({ x: 0.5, y: p50Plot, xref: "paper", yref: "y", xanchor: "center", yanchor: "bottom",
+        text: "compromiso P50 · " + fmtD(p50Dia) + uni,
+        showarrow: false, font: { size: 10, color: "#C5311E" } });
     }
     // Eje Y desde 0, con techo = max(curva, referencia) + holgura → la referencia queda con aire.
     // [2026-08-25] `holgura` es ADITIVO y por defecto 1.12: el panel de Focos no cambia. El panel
@@ -2501,7 +2542,11 @@
     // espacio log promedio y PPTO distan 0,011 sobre un eje de ~5,4, o sea aún más juntas. Además
     // log(0) es -infinito, así que tampoco podría arrancar en 0.
     var vals = yPlot.filter(function (v) { return v != null; });
-    var refs = [refPlot, pptoPlot, promMesPlot].filter(function (v) { return v != null && v > 0; });
+    // [2026-09-08 · PANEL-N1] `p50Plot` entra en el rango por la MISMA razón que el PPTO: es una
+    // META y suele estar POR ENCIMA de la curva. El comentario de arriba lo documenta con el caso
+    // medido —«sin esto su línea quedaba fuera del área visible, justo el caso de CRUDO y GAS»—;
+    // el P50, que está aún más alto que el PPTO, se saldría igual.
+    var refs = [refPlot, pptoPlot, promMesPlot, p50Plot].filter(function (v) { return v != null && v > 0; });
     var todos = vals.concat(refs);
     var dataMax = todos.length ? Math.max.apply(null, todos) : 0;
     var dataMin = todos.length ? Math.min.apply(null, todos) : 0;
@@ -4321,10 +4366,18 @@
       // __cnCompProdHtml activa `--solo` solo con que no haya tarjeta para el producto (:3202),
       // así que la curva pasa a ancho completo sin tocar el constructor. Para volver a mostrarla
       // basta con devolver `ed.tarjetas` aquí.
-      host.innerHTML = __cnCompProdHtml(focosF, ed.meta, [], sufijo);
+      // [2026-09-08 · PANEL-N1] En una pregunta MENSUAL (N1) la tarjeta SÍ va: el comentario de
+      // arriba la quitó porque la pregunta era por UN DÍA y la tarjeta hablaba del MES —dos
+      // cifras casi iguales, una al lado de otra—. Aquí la pregunta ES por el mes, así que
+      // tarjeta y texto hablan de lo mismo. `dia_marcado === null` es la marca de que la
+      // pregunta es mensual (lo emite el backend, respuesta_cuantificar.py).
+      var _esMes = datos.dia_marcado == null;
+      var _tarj = _esMes ? (ed.tarjetas || []) : [];
+      host.innerHTML = __cnCompProdHtml(focosF, ed.meta, _tarj, sufijo);
       var edScoped = { focos: focosF };
       if (blk.isConnected) {
-        __cnPaintFocoStk(blk, edScoped, dd, sufijo);
+        // [2026-09-08 · PANEL-N1] `datos.p50` lo emite el backend solo si el NIVEL tiene P50.
+        __cnPaintFocoStk(blk, edScoped, dd, sufijo, (datos.p50 || {}).valor);
         __cnCompProdMarcarDia(blk, datos.dia_marcado);
         __cnStackScroll(blk);
       } else {
@@ -4333,6 +4386,9 @@
         // resaltado. Degradación cosmética aceptada y declarada; los datos son los correctos.
         blk.dataset.pendPaint = "1";
         blk.__cnAnzEd = edScoped; blk.__cnAnzDd = dd; blk.__cnAnzSufijo = sufijo;
+        // [2026-09-08 · PANEL-N1] El P50 se guarda junto a ed/dd para que la repintada de :459
+        // (al volver de otra pestaña) pueda volver a dibujar la línea del compromiso.
+        blk.__cnAnzP50 = (datos.p50 || {}).valor;
       }
     }).catch(function () {
       host.innerHTML = '<div class="p-2 text-danger small">Fallo de red cargando el comportamiento del producto.</div>';
