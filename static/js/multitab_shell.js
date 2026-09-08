@@ -1119,6 +1119,13 @@
       items: [
         { t: "¿Cómo vamos este mes?" },
         { t: "¿Vamos a cerrar en meta?" },
+        // [2026-09-08 · P50-CUMPLIMIENTO-MES] El cumplimiento del P50 por MES no estaba
+        // ofrecido en ninguna plantilla, aunque es la pregunta que más se hace sobre la lámina
+        // gerencial. Lleva el hueco `mes` para que el usuario lo elija: sin él, "este mes"
+        // resolvería al mes en curso y la respuesta sería de otro periodo. Las dos dicen "P50"
+        // literal a propósito: es el ancla que las lleva a Analizar/referencia.
+        { t: "¿Cuál es el cumplimiento del P50 para el mes de ", slot: "mes", t2: "?" },
+        { t: "¿Cómo quedó el real contra el P50 en ", slot: "mes", t2: "?" },
         { t: "¿Cómo va ", slot: "entidad", t2: " frente al presupuesto este mes?" },
         { t: "¿Cuánto produjo ", slot: "entidad", t2: " en ", slot2: "mes", t3: " vs el operativo?" },
         { t: "¿Cuánto produjo ", slot: "entidad", t2: " en ", slot2: "mes", t3: " contra el contable?" },
@@ -4383,6 +4390,16 @@
              // razón que "p50_vp": __cnCuantCardHtml NO valida el tipo y pintaría una tarjeta
              // KPI leyendo campos (estado/cumplimiento_pct/nivel) que este contrato no tiene.
              : (panel.tipo === "p50_anual")        ? __cnP50AnualHtml(d)
+             // [2026-09-08 · P50-CUMPLIMIENTO-MES] "p50_cards" (Analizar/referencia, rama GLOBAL
+             // CON MES): las 5 tarjetas del panorama (Crudo · Gas · Blancos · Filiales · Total),
+             // ahora también en el chat cuando la pregunta acota un mes. `d` es la respuesta
+             // cruda de /analisis/president, que el backend ya tenía en la mano — panel PURO,
+             // sin fetch ni hook post-inserción (las tarjetas son HTML plano, no Plotly).
+             // 🔑 Se ENVUELVE en .cn-kpi__row: es la rejilla de 5 columnas (colapsable.css:1220)
+             //    que en el panorama ya existe en el DOM (#cn-p50-row) y aquí no. Sin ella las
+             //    tarjetas se apilan en bloque. Registrado ANTES del fallback por la razón de
+             //    siempre: __cnCuantCardHtml NO valida el tipo y pintaría campos ajenos.
+             : (panel.tipo === "p50_cards")        ? '<div class="cn-kpi__row">' + __cnP50CardsHtml(d) + '</div>'
              : __cnCuantCardHtml(d);
     // Tope silencioso (sin UI, sin aviso): al superarlo se descarta el bloque más antiguo.
     while (stack.children.length >= __CN_STACK_MAX) stack.removeChild(stack.firstChild);
@@ -5990,6 +6007,22 @@
       .catch(function () { /* sin lista, el panel sigue mostrando el mes por defecto */ });
   }
 
+  // [2026-09-08 · P50-CUMPLIMIENTO-MES] La fila de 5 tarjetas, extraída a función PURA.
+  // Estaba incrustada dentro del callback de fetch de __cnPaintP50Header y por eso solo existía
+  // en el panorama: el chat no tenía forma de pintarla. Ahora la comparten los dos consumidores
+  // (el encabezado del tablero y el panel "p50_cards" del Motor Q), y así no pueden divergir.
+  // 🔑 `d` es la respuesta CRUDA de /api/analisis/president. Las tres constructoras que compone
+  //    ya devuelven "" cuando les falta su dato (__cnP50CardHtml, __cnP50FilialesHtml,
+  //    __cnP50TotalHtml), así que componer nunca puede reventar: en el peor caso salen menos
+  //    tarjetas, no una excepción.
+  // 🔑 Devuelve SOLO las tarjetas, sin el .cn-kpi__row: el header ya lo tiene en el DOM y el
+  //    dispatcher lo añade él mismo. Envolver aquí duplicaría la rejilla en el header.
+  function __cnP50CardsHtml(d) {
+    if (!d || !d.productos || !d.productos.length) { return ""; }
+    return d.productos.map(__cnP50CardHtml).join("") +
+           __cnP50FilialesHtml(d.empresas) + __cnP50TotalHtml(d.empresas);
+  }
+
   // Handler del <select>. Repinta SOLO el panel P50 (decisión del usuario 2026-09-08): el resto
   // del tablero sigue en su mes, y cada bloque declara el suyo en su encabezado.
   window.__cnP50CambiarMes = function (v) {
@@ -6015,8 +6048,9 @@
         // Va DESPUÉS de los productos y con su propia clase: no es un producto físico, es una
         // empresa, así que no lleva anillo Real/P50 por producto sino la comparación contra su
         // propio P50. Si el backend no manda `empresas` (versión anterior), no se pinta nada.
-        row2.innerHTML = d.productos.map(__cnP50CardHtml).join("") +
-                         __cnP50FilialesHtml(d.empresas) + __cnP50TotalHtml(d.empresas);
+        // [P50-CUMPLIMIENTO-MES] La composición vive en __cnP50CardsHtml, compartida con el
+        // panel "p50_cards" del chat. Aquí NO se envuelve: `row2` YA es el .cn-kpi__row.
+        row2.innerHTML = __cnP50CardsHtml(d);
         // La guía de corte solo la pinta el mes por defecto: con un mes elegido a mano, la fecha
         // de corte del tablero no cambia y repintarla anunciaría un mes que no es el suyo.
         if (!mes) { __cnPintarGuia(d.corte); }
