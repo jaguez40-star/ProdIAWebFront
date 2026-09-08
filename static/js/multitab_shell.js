@@ -6237,19 +6237,20 @@
           hovertemplate: "P50 %{y:.1f}<extra></extra>"
         };
 
-        // Eje recortado como la muestra (550-790 con los datos de 2026): el interés está en
-        // comparar meses entre sí y contra el P50, y desde cero esas diferencias (~700 vs ~730)
-        // se vuelven invisibles. El zócalo se recorta a TODAS las barras por igual, así que el
-        // apilado sigue leyéndose bien -- el bug original no era el eje, era dibujar la franja
-        // de Ecopetrol desde el piso en vez de desde cero.
-        // El margen inferior es amplio (~145) a propósito: deja el mismo aire bajo las barras
-        // que el diseño aprobado; con un recorte ajustado quedaban demasiado cortas.
-        // minVal/maxVal miran totales Y P50: si el techo saliera solo de las barras, una línea
-        // de meta por encima del total más alto quedaría fuera del lienzo. Pasó el 2026-09-08
-        // cuando el backend devolvió p50 en null: el eje se quedó en 750 y la meta (747) no
-        // tenía dónde dibujarse.
-        var lo = Math.round(((minVal === null ? 690 : minVal) - 143) / 50) * 50;
-        var hi = Math.ceil(((maxVal === null ? 750 : maxVal) + 43) / 10) * 10;
+        // [2026-09-08 · opción B, decisión del usuario] Eje desde CERO.
+        // El diseño aprobado lo recortaba en 550 para que se apreciara la diferencia entre
+        // meses (~693 vs ~733) y contra el P50. Pero con ese recorte la franja de Ecopetrol
+        // quedaba en ~40 unidades de alto sobre un eje de 240: la sección MAYOR del dato era
+        // la MENOR en pantalla, y su cifra no cabía dentro (Plotly la ocultaba por
+        // `uniformtext`). Recorte de eje y etiqueta dentro de la barra son incompatibles;
+        // se eligió conservar las tres cifras y las proporciones reales.
+        // 🔑 `hi` sigue mirando totales Y P50: si el techo saliera solo de las barras, una
+        // meta por encima del total más alto quedaría fuera del lienzo (pasó el 2026-09-08
+        // cuando el backend devolvió p50 en null y el eje se quedó en 750 con la meta en 747).
+        // El +6% deja sitio para la etiqueta del total y la del P50 sobre la barra más alta,
+        // sin dejar una franja muerta arriba que aplaste las columnas.
+        var lo = 0;
+        var hi = Math.ceil(((maxVal === null ? 750 : maxVal) * 1.06) / 25) * 25;
 
         var shapes = [], annotations = [];
         if (primerProyIdx > 0) {
@@ -6267,10 +6268,10 @@
 
         var layout = {
           barmode: "stack", bargap: 0.35,
-          // Sin esto Plotly encoge la cifra hasta hacerla ilegible cuando el segmento es
-          // estrecho (filiales es ~1/5 de la barra). Preferimos tamaño constante y, si de
-          // verdad no cabe, que la oculte -- una cifra de 5px no la lee nadie.
-          uniformtext: { mode: "hide", minsize: 9 },
+          // Con el eje desde cero las tres cifras caben, así que el modo es `show`: mantiene
+          // el tamaño uniforme sin ocultar ninguna. Con el eje recortado esto era `hide` y
+          // borraba justo la de Ecopetrol, cuyo segmento quedaba demasiado bajo.
+          uniformtext: { mode: "show", minsize: 9 },
           xaxis: { tickfont: { size: 11, color: C.tick }, showgrid: false, zeroline: false },
           yaxis: {
             title: { text: (d.unidad || "kboepd").toUpperCase(), font: { size: 10, color: C.tick } },
