@@ -2344,7 +2344,7 @@
     var vd = serie.filter(function (v) { return v != null && v > 0; });
     var promMes = vd.length ? vd.reduce(function (a, b) { return a + b; }, 0) / vd.length : 0;   // media del mes (fallback)
     var ref = prom2026 != null ? prom2026 : promMes;    // referencia: promedio 2026 (REAL mensual) o media del mes
-    var U = "kboepd";   // [BEQ] los tres productos comparten unidad
+    var U = __cnUniProd(prod);   // [BEQ] kbopd crudo · kblpd blancos · kbepd gas
     // [2026-08-25] El panel «Comportamiento {Producto}» (.cn-compprod__grid) pide más aire sobre
     // la curva y NO lleva pie de texto. Se detecta por el DOM y no por parámetro porque el pintor
     // (__cnPaintFocoStk) es COMPARTIDO con el panel de Focos: así sus dos call sites (:1670, :1688)
@@ -3113,7 +3113,7 @@
     var g = (ed && ed.gap_por_producto && ed.gap_por_producto[prod]) || null;
     var dets = (g && g.detractores) || [];
     var nombre = prod.charAt(0).toUpperCase() + prod.slice(1).toLowerCase();
-    var U = (String(prod).toUpperCase() === "GAS") ? "kbepd" : "kbopd";   // [BEQ] gas equivalente · liquidos bopd
+    var U = __cnUniProd(prod);   // [BEQ]
     var esGas = (prod === "GAS");
     var mesN = (dd && dd.mes && dd.mes.nombre) || "";                    // mes dinámico = último mes cargado
     // [2026-07-25] Gas en MSCF = millones de pies³ (÷1e6, 2 dec, coma es-CO) — SIN cambios.
@@ -3246,7 +3246,7 @@
     var nums = rm.meses_num || [];
     var prom = (rm.promedio_mes || {})[producto];          // promedio MENSUAL de meses cerrados (= 3,3M)
     var mesActual = rm.mes_actual;
-    var U = (String(producto).toUpperCase() === "GAS") ? "kbepd" : "kbopd";   // [BEQ]
+    var U = __cnUniProd(producto);   // [BEQ]
     var esGas = producto === "GAS";
     var fmtV = __cnBeq;   // [BEQ]
     var yPlot = y;   // [BEQ]
@@ -3526,7 +3526,10 @@
   // [BEQ-2026-09-08] Rotulo por producto: los liquidos son barriles de petroleo (kbopd);
   // el gas se convierte con el factor 5,7, asi que es EQUIVALENTE (kbepd).
   function __cnUniProd(prod) {
-    return (String(prod || "").toUpperCase() === "GAS") ? "kbepd" : "kbopd";
+    var p = String(prod || "").toUpperCase();
+    if (p === "GAS") { return "kbepd"; }        // equivalente (factor 5,7)
+    if (p === "BLANCOS") { return "kblpd"; }    // barriles de LIQUIDO
+    return "kbopd";                             // crudo: barriles de petroleo
   }
   var __cnKpiLabel = { alineado: "alineado", ajustado: "ajustado", actuar: "actuar" };
 
