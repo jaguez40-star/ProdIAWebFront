@@ -6225,6 +6225,10 @@
         // de Ecopetrol desde el piso en vez de desde cero.
         // El margen inferior es amplio (~145) a propósito: deja el mismo aire bajo las barras
         // que el diseño aprobado; con un recorte ajustado quedaban demasiado cortas.
+        // minVal/maxVal miran totales Y P50: si el techo saliera solo de las barras, una línea
+        // de meta por encima del total más alto quedaría fuera del lienzo. Pasó el 2026-09-08
+        // cuando el backend devolvió p50 en null: el eje se quedó en 750 y la meta (747) no
+        // tenía dónde dibujarse.
         var lo = Math.round(((minVal === null ? 690 : minVal) - 143) / 50) * 50;
         var hi = Math.ceil(((maxVal === null ? 750 : maxVal) + 43) / 10) * 10;
 
