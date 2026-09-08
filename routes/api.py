@@ -276,6 +276,23 @@ def analisis_president():
         return jsonify({"error": f"INGESTA no disponible: {e}"}), 502
 
 
+@api_bp.route("/analisis/president/senda")
+def analisis_president_senda():
+    """Proxy: senda mensual del año (real + proyección a diciembre) para el panel P50.
+
+    [2026-09-08 · SENDA-DIC] Caché larga (600s), como el selector de meses: la senda solo
+    cambia cuando se ingiere un reporte nuevo, no dentro del día.
+    """
+    try:
+        params = {}
+        anio = request.args.get("anio")
+        if anio:
+            params["anio"] = anio        # lista blanca: lo que no se copie aquí NO llega
+        return _analisis_proxy_cacheado("/analisis/president/senda", params, 600)
+    except requests.RequestException as e:
+        return jsonify({"error": f"INGESTA no disponible: {e}"}), 502
+
+
 @api_bp.route("/analisis/desempeno")
 def analisis_desempeno():
     """Proxy: desempeño del mes (KPIs REAL vs PPTO + curva diaria) de una entidad."""

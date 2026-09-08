@@ -2200,9 +2200,14 @@
           '          onchange="window.__cnP50CambiarMes(this.value)"' +
           '          aria-label="Mes del compromiso P50"></select></div>' +
           '  <div class="cn-kpi__row" id="cn-p50-row"><div class="cn-p50hd__load">Cargando compromiso P50…</div></div>' +
+          // [2026-09-08 · SENDA-DIC] HERMANO de #cn-p50-row, NO adentro (H7): ese nodo se
+          // reescribe ENTERO en cada cambio de mes y un gráfico Plotly adentro se destruiría
+          // sin purgar, filtrando memoria (CLAUDE.md §10.4).
+          '  <div id="cn-p50-senda"></div>' +
           '</div>';
       }
       __cnPaintP50Header();
+      __cnPaintSenda();
       return;   // corta ANTES del fetch de /desempeno (:1600): el global termina aquí
     }
 
@@ -3497,7 +3502,7 @@
     __cnPrecargarFocosLazy(body);   // Diferidas/Mantenimientos/EBITDA de cada foco, en paralelo
     // [2026-07-27] llena el encabezado P50 (async, ECP global) — opción A.
     // [2026-07-29] En drill-down a una entidad el encabezado no se pinta, así que se evita el fetch.
-    if (!__cnEsFil() && !__cnPanelEntidad) __cnPaintP50Header();
+    if (!__cnEsFil() && !__cnPanelEntidad) { __cnPaintP50Header(); __cnPaintSenda(); }
   }
 
   // Nivel 1: tarjetas KPI de cierre (barra + proyectado/meta + microcopy), 1 por producto.
@@ -6061,6 +6066,93 @@
       });
   }
 
+  // [2026-09-08 · SENDA-DIC] Senda anual: real cerrado + proyección hasta diciembre, reproduce
+  // la lámina "Producción Equivalente G.E." (barra apilada Ecopetrol+Filiales, línea P50).
+  // Pura: solo el contenedor y el título. "" si no hay serie — mismo criterio que
+  // __cnP50FilialesHtml/__cnP50TotalHtml (:6015-6016): componer nunca revienta.
+  function __cnSendaHtml(d) {
+    if (!d || !d.serie || !d.serie.length) { return ""; }
+    return '<div class="cn-p50hd__lbl"><i class="bi bi-graph-up-arrow"></i> Senda de producción · real y proyección a diciembre</div>' +
+           '<div id="cn-p50-senda-plot"></div>';
+  }
+
+  // 🟢 Plotly YA está vendorizado y cargado global (base.html:33) — NUNCA descargar ni crear
+  // otro <script>, H5/H12 del plan.
+  // 🔴 NO se llama desde window.__cnP50CambiarMes: cambiar de mes solo repinta #cn-p50-row
+  // (decisión ya vigente para el resto del tablero, comentario de :6026); la senda es la del
+  // AÑO completo y no depende del mes elegido en el selector.
+  function __cnPaintSenda() {
+    var host = el("cn-p50-senda"); if (!host) return;
+    fetch("/api/analisis/president/senda")
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        var host2 = el("cn-p50-senda"); if (!host2) return;
+        host2.innerHTML = __cnSendaHtml(d);
+        var plotNode = el("cn-p50-senda-plot");
+        if (!plotNode || !window.Plotly || !d || !d.serie || !d.serie.length) { return; }
+        // Purga antes de dibujar: si el nodo ya tuvo un gráfico (dos montajes de la misma
+        // vista), Plotly.newPlot sobre un nodo usado no libera el trazo anterior por sí solo —
+        // es el mismo riesgo de fuga que el comentario del contenedor advierte.
+        try { window.Plotly.purge(plotNode); } catch (e) { /* nodo nuevo: nada que purgar */ }
+
+        var meses = [], ecp = [], fil = [], p50 = [], patronEcp = [], patronFil = [];
+        var primerProyIdx = -1;
+        d.serie.forEach(function (m, i) {
+          meses.push(m.mes_nombre);
+          ecp.push(m.ecopetrol);
+          fil.push(m.filiales);
+          p50.push(m.p50);
+          var rayado = !m.es_real;
+          patronEcp.push(rayado ? "/" : "");
+          patronFil.push(rayado ? "/" : "");
+          if (rayado && primerProyIdx === -1) { primerProyIdx = i; }
+        });
+
+        // Ecopetrol ABAJO, Filiales ENCIMA (decisión del usuario, 2026-09-08): Ecopetrol es
+        // ~5x filiales y con el eje en cero (obligatorio, ver yaxis abajo) debe verse mayor.
+        var trazaEcp = {
+          x: meses, y: ecp, name: "Ecopetrol", type: "bar",
+          marker: { color: "#00874A", pattern: { shape: patronEcp } }
+        };
+        var trazaFil = {
+          x: meses, y: fil, name: "Filiales", type: "bar",
+          marker: { color: "#5FD198", pattern: { shape: patronFil } }
+        };
+        var trazaP50 = {
+          x: meses, y: p50, name: "Meta P50", type: "scatter", mode: "lines+markers",
+          line: { color: "#1B2A2E", width: 2 }, marker: { size: 6 }
+        };
+
+        var shapes = [];
+        if (primerProyIdx > 0) {
+          shapes.push({
+            type: "line", xref: "x", yref: "paper",
+            x0: meses[primerProyIdx], x1: meses[primerProyIdx], y0: 0, y1: 1,
+            line: { color: "#E8A33D", width: 1, dash: "dot" }
+          });
+        }
+
+        var layout = {
+          barmode: "stack",
+          // 🔴 rangemode 'tozero' NO es negociable (bug medido en la propuesta original): con
+          // el eje truncado, Ecopetrol (~593) se veía MÁS PEQUEÑO que Filiales (~122) porque
+          // solo se dibujaba lo que sobresalía del piso. Un apilado exige base en cero.
+          yaxis: { title: d.unidad || "kboepd", rangemode: "tozero" },
+          margin: { t: 10, r: 10, b: 30, l: 50 },
+          legend: { orientation: "h" },
+          shapes: shapes,
+          height: 280
+        };
+
+        window.Plotly.newPlot(plotNode, [trazaEcp, trazaFil, trazaP50], layout,
+          { displayModeBar: false, responsive: true });
+      })
+      .catch(function () {
+        var host3 = el("cn-p50-senda");
+        if (host3) host3.innerHTML = '<div class="cn-p50hd__na">No se pudo cargar la senda proyectada.</div>';
+      });
+  }
+
   // Épica 1 (atribución cuantitativa del gap, feedback gerencial 2026-07-24): el renglón ECP
   // se limpió (ver comentario de abajo) pero el dato en barriles + la fuente/soporte (comentario real
   // del reporte, vía f.causa.eventos) siguen existiendo — se muestran DENTRO del panel "Comportamiento
@@ -6588,7 +6680,9 @@
           '<select id="cn-p50-sel" class="form-select form-select-sm cn-p50hd__sel"' +
           ' onchange="window.__cnP50CambiarMes(this.value)"' +
           ' aria-label="Mes del compromiso P50"></select></div>' +
-          '<div class="cn-kpi__row" id="cn-p50-row"><div class="cn-p50hd__load">Cargando compromiso P50…</div></div>');
+          '<div class="cn-kpi__row" id="cn-p50-row"><div class="cn-p50hd__load">Cargando compromiso P50…</div></div>' +
+          // [2026-09-08 · SENDA-DIC] HERMANO de #cn-p50-row, mismo motivo que en el otro bloque.
+          '<div id="cn-p50-senda"></div>');
     var head =
       '<div class="cn-ejec__hd"><span class="cn-ejec__hd-ic"><i class="bi bi-stars"></i></span>' +
       '  Análisis Ejecutivo (IA) · ' + esc(m.periodo || "") + ' · corte ' + esc(m.corte || "") +
