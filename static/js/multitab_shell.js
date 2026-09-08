@@ -3943,7 +3943,51 @@
   // 🔑 `is-active` obligatorio: .cp-foco__panel es display:none y aquí no hay pestañas (A-2).
   // 🔑 El patrón de ID `cn-foco-day-{rank}{sufijo}` se CONSERVA aunque el rank no se muestre: es el
   // contrato con __cnPaintFocoStk y con la cola data-pend-paint de acordeon.js (A-9).
-  function __cnCompProdHtml(focos, meta, tarjetas, sufijo) {
+  // [2026-09-08 · TARJETA-N1-EXTRA] Bloque propio del panel de N1 (cuant_dia_panel), HERMANO de
+  // la tarjeta __cnTarjetasKpiHtml — NO se integra dentro de ella porque esa función la comparten
+  // otros 5 paneles del tablero de Análisis (H-01) y esto no debe pintarse ahí.
+  // 🔑 Presupuesto y GAP salen de `extra.real`/`extra.ppto` — la MISMA fuente que arma el TEXTO
+  //    de la respuesta (respuesta_cuantificar.py:248), no de la tarjeta de arriba (que consulta
+  //    /analisis/ejecutivo, un cálculo independiente). Es la lección de :4361-4365: dos cifras
+  //    casi iguales de fuentes distintas generan desconfianza aunque ambas sean correctas.
+  // 🔑 El rótulo de la referencia es DINÁMICO (`extra.referencia_label`), nunca "Presupuesto" a
+  //    secas: hay entidades sin PPTO formal donde esa clave vale "promedio mensual del año"
+  //    (respuesta_cuantificar.py, _REF_LABEL). Rotular "Presupuesto" ahí sería inventar un dato
+  //    que no existe.
+  // 🔑 El P50 MANDA sobre el PPTO cuando existe (VP/global): es la regla de nivel ya establecida
+  //    (plan PANEL-N1-ENRIQUECIDO, H-05) — el P50 no está definido por campo.
+  function __cnN1ExtraHtml(extra) {
+    if (!extra) return "";
+    var fmtV = __cnBeq;                                             // [BEQ]
+    var uni = extra.unidad ? (" " + esc(extra.unidad)) : "";
+    var conP50 = !!(extra.p50 && extra.p50.valor != null);
+    var refVal = conP50 ? extra.p50.valor : extra.ppto;
+    var refLbl = conP50 ? "P50"
+      : (extra.referencia_label
+          ? extra.referencia_label.charAt(0).toUpperCase() + extra.referencia_label.slice(1)
+          : "Referencia");
+    var filas = "";
+    // Sin referencia (entidad sin PPTO ni promedio) -> se omite la fila, NUNCA se inventa un "—".
+    if (refVal != null) {
+      filas += '<div class="cp-foco__extra-r"><span>' + esc(refLbl) + '</span><b>' +
+        fmtV(refVal) + uni + '</b></div>';
+    }
+    if (extra.dias_con_dato != null && extra.dias_del_mes) {
+      filas += '<div class="cp-foco__extra-r"><span>Días reportados</span><b>' +
+        extra.dias_con_dato + ' / ' + extra.dias_del_mes + '</b></div>';
+    }
+    if (!filas) return "";
+    var gapHtml = "";
+    if (refVal != null && extra.real != null) {
+      var gap = extra.real - refVal;
+      var pos = gap >= 0;
+      gapHtml = '<div class="cp-foco__extra-gap' + (pos ? " cp-foco__extra-gap--pos" : " cp-foco__extra-gap--neg") + '">' +
+        '<span>GAP ' + esc(refLbl) + '</span><b>' + (pos ? "+" : "") + fmtV(gap) + uni + '</b></div>';
+    }
+    return '<div class="cp-foco__extra">' + filas + gapHtml + '</div>';
+  }
+
+  function __cnCompProdHtml(focos, meta, tarjetas, sufijo, extra) {
     focos = (focos || []).filter(function (f) { return !f.sin_produccion; });
     tarjetas = tarjetas || [];
     sufijo = sufijo || "";
@@ -3954,11 +3998,20 @@
       var prod = f.producto || "";
       var pI = __cnProdId(prod) || { color: "#6E7C75", soft: "#F1F4F1" };
       var tarProd = tarjetas.filter(function (t) { return t.producto === prod; });
+      // [2026-09-08 · TARJETA-N1-EXTRA] `extra` solo llega en el panel de N1 (el único caller,
+      // :4376, lo pasa condicionado a que la pregunta sea mensual). El bloque va DENTRO de
+      // .cp-foco__kpicol, hermano de la tarjeta — nunca dentro de __cnTarjetasKpiHtml, que la
+      // comparten otros 5 paneles (H-01).
+      var _extraHtml = __cnN1ExtraHtml(extra);
       var kpi = tarProd.length
         ? '<div class="cp-foco__kpicol"><div class="cn-kpi__row cn-kpi__row--solo">' +
-            __cnTarjetasKpiHtml(tarProd, meta.periodo) + '</div></div>'
+            __cnTarjetasKpiHtml(tarProd, meta.periodo) + '</div>' + _extraHtml + '</div>'
         : "";
-      var gridCls = "cn-compprod__grid" + (tarProd.length ? "" : " cn-compprod__grid--solo");
+      // 🔑 El modificador --ext va en el GRID porque es el grid quien fija la altura (375px en
+      //    la pila, colapsable.css:2529). Solo se añade si HAY bloque extra: N1D/N1DSEL/N1DSER
+      //    y el tablero de Análisis se quedan en 375px, intactos (H-05).
+      var gridCls = "cn-compprod__grid" + (tarProd.length ? "" : " cn-compprod__grid--solo") +
+                    (_extraHtml ? " cn-compprod__grid--ext" : "");
       return '<div class="cp-foco" style="--cp-prod:' + pI.color + ';--cp-prod-soft:' + pI.soft + '">' +
         '<div class="cp-foco__panel is-active">' +
           '<div class="' + gridCls + '">' + kpi +
@@ -4373,7 +4426,18 @@
       // pregunta es mensual (lo emite el backend, respuesta_cuantificar.py).
       var _esMes = datos.dia_marcado == null;
       var _tarj = _esMes ? (ed.tarjetas || []) : [];
-      host.innerHTML = __cnCompProdHtml(focosF, ed.meta, _tarj, sufijo);
+      // [2026-09-08 · TARJETA-N1-EXTRA] `extra` viaja SOLO cuando la pregunta es mensual (N1) —
+      // mismo criterio que `_tarj` arriba. Los campos salen de `datos` (el ejecutor de
+      // Cuantificar, lo que arma el TEXTO), NO de `ed`/`ed.tarjetas` (/analisis/ejecutivo): son
+      // los que se comparan visualmente contra la cifra del texto y deben ser la MISMA fuente
+      // (H-05) — evita el bug de "dos cifras casi iguales que no cuadran".
+      var _extra = _esMes ? {
+        real: datos.real, ppto: datos.ppto, unidad: datos.unidad,
+        referencia_label: datos.referencia_label,
+        dias_con_dato: datos.dias_con_dato, dias_del_mes: datos.dias_del_mes,
+        p50: datos.p50
+      } : null;
+      host.innerHTML = __cnCompProdHtml(focosF, ed.meta, _tarj, sufijo, _extra);
       var edScoped = { focos: focosF };
       if (blk.isConnected) {
         // [2026-09-08 · PANEL-N1] `datos.p50` lo emite el backend solo si el NIVEL tiene P50.

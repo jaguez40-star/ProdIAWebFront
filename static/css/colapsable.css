@@ -1195,6 +1195,23 @@
 /* la tarjeta KPI llena el mismo alto que el gráfico diario y el panel de brecha (antes solo ocupaba su contenido) */
 .cp-foco__kpicol .cn-kpi__row--solo { flex: 1 1 auto; min-height: 0; }
 .cp-foco__kpicol .cp-mes__kpi { height: 100%; justify-content: space-between; }
+/* [2026-09-08 · TARJETA-N1-EXTRA] Bloque propio del panel de N1, HERMANO de la tarjeta dentro
+   de .cp-foco__kpicol. La tarjeta (.cn-kpi__row--solo) conserva su `flex: 1 1 auto` de arriba
+   SIN TOCARLO: con este bloque en `flex: 0 0 auto` (alto natural), aquella se estira sola para
+   llenar lo que quede. Ese reparto es justo el que se busca, así que no hace falta ningún
+   modificador sobre la regla compartida -- que también usa __cnFocosHtml (:6656).
+   🔑 SIN `overflow`. La regla de oro del proyecto (:1558-1561, :2527-2528) prohíbe un segundo
+      scroller dentro de .cn-col: "dos scrollers anidados atrapan la rueda del ratón y dejan la
+      pila inalcanzable" (:1480-1481). El alto se resuelve ampliando el contenedor (CSS 2/2),
+      nunca metiendo una barra aquí. */
+.cp-foco__extra { flex: 0 0 auto; display: flex; flex-direction: column; gap: 4px;
+  margin-top: 8px; padding-top: 10px; border-top: 1px solid #E5E9E6; font-size: 12px; }
+.cp-foco__extra-r { display: flex; justify-content: space-between; gap: 8px; color: #6E7C75; }
+.cp-foco__extra-r b { color: #1A211E; font-variant-numeric: tabular-nums; font-weight: 600; }
+.cp-foco__extra-gap { display: flex; justify-content: space-between; gap: 8px; margin-top: 2px;
+  padding: 5px 9px; border-radius: 7px; font-weight: 700; font-size: 11.5px; }
+.cp-foco__extra-gap--pos { background: #E9F3EC; color: #1f6b4a; }
+.cp-foco__extra-gap--neg { background: #FBECEA; color: #C5311E; }
 /* cuerpo de la tarjeta Real vs Presupuesto: KPIs (izq) | barras (der) */
 .cn-desemp__rvp-body { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: minmax(130px,180px) 1fr; gap: 12px; padding: 6px 8px 8px; }
 .cn-ins { display: flex; flex-direction: column; min-width: 0; border: 1px solid var(--rb-border,#e3e8e5); border-radius: 10px; background: #fff; overflow: hidden; }
@@ -2529,6 +2546,16 @@
 .cn-stk__body .cp-foco__panel .cn-compprod__grid { height: 375px; min-height: 0; }
 .cn-stk__body .cp-foco__panel .cn-compprod__grid > * {
   height: 100%; min-height: 0; overflow: visible; }
+/* [2026-09-08 · TARJETA-N1-EXTRA] El panel de N1 lleva ~90px más en la columna izquierda (las
+   filas de referencia, días reportados y el chip GAP). Con los 375px fijos de arriba y
+   `overflow: visible` en los hijos, ese contenido se saldría del panel por abajo y pisaría el
+   bloque siguiente de la pila. 470px = 375 + 90 + 5 de aire.
+   🔑 El modificador va en el GRID, no en la columna: es el grid quien fija la altura. Lo añade
+      __cnCompProdHtml SOLO cuando hay bloque extra que pintar, así que N1D/N1DSEL/N1DSER y el
+      tablero de Análisis (:2516, que ni siquiera cuelga de .cn-stk__body) siguen en 375px.
+   🔑 La curva de la derecha también es height:100%, así que pasa de ~327px a ~422px. Es una
+      MEJORA declarada: una serie diaria de 30 puntos se lee mejor con más alto. */
+.cn-stk__body .cp-foco__panel .cn-compprod__grid--ext { height: 470px; }
 /* [2026-08-25] QV2-PANEL-MES · el WATERFALL de N4 dentro del panel mensual.
    Clase propia --var porque .cn-wf__svg (:1711) fija min-height:380px para el waterfall de
    EBITDA, que vive en un host de 480px; aquí el host mide 327px (medido) y ese piso lo
