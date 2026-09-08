@@ -2322,10 +2322,12 @@
     // sirve de semáforo: si él no se fía del mensual para este producto, el PPTO tampoco vale.
     // 🔑 Va DESPUÉS de declarar prom2026: con `var` el hoisting lo dejaría en undefined y la guarda
     // sería siempre falsa — el fallback no se ejecutaría nunca y el fallo sería silencioso.
+    // [BEQ-2026-09-08] `pp.ppto` YA es un CAUDAL (kbopd/kbepd por día): no se divide entre los días
+    // del mes. Antes era un volumen mensual y la división era correcta; con el cambio de unidades
+    // dejó de serlo y el PPTO salía ~31 veces menor (gas: 2,5 frente a 80,6 reales, "+3112%").
     if (pptoDia == null && prom2026 != null) {
-      var dimMes = (d.mes && d.mes.dias_del_mes) || 0;
       var pp = (d.por_producto || []).filter(function (x) { return x.producto === prod; })[0];
-      if (dimMes && pp && pp.ppto) pptoDia = pp.ppto / dimMes;
+      if (pp && pp.ppto) pptoDia = pp.ppto;
     }
     var delMes = cvVen
       ? (' · ' + __cnFechaCorta(cvVen.ini) + ' a ' + __cnFechaCorta(cvVen.fin))
