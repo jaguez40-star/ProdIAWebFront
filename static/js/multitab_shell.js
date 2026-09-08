@@ -2188,7 +2188,7 @@
         topG.innerHTML =
           '<div class="cn-ejec-body">' +
           '  <div class="cn-p50hd__lbl"><i class="bi bi-flag-fill"></i> ECP · Cumplimiento del compromiso corporativo ' +
-          '  <b>(P50)</b> <span class="cn-p50hd__u">· promedio del mes en kboepd</span></div>' +
+          '  <b>(P50)</b> <span class="cn-p50hd__u">· promedio del mes en kbepd</span></div>' +
           '  <div class="cn-kpi__row" id="cn-p50-row"><div class="cn-p50hd__load">Cargando compromiso P50…</div></div>' +
           '</div>';
       }
@@ -2353,7 +2353,7 @@
     __cnDailyPlot(elp, fechas, serie, ref, U, prod === "GAS", prom2026 != null, __cnProdCol(prod),
                   esCompProd ? 1.30 : undefined,
                   esCompProd ? { x: "Día" + (mesNom ? " de " + mesNom : " del mes"),
-                                 y: "Producción (" + (U || "kboepd") + ")" } : undefined,
+                                 y: "Producción (" + (U || "kbopd") + ")" } : undefined,
                   pptoDia,
                   // [2026-08-31] 4ª referencia: la media real de ESTE mes, que ya se calculaba para
                   // el pie. Solo se dibuja si hay una referencia anual con la que contrastarla; si
@@ -3113,7 +3113,7 @@
     var g = (ed && ed.gap_por_producto && ed.gap_por_producto[prod]) || null;
     var dets = (g && g.detractores) || [];
     var nombre = prod.charAt(0).toUpperCase() + prod.slice(1).toLowerCase();
-    var U = "kboepd";   // [BEQ]
+    var U = (String(prod).toUpperCase() === "GAS") ? "kbepd" : "kbopd";   // [BEQ] gas equivalente · liquidos bopd
     var esGas = (prod === "GAS");
     var mesN = (dd && dd.mes && dd.mes.nombre) || "";                    // mes dinámico = último mes cargado
     // [2026-07-25] Gas en MSCF = millones de pies³ (÷1e6, 2 dec, coma es-CO) — SIN cambios.
@@ -3246,9 +3246,9 @@
     var nums = rm.meses_num || [];
     var prom = (rm.promedio_mes || {})[producto];          // promedio MENSUAL de meses cerrados (= 3,3M)
     var mesActual = rm.mes_actual;
-    var U = "kboepd";   // [BEQ]
+    var U = (String(producto).toUpperCase() === "GAS") ? "kbepd" : "kbopd";   // [BEQ]
     var esGas = producto === "GAS";
-    var fmtV = __cnBeq;   // [BEQ] kboepd
+    var fmtV = __cnBeq;   // [BEQ]
     var yPlot = y;   // [BEQ]
     var promPlot = prom;   // [BEQ]
     var colores = x.map(function (_, i) { return (nums[i] === mesActual) ? "#7fb59a" : "#1f6b4a"; });
@@ -3523,6 +3523,11 @@
     return (n < 0 ? "-" : "") + out;
   }
   function __cnGasM(v, dec) { return __cnBeq(v, dec); }
+  // [BEQ-2026-09-08] Rotulo por producto: los liquidos son barriles de petroleo (kbopd);
+  // el gas se convierte con el factor 5,7, asi que es EQUIVALENTE (kbepd).
+  function __cnUniProd(prod) {
+    return (String(prod || "").toUpperCase() === "GAS") ? "kbepd" : "kbopd";
+  }
   var __cnKpiLabel = { alineado: "alineado", ajustado: "ajustado", actuar: "actuar" };
 
   // ===== [2026-07-24] Rediseño A+C · Fase 1: anillo de % cumplimiento + estado color-codeado =====
@@ -3638,7 +3643,7 @@
       var ringPct, figLbl, figVal, pptoLbl, pptoVal;
       if (k.bopd && k.bopd.requerido) {                     // CRUDO / GAS: ritmo diario real vs PPTO
         ringPct = Math.round(k.bopd.real / k.bopd.requerido * 100);
-        var duni = k.unidad || "kboepd";   // [BEQ] la unidad YA es caudal diario: sin sufijo
+        var duni = k.unidad || "kbopd";   // [BEQ] la unidad YA es caudal diario: sin sufijo
         figLbl = "Producción actual diaria";
         figVal = fmtR(k.bopd.real) + ' <span class="cp-mes__kpi-unit">' + duni + '</span>';
         pptoLbl = "PPTO"; pptoVal = fmtR(k.bopd.requerido);
@@ -3740,7 +3745,7 @@
       '</div>' +
       '<div class="cp-p50__ring">' + __cnRing(cumpl, S.color, 96, "REAL / P50", 1) + '</div>' +
       '<div class="cp-p50__real">' +
-        '<div class="cp-p50__realval">' + __cnKb(real) + ' <span class="cp-mes__kpi-unit">kboepd</span></div>' +
+        '<div class="cp-p50__realval">' + __cnKb(real) + ' <span class="cp-mes__kpi-unit">' + esc(__cnUniProd(d.producto)) + '</span></div>' +
         '<div class="cp-p50__reallbl">Real del mes</div>' +
       '</div>' +
       '<div class="cp-p50__rows">' +
@@ -4619,7 +4624,7 @@
       showlegend: true, legend: { orientation: "h", y: -0.18, x: 0, font: { size: 11 } },
       xaxis: { title: { text: "Mes", font: { size: 11 } }, tickfont: { size: 11 }, showgrid: false },
       yaxis: {
-        title: { text: "Producción (kboepd)", font: { size: 11 } },   // [BEQ]
+        title: { text: "Producción (" + (unidad || "kbopd") + ")", font: { size: 11 } },   // [BEQ] del payload
         tickfont: { size: 10 }, separatethousands: true, gridcolor: "#eef1ef", zeroline: false
       },
       plot_bgcolor: "#fff", paper_bgcolor: "#fff"
@@ -4677,7 +4682,7 @@
       legend: { orientation: "h", y: -0.18, x: 0, font: { size: 11 } },
       xaxis: { tickfont: { size: 11 }, showgrid: false },
       yaxis: {
-        title: { text: "Producción (kboepd)", font: { size: 11 } },   // [BEQ]
+        title: { text: "Producción (" + (unidad || "kbopd") + ")", font: { size: 11 } },   // [BEQ] del payload
         tickfont: { size: 10 }, rangemode: "tozero", separatethousands: true,
         gridcolor: "#eef1ef", zeroline: false
       },
@@ -4737,7 +4742,7 @@
       showlegend: true, legend: { orientation: "h", y: -0.18, x: 0, font: { size: 11 } },
       xaxis: { title: { text: "Mes", font: { size: 11 } }, tickfont: { size: 11 }, showgrid: false },
       yaxis: {
-        title: { text: "Producción (kboepd)", font: { size: 11 } },   // [BEQ]
+        title: { text: "Producción (" + (unidad || "kbopd") + ")", font: { size: 11 } },   // [BEQ] del payload
         tickfont: { size: 10 }, rangemode: "tozero", separatethousands: true,
         gridcolor: "#eef1ef", zeroline: false
       },
@@ -5099,7 +5104,7 @@
   // (via __cnPanelMesCargar), porque Plotly necesita un contenedor con ancho real.
   function __cnP50AnualInto(hostEl, d) {
     var meses = d.meses || [], vals = d.valores || [];
-    var u = d.unidad || "kboepd";
+    var u = d.unidad || "kbepd";   // [BEQ] P50 anual: agregado con gas convertido
     var anio = d.anio || 2026;
     var meta = (d.meta != null) ? d.meta : null;
 
@@ -6390,7 +6395,7 @@
       ? '<div class="cn-kpi__row">' + __cnTarjetasKpiHtml(d.tarjetas || [], m.periodo) + '</div>'
       : (__cnPanelEntidad ? ""
         : '<div class="cn-p50hd__lbl"><i class="bi bi-flag-fill"></i> ECP · Cumplimiento del compromiso corporativo ' +
-          '<b>(P50)</b> <span class="cn-p50hd__u">· promedio del mes en kboepd</span></div>' +
+          '<b>(P50)</b> <span class="cn-p50hd__u">· promedio del mes en kbepd</span></div>' +
           '<div class="cn-kpi__row" id="cn-p50-row"><div class="cn-p50hd__load">Cargando compromiso P50…</div></div>');
     var head =
       '<div class="cn-ejec__hd"><span class="cn-ejec__hd-ic"><i class="bi bi-stars"></i></span>' +
@@ -7864,7 +7869,7 @@
     return __cnBeq(v);   // [BEQ]
   }
   function __daUni(prod, porMes) {
-    var u = "kboepd";   // [BEQ]
+    var u = __cnUniProd(prod);   // [BEQ]
     return u;   // [BEQ] caudal: sin sufijo
   }
   // A5 · "vivo" = produjo, o tiene curva diaria, o TIENE META (real=0 con meta es el peor caso
@@ -8000,7 +8005,7 @@
       '<div class="da__big"><b>' + __daNum(bigVal, t.producto) + '</b>' +
         '<span>' + __daUni(t.producto, false) + ' de ' + esc(String(t.producto).toLowerCase()) + '</span></div>' +
       (t.bopd_avg != null
-        ? '<div class="da__ritmo">ritmo promedio <b>' + __cnBeq(t.bopd_avg) + '</b> kboepd</div>'   // [BEQ]
+        ? '<div class="da__ritmo">ritmo promedio <b>' + __cnBeq(t.bopd_avg) + '</b> ' + __cnUniProd(t.producto) + '</div>'   // [BEQ]
         : "") +
       '</div>';
 
