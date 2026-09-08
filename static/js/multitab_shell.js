@@ -3538,7 +3538,7 @@
     if (val == null) { return ""; }
     var pos = val >= 0;
     return '<div class="cp-p50__gapw ' + (pos ? "cp-p50__gapw--pos" : "cp-p50__gapw--neg") + '">' +
-      '<span class="cp-p50__gapw-k">Gap vs P50</span>' +
+      '<span class="cp-p50__gapw-k">Gap P50</span>' +
       '<span class="cp-p50__gapw-v">' +
         '<i class="bi bi-arrow-' + (pos ? "up" : "down") + '-short"></i>' +
         (pos ? "+" : "−") + __cnBeq(Math.abs(val)) +
