@@ -3748,7 +3748,7 @@
       '</div>' +
       '<div class="cp-p50__ring">' + __cnRing(cumpl, S.color, 96, "REAL / P50", 1) + '</div>' +
       '<div class="cp-p50__real">' +
-        '<div class="cp-p50__realval">' + __cnKb(real) + ' <span class="cp-mes__kpi-unit">' + esc(__cnUniProd(d.producto)) + '</span></div>' +
+        '<div class="cp-p50__realval">' + __cnKb(real) + ' <span class="cp-mes__kpi-unit">' + esc(__cnUniProd(PROD)) + '</span></div>' +
         '<div class="cp-p50__reallbl">Real del mes</div>' +
       '</div>' +
       '<div class="cp-p50__rows">' +
