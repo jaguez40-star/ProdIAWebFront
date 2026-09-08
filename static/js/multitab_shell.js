@@ -4985,7 +4985,7 @@
     var esGas = (d.producto === "gas");
     var fmtV = esVp
       ? function (v) { return Number(v).toLocaleString("es-CO", { minimumFractionDigits: 1, maximumFractionDigits: 1 }); }
-      : __cnBeq);   // [BEQ]
+      : __cnBeq;   // [BEQ]
     var unidad = d.unidad || "bbl";
     var prodInfo = __cnProdId(d.producto);   // accessor obligatorio (H4) — d.producto en minúsculas
     var prodLbl = d.producto ? (d.producto.charAt(0).toUpperCase() + d.producto.slice(1)) : "";
