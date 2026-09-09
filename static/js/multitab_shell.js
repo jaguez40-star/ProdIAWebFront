@@ -2447,7 +2447,13 @@
     // cálculo del rango: con `var`, declararlo después lo dejaría en `undefined` dentro de ese
     // cálculo por hoisting, y la línea quedaría fuera del área visible sin ningún error — el
     // mismo fallo silencioso que documenta el guard de `prom2026` en :2336.
-    var p50Plot = (p50Dia != null && p50Dia > 0) ? p50Dia : null;
+    // [2026-09-08 · VP-FUENTE-VERDAD] `p50Dia` es ahora un OBJETO {valor, alcance}: el alcance
+    // dice de QUIÉN es el compromiso. Cuando la pregunta es por un CAMPO, el P50 es el de su
+    // vicepresidencia y hay que rotularlo («Compromiso P50 · VP GAA»), nunca dejar que se lea
+    // como el P50 del campo. Se acepta también un número suelto por compatibilidad.
+    var _p50v = (p50Dia && typeof p50Dia === "object") ? p50Dia.valor : p50Dia;
+    var _p50alc = (p50Dia && typeof p50Dia === "object") ? p50Dia.alcance : null;
+    var p50Plot = (_p50v != null && _p50v > 0) ? _p50v : null;
     var promMesPlot = (promMesRef != null && promMesRef > 0) ? promMesRef : null;   // [BEQ]
     // Eje X categórico = número de día del mes ("2026-05-01" → "1"). El hover conserva la fecha completa.
     var xcat = fechas.map(function (f) {
@@ -2520,9 +2526,10 @@
     if (p50Plot) {
       shapes.push({ type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: p50Plot, y1: p50Plot,
         line: { color: "#C5311E", width: 2, dash: "12px 4px" } });
-      if (conLeyenda) refLeyenda("compromiso P50", p50Dia, "#C5311E", "dash");
+      var _p50lbl = "compromiso P50" + (_p50alc ? " · " + esc(_p50alc) : "");
+      if (conLeyenda) refLeyenda(_p50lbl, _p50v, "#C5311E", "dash");
       else anns.push({ x: 0.5, y: p50Plot, xref: "paper", yref: "y", xanchor: "center", yanchor: "bottom",
-        text: "compromiso P50 · " + fmtD(p50Dia) + uni,
+        text: _p50lbl + " · " + fmtD(_p50v) + uni,
         showarrow: false, font: { size: 10, color: "#C5311E" } });
     }
     // Eje Y desde 0, con techo = max(curva, referencia) + holgura → la referencia queda con aire.
@@ -3960,7 +3967,12 @@
     if (!extra) return "";
     var fmtV = __cnBeq;                                             // [BEQ]
     var uni = extra.unidad ? esc(extra.unidad) : "";
-    var conP50 = !!(extra.p50 && extra.p50.valor != null);
+    // [2026-09-08 · VP-FUENTE-VERDAD] `alcance` viene cuando el P50 NO es de esta entidad sino
+    // de su vicepresidencia (un CAMPO toma el de su VP). En ese caso el P50 es solo CONTEXTO:
+    // no manda sobre el anillo ni sobre el GAP, que siguen contra el PPTO del propio campo —
+    // comparar el real de Castilla contra el compromiso de toda GAA daria un % sin sentido.
+    var p50Ajeno = !!(extra.p50 && extra.p50.alcance);
+    var conP50 = !!(extra.p50 && extra.p50.valor != null) && !p50Ajeno;
     var refVal = conP50 ? extra.p50.valor : extra.ppto;
     var refLbl = conP50 ? "Compromiso = P50"
       : (extra.referencia_label
@@ -3989,6 +4001,11 @@
                                                    fmtV(extra.promedio_anio), "#BA7517");
     if (extra.media_mes != null) filas += fila("Media del mes", fmtV(extra.media_mes), "#5A6B7A");
     if (extra.proyeccion != null) filas += fila("Proyección cierre", fmtV(extra.proyeccion));
+    // [2026-09-08 · VP-FUENTE-VERDAD] El P50 de la VP a la que pertenece este campo. Va como
+    // fila rotulada («Compromiso P50 · VP GAA») y NUNCA en el anillo ni en el GAP: es el
+    // compromiso de la vicepresidencia entera, de otra magnitud que la cifra del campo.
+    if (p50Ajeno) filas += fila("Compromiso P50 · " + extra.p50.alcance,
+                                fmtV(extra.p50.valor), "#C5311E");
     // 🔑 «Días reportados» SOLO si el mes tiene tabla diaria. Un mes cerrado sin diario da
     //    dias_con_data=0, y pintar «0 / 30» sobre una cifra DEFINITIVA sería una afirmación
     //    falsa — es exactamente lo que niveles.py:188-194 se cuida de no decir con
@@ -4496,7 +4513,12 @@
       var edScoped = { focos: focosF };
       if (blk.isConnected) {
         // [2026-09-08 · PANEL-N1] `datos.p50` lo emite el backend solo si el NIVEL tiene P50.
-        __cnPaintFocoStk(blk, edScoped, dd, sufijo, (datos.p50 || {}).valor);
+        // [2026-09-08 · VP-FUENTE-VERDAD] Al gráfico SOLO va el P50 propio de la entidad. El de
+        // una VP ajena (cuando la pregunta es por un campo) NO: su magnitud es la de toda la VP
+        // —CASTILLA produce 55 kbopd y el P50 de GAA es 104,7— y en el mismo eje aplastaría la
+        // curva del campo contra el suelo. Ese caso se muestra como FILA en la tarjeta, donde
+        // se puede rotular «VP GAA» sin distorsionar la escala de nada.
+        __cnPaintFocoStk(blk, edScoped, dd, sufijo, (datos.p50 && !datos.p50.alcance) ? datos.p50 : null);
         __cnCompProdMarcarDia(blk, datos.dia_marcado);
         __cnStackScroll(blk);
       } else {
@@ -4507,7 +4529,7 @@
         blk.__cnAnzEd = edScoped; blk.__cnAnzDd = dd; blk.__cnAnzSufijo = sufijo;
         // [2026-09-08 · PANEL-N1] El P50 se guarda junto a ed/dd para que la repintada de :459
         // (al volver de otra pestaña) pueda volver a dibujar la línea del compromiso.
-        blk.__cnAnzP50 = (datos.p50 || {}).valor;
+        blk.__cnAnzP50 = (datos.p50 && !datos.p50.alcance) ? datos.p50 : null;
       }
     }).catch(function () {
       host.innerHTML = '<div class="p-2 text-danger small">Fallo de red cargando el comportamiento del producto.</div>';
