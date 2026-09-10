@@ -7924,6 +7924,14 @@
   var __cnDiacriticos = new RegExp("[̀-ͯ]", "g");
   function __cnEsPanoramaTxt(t) {
     var n = (t || "").toLowerCase().normalize("NFD").replace(__cnDiacriticos, "");
+    // [2026-09-10 · PANORAMA] «panorama general DE PRODUCCION» NO es este atajo: esa pregunta
+    // la responde el backend con la lámina del año (sub-intención `panorama`, panel
+    // analiza_panorama). Este atajo corta ANTES de llamar al backend y hace `return`, así que
+    // sin esta excepción la pregunta era inalcanzable — se pintaba la burbuja fija y el
+    // clasificador no llegaba a verla nunca.
+    // 🔑 Se excluye solo esa forma: «bloque 2» y «panorama general» a secas siguen trayendo
+    //    el panorama de tarjetas P50 como hasta ahora.
+    if (n.indexOf("panorama general de produccion") !== -1) { return false; }
     return n.indexOf("bloque 2") !== -1 || n.indexOf("panorama general") !== -1;
   }
 
