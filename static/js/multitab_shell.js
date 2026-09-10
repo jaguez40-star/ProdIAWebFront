@@ -4620,6 +4620,8 @@
              // panel.datos. Registrado ANTES del fallback por la razón de siempre:
              // __cnCuantCardHtml NO valida el tipo y pintaría una tarjeta KPI con campos ajenos.
              : (panel.tipo === "analiza_senda")    ? __cnAnzSendaHtml(d)
+             // [2026-09-10 · PANORAMA] La lámina del año entera, pedida por su nombre.
+             : (panel.tipo === "analiza_panorama") ? __cnAnzPanoramaHtml(d)
              : __cnCuantCardHtml(d);
     // Tope silencioso (sin UI, sin aviso): al superarlo se descarta el bloque más antiguo.
     while (stack.children.length >= __CN_STACK_MAX) stack.removeChild(stack.firstChild);
@@ -4693,7 +4695,7 @@
     // [2026-09-07 · PANEL-P50-ANUAL-V2] +p50_anual: paso de SVG puro a Plotly, asi que ahora SI
     // necesita pintor diferido. Sin esta linea el host queda vacio y no se pinta nada, sin error.
     // [2026-09-10 · SENDA-CHAT] +analiza_senda: Plotly, mismo pintor diferido.
-    if (panel.tipo === "cuant_serie" || panel.tipo === "cuant_var" || panel.tipo === "cuant_acum" || panel.tipo === "analiza_tend" || panel.tipo === "cuant_cmp" || panel.tipo === "cuant_serie_ppto" || panel.tipo === "p50_anual" || panel.tipo === "analiza_senda") __cnPanelMesCargar(blk, d, panel.tipo);
+    if (panel.tipo === "cuant_serie" || panel.tipo === "cuant_var" || panel.tipo === "cuant_acum" || panel.tipo === "analiza_tend" || panel.tipo === "cuant_cmp" || panel.tipo === "cuant_serie_ppto" || panel.tipo === "p50_anual" || panel.tipo === "analiza_senda" || panel.tipo === "analiza_panorama") __cnPanelMesCargar(blk, d, panel.tipo);
   }
 
   // [2026-08-11] NO-OP desde que análisis y pila conviven en un scroll único (.cn-col): ya no hay
@@ -5062,6 +5064,9 @@
       // dentro hay DOS gráficos y una tabla, y cada pintor busca el suyo por [data-rol].
       var hsd = blk.querySelector(".cn-sendap");
       if (hsd) __cnSendaMesInto(hsd, d);
+    } else if (tipo === "analiza_panorama") {
+      var hpn = blk.querySelector(".cn-panorama");
+      if (hpn) __cnPanoramaInto(hpn, d);
     }
   }
 
@@ -6548,6 +6553,37 @@
       '</div>' +
       (avisos ? '<div class="cq-avisos">' + avisos + '</div>' : "") +
       '</div>';
+  }
+
+  // [2026-09-10 · PANORAMA] «¿Cuál es el panorama general de producción?» -> la lámina del año
+  // (barras apiladas ECP+Filiales, real y proyectado, con la línea de meta P50). Es el gráfico
+  // que vivía en el tablero y que ahora se pide por su nombre desde el chat.
+  // 🔑 REUSA __cnSendaPlotInto tal cual: ya sabe pintar exactamente esto, y es el mismo pintor
+  //    del tablero. Un segundo dibujante de las mismas barras sería un gemelo que se
+  //    desincroniza; aquí solo se le da un host de la pila en vez del host fijo del tablero.
+  // 🔑 Envoltorio propio (no __cnPanelMesHtml): ese queda capado a 375px y recorta sin avisar.
+  function __cnAnzPanoramaHtml(d) {
+    if (!d || !d.serie || !d.serie.length) return "";
+    var avisos = (d.avisos || []).map(function (a) {
+      return '<div class="cq-aviso">⚠️ ' + esc(a) + '</div>';
+    }).join("");
+    return '<div class="cn-panorama">' +
+      '<div class="cn-sendap__lbl">Producción equivalente G.E. ' + esc(String(d.anio || "")) +
+        ' <em>· real cerrado, proyectado y meta P50</em></div>' +
+      '<div class="cn-panorama__plot" data-rol="panorama"></div>' +
+      (avisos ? '<div class="cq-avisos">' + avisos + '</div>' : "") +
+      '</div>';
+  }
+
+  // Pintor diferido: lo llama __cnPanelMesPintar con el bloque ya conectado, porque Plotly
+  // necesita un contenedor con ancho real.
+  function __cnPanoramaInto(hostEl, d) {
+    if (!hostEl) { return; }
+    if (!window.Plotly) {
+      hostEl.innerHTML = '<div class="cn-sendap__na">No se pudo cargar Plotly.</div>';
+      return;
+    }
+    __cnSendaPlotInto(hostEl.querySelector('[data-rol="panorama"]'), d);
   }
 
   // Meses que el BACKEND marcó como futuros. Sin la lista no se inventa una regla: se devuelve

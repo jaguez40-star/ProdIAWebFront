@@ -2670,6 +2670,12 @@
 .cn-sendap__chip--gap {
   height: 10px; background: rgba(199,127,27,0.16); border: 1px solid #C77F1B; }
 
+/* [2026-09-10 · PANORAMA] La lámina del año pedida desde el chat («¿cuál es el
+   panorama general de producción?»). Reusa el pintor del tablero, así que solo
+   necesita host con alto real: sin él Plotly monta un SVG de 10px SIN error. */
+.cn-panorama { padding: 2px 2px 0; }
+.cn-panorama__plot { width: 100%; height: 300px; min-width: 0; }
+
 /* Muy estrecho (pila clásica a 1366px ≈ 259px útiles): los gráficos se achatan
    antes que desaparecer, y la tabla es lo último que se sacrifica porque las
    cifras siguen siendo legibles donde una curva de 12 puntos ya no lo es. */
