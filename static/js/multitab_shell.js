@@ -2210,7 +2210,14 @@
           '</div>';
       }
       __cnPaintP50Header();
-      __cnPaintSenda();
+      // [2026-09-10 · SENDA-OCULTA] La senda ("Producción equivalente G.E.") YA NO se pinta al
+      // abrir: al arrancar solo va el panel principal, las tarjetas P50. Decisión del usuario
+      // 2026-09-10. Desde que el chat responde la senda como panel propio, pintarla también
+      // aquí duplicaba el mismo gráfico y gastaba un fetch que nadie había pedido.
+      // 🔑 NO SE ELIMINA NADA: el host #cn-p50-senda sigue montado justo arriba, y
+      //    __cnPaintSenda / __cnSendaHtml / __cnSendaPlotInto quedan intactas. Para devolverla,
+      //    descomentar esta línea (y su gemela de __cnPaintEjec) — nada más.
+      // __cnPaintSenda();
       return;   // corta ANTES del fetch de /desempeno (:1600): el global termina aquí
     }
 
@@ -3554,7 +3561,12 @@
     __cnPrecargarFocosLazy(body);   // Diferidas/Mantenimientos/EBITDA de cada foco, en paralelo
     // [2026-07-27] llena el encabezado P50 (async, ECP global) — opción A.
     // [2026-07-29] En drill-down a una entidad el encabezado no se pinta, así que se evita el fetch.
-    if (!__cnEsFil() && !__cnPanelEntidad) { __cnPaintP50Header(); __cnPaintSenda(); }
+    // [2026-09-10 · SENDA-OCULTA] Gemela de la de arriba (:2213): el Análisis Ejecutivo monta el
+    // MISMO encabezado P50 (:7272), así que si aquí se siguiera llamando, la senda reaparecería
+    // por este otro camino y el cambio no se notaría. Se esconde en los dos sitios o en ninguno.
+    // 🔑 Sin eliminar nada: para devolverla, añadir de nuevo __cnPaintSenda() aquí y descomentar
+    //    la línea de :2213.
+    if (!__cnEsFil() && !__cnPanelEntidad) { __cnPaintP50Header(); }
   }
 
   // Nivel 1: tarjetas KPI de cierre (barra + proyectado/meta + microcopy), 1 por producto.
