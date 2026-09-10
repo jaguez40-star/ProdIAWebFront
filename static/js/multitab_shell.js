@@ -4602,6 +4602,12 @@
              //    tarjetas se apilan en bloque. Registrado ANTES del fallback por la razón de
              //    siempre: __cnCuantCardHtml NO valida el tipo y pintaría campos ajenos.
              : (panel.tipo === "p50_cards")        ? '<div class="cn-kpi__row">' + __cnP50CardsHtml(d) + '</div>'
+             // [2026-09-10 · SENDA-CHAT] "analiza_senda" (Analizar/senda): barra apilada ECP+Filiales
+             // real+proyectado con línea P50, la misma del tablero. Constructor PURO; los datos
+             // (respuesta cruda de /analisis/president/senda) ya viajan en panel.datos. Registrado
+             // ANTES del fallback por la razón de siempre: __cnCuantCardHtml NO valida el tipo y
+             // pintaría una tarjeta KPI leyendo campos que este contrato no tiene.
+             : (panel.tipo === "analiza_senda")    ? __cnAnzSendaHtml(d)
              : __cnCuantCardHtml(d);
     // Tope silencioso (sin UI, sin aviso): al superarlo se descarta el bloque más antiguo.
     while (stack.children.length >= __CN_STACK_MAX) stack.removeChild(stack.firstChild);
@@ -4674,7 +4680,8 @@
     // guardián de __cnPanelMesCargar cubre el caso del DocumentFragment (pestaña oculta).
     // [2026-09-07 · PANEL-P50-ANUAL-V2] +p50_anual: paso de SVG puro a Plotly, asi que ahora SI
     // necesita pintor diferido. Sin esta linea el host queda vacio y no se pinta nada, sin error.
-    if (panel.tipo === "cuant_serie" || panel.tipo === "cuant_var" || panel.tipo === "cuant_acum" || panel.tipo === "analiza_tend" || panel.tipo === "cuant_cmp" || panel.tipo === "cuant_serie_ppto" || panel.tipo === "p50_anual") __cnPanelMesCargar(blk, d, panel.tipo);
+    // [2026-09-10 · SENDA-CHAT] +analiza_senda: Plotly, mismo pintor diferido.
+    if (panel.tipo === "cuant_serie" || panel.tipo === "cuant_var" || panel.tipo === "cuant_acum" || panel.tipo === "analiza_tend" || panel.tipo === "cuant_cmp" || panel.tipo === "cuant_serie_ppto" || panel.tipo === "p50_anual" || panel.tipo === "analiza_senda") __cnPanelMesCargar(blk, d, panel.tipo);
   }
 
   // [2026-08-11] NO-OP desde que análisis y pila conviven en un scroll único (.cn-col): ya no hay
@@ -5038,6 +5045,9 @@
     } else if (tipo === "p50_anual") {
       var hpa = blk.querySelector(".cn-p50an-mes");
       if (hpa) __cnP50AnualInto(hpa, d);
+    } else if (tipo === "analiza_senda") {
+      var hsd = blk.querySelector(".cn-senda-mes");
+      if (hsd) __cnSendaMesInto(hsd, d);
     }
   }
 
@@ -6269,9 +6279,11 @@
   // __cnP50FilialesHtml/__cnP50TotalHtml (:6015-6016): componer nunca revienta.
   function __cnSendaHtml(d) {
     if (!d || !d.serie || !d.serie.length) { return ""; }
+    // [2026-09-10 · SENDA-CHAT] CLASE, no id: la senda ahora también se pinta en la pila del chat,
+    // donde pueden convivir dos bloques de senda — con id fijo el segundo pintaría sobre el primero.
     return '<div class="cn-p50hd__lbl"><i class="bi bi-graph-up-arrow"></i> Producción equivalente G.E. ' +
            esc(String(d.anio || "")) + ' <span class="cn-p50hd__u">· real cerrado, proyectado y meta P50</span></div>' +
-           '<div id="cn-p50-senda-plot"></div>';
+           '<div class="cn-p50-senda-plot"></div>';
   }
 
   // Paleta de la muestra aprobada (artifact 2026-09-08). Verde ECP sólido abajo, verde claro
@@ -6286,19 +6298,12 @@
   var __CN_MES_ABR = ["", "Ene", "Feb", "Mar", "Abr", "May", "Jun",
                       "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
 
-  // 🟢 Plotly YA está vendorizado y cargado global (base.html:33) — NUNCA descargar ni crear
-  // otro <script>, H5/H12 del plan.
-  // 🔴 NO se llama desde window.__cnP50CambiarMes: cambiar de mes solo repinta #cn-p50-row
-  // (decisión ya vigente para el resto del tablero, comentario de :6026); la senda es la del
-  // AÑO completo y no depende del mes elegido en el selector.
-  function __cnPaintSenda() {
-    var host = el("cn-p50-senda"); if (!host) return;
-    fetch("/api/analisis/president/senda")
-      .then(function (r) { return r.json(); })
-      .then(function (d) {
-        var host2 = el("cn-p50-senda"); if (!host2) return;
-        host2.innerHTML = __cnSendaHtml(d);
-        var plotNode = el("cn-p50-senda-plot");
+  // [2026-09-10 · SENDA-CHAT] Pintor PURO de Plotly sobre un nodo ya insertado en el DOM. Antes
+  // este cuerpo vivía dentro del .then() de __cnPaintSenda, atado al fetch y al id fijo del
+  // tablero; ahora lo comparten el tablero (__cnPaintSenda, que sigue haciendo el fetch) y la
+  // pila del chat (__cnSendaMesInto, que recibe los datos en panel.datos y no fetchea nada).
+  // Una sola función = una sola paleta, un solo layout, un solo sitio donde arreglar.
+  function __cnSendaPlotInto(plotNode, d) {
         if (!plotNode || !window.Plotly || !d || !d.serie || !d.serie.length) { return; }
         // Purga antes de dibujar: si el nodo ya tuvo un gráfico (dos montajes de la misma
         // vista), Plotly.newPlot sobre un nodo usado no libera el trazo anterior por sí solo —
@@ -6444,11 +6449,47 @@
 
         window.Plotly.newPlot(plotNode, [trazaEcp, trazaFil, trazaTot, trazaP50], layout,
           { displayModeBar: false, responsive: true });
+  }
+
+  // 🟢 Plotly YA está vendorizado y cargado global (base.html:33) — NUNCA descargar ni crear
+  // otro <script>, H5/H12 del plan.
+  // 🔴 NO se llama desde window.__cnP50CambiarMes: cambiar de mes solo repinta #cn-p50-row
+  // (decisión ya vigente para el resto del tablero, comentario de :6026); la senda es la del
+  // AÑO completo y no depende del mes elegido en el selector.
+  // [2026-09-10 · SENDA-CHAT] Ahora es solo el ENVOLTORIO del tablero: fetch + inyectar el
+  // markup + delegar el dibujo a __cnSendaPlotInto. Misma firma y mismos 2 call sites que
+  // antes (:2213, :3557); el tablero no cambia de comportamiento.
+  function __cnPaintSenda() {
+    var host = el("cn-p50-senda"); if (!host) return;
+    fetch("/api/analisis/president/senda")
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        var host2 = el("cn-p50-senda"); if (!host2) return;
+        host2.innerHTML = __cnSendaHtml(d);
+        __cnSendaPlotInto(host2.querySelector(".cn-p50-senda-plot"), d);
       })
       .catch(function () {
         var host3 = el("cn-p50-senda");
         if (host3) host3.innerHTML = '<div class="cn-p50hd__na">No se pudo cargar la senda proyectada.</div>';
       });
+  }
+
+  // [2026-09-10 · SENDA-CHAT] Constructor PURO del panel de senda en la PILA del chat. Reusa el
+  // envoltorio mensual (__cnPanelMesHtml): es el que da altura al grid en la pila — MEDIDO el
+  // 2026-08-25 (:4694-4697) que sin él Plotly monta un SVG de 10 px sin lanzar error. `producto`
+  // no existe en la senda (es corporativa, con gas convertido): __cnProdId(undefined) devuelve
+  // null y el envoltorio cae al gris neutro (:3643, :4705). Los `avisos` del endpoint son
+  // strings y el envoltorio ya los pinta.
+  function __cnAnzSendaHtml(d) {
+    if (!d || !d.serie || !d.serie.length) return "";
+    return __cnPanelMesHtml(d, "cn-senda-mes");
+  }
+
+  // Pintor diferido del panel de senda en la pila (se llama desde __cnPanelMesPintar, con el
+  // bloque ya conectado). Sin el título del tablero: el texto de la respuesta ya lo dice.
+  function __cnSendaMesInto(hostEl, d) {
+    hostEl.innerHTML = '<div class="cn-p50-senda-plot"></div>';
+    __cnSendaPlotInto(hostEl.querySelector(".cn-p50-senda-plot"), d);
   }
 
   // Épica 1 (atribución cuantitativa del gap, feedback gerencial 2026-07-24): el renglón ECP
