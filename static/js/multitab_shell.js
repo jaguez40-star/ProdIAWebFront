@@ -4602,11 +4602,11 @@
              //    tarjetas se apilan en bloque. Registrado ANTES del fallback por la razón de
              //    siempre: __cnCuantCardHtml NO valida el tipo y pintaría campos ajenos.
              : (panel.tipo === "p50_cards")        ? '<div class="cn-kpi__row">' + __cnP50CardsHtml(d) + '</div>'
-             // [2026-09-10 · SENDA-CHAT] "analiza_senda" (Analizar/senda): barra apilada ECP+Filiales
-             // real+proyectado con línea P50, la misma del tablero. Constructor PURO; los datos
-             // (respuesta cruda de /analisis/president/senda) ya viajan en panel.datos. Registrado
-             // ANTES del fallback por la razón de siempre: __cnCuantCardHtml NO valida el tipo y
-             // pintaría una tarjeta KPI leyendo campos que este contrato no tiene.
+             // [2026-09-10 · SENDA-PANEL] "analiza_senda" (Analizar/senda): panel compuesto —
+             // el año en líneas, el zoom de la proyección con la brecha, y la tabla de cifras.
+             // Constructor PURO; los datos (serie de 12 meses + `meses_futuros`) ya viajan en
+             // panel.datos. Registrado ANTES del fallback por la razón de siempre:
+             // __cnCuantCardHtml NO valida el tipo y pintaría una tarjeta KPI con campos ajenos.
              : (panel.tipo === "analiza_senda")    ? __cnAnzSendaHtml(d)
              : __cnCuantCardHtml(d);
     // Tope silencioso (sin UI, sin aviso): al superarlo se descarta el bloque más antiguo.
@@ -5046,7 +5046,9 @@
       var hpa = blk.querySelector(".cn-p50an-mes");
       if (hpa) __cnP50AnualInto(hpa, d);
     } else if (tipo === "analiza_senda") {
-      var hsd = blk.querySelector(".cn-senda-mes");
+      // [2026-09-10 · SENDA-PANEL] El host es el panel entero (.cn-sendap), no un div de plot:
+      // dentro hay DOS gráficos y una tabla, y cada pintor busca el suyo por [data-rol].
+      var hsd = blk.querySelector(".cn-sendap");
       if (hsd) __cnSendaMesInto(hsd, d);
     }
   }
@@ -6486,22 +6488,256 @@
       });
   }
 
-  // [2026-09-10 · SENDA-CHAT] Constructor PURO del panel de senda en la PILA del chat. Reusa el
-  // envoltorio mensual (__cnPanelMesHtml): es el que da altura al grid en la pila — MEDIDO el
-  // 2026-08-25 (:4694-4697) que sin él Plotly monta un SVG de 10 px sin lanzar error. `producto`
-  // no existe en la senda (es corporativa, con gas convertido): __cnProdId(undefined) devuelve
-  // null y el envoltorio cae al gris neutro (:3643, :4705). Los `avisos` del endpoint son
-  // strings y el envoltorio ya los pinta.
+  // [2026-09-10 · SENDA-PANEL] Panel compuesto de la senda en la PILA del chat: el año en
+  // líneas (contexto) + el zoom de la proyección con la brecha sombreada + la tabla de cifras,
+  // bajo una leyenda compartida.
+  //
+  // 🔴 NO reusa __cnPanelMesHtml: ese envoltorio queda capado a 375px de alto
+  //    (colapsable.css:2560) y .cn-ins recorta lo que sobre SIN lanzar error (:1231). Este panel
+  //    pide ~556px con la fila de abajo en dos columnas, y ~800px cuando cae a una sola. Se
+  //    monta envoltorio propio, igual que hace __cnDifPanelHtml (:2989) para las diferidas.
+  //    Verificado: .cn-stk no tiene max-height ni overflow, así que el bloque crece libre.
+  // 🔴 NO llama a __cnSendaPlotInto: esa función la comparte el TABLERO (vía __cnPaintSenda) y
+  //    pinta barras apiladas. Cambiarla movería el tablero, que en este plan no cambia.
+  // 🔑 `meses_futuros` lo manda el BACKEND ya resuelto; aquí no se recalcula qué es futuro.
+  //    Dos implementaciones de la misma regla es como el texto y la gráfica dejan de coincidir.
   function __cnAnzSendaHtml(d) {
     if (!d || !d.serie || !d.serie.length) return "";
-    return __cnPanelMesHtml(d, "cn-senda-mes");
+    var avisos = (d.avisos || []).map(function (a) {
+      return '<div class="cq-aviso">⚠️ ' + esc(a) + '</div>';
+    }).join("");
+    return '<div class="cn-sendap">' +
+      '<div class="cn-sendap__ctx">' +
+        '<div class="cn-sendap__lbl">Contexto <em>· el año completo</em></div>' +
+        '<div class="cn-sendap__plot" data-rol="ctx"></div>' +
+      '</div>' +
+      '<div class="cn-sendap__row">' +
+        '<div class="cn-sendap__cell">' +
+          '<div class="cn-sendap__lbl">Detalle <em>· la brecha contra el P50</em></div>' +
+          '<div class="cn-sendap__plot" data-rol="zoom"></div>' +
+        '</div>' +
+        '<div class="cn-sendap__cell">' +
+          '<div class="cn-sendap__lbl">Cifras <em>· ' + esc(d.unidad || "kboepd") + '</em></div>' +
+          // 🔑 __tblHOST, no __tbl: `.cn-sendap__tbl` es la clase del <table> de dentro. Si el
+          //    host llevara la misma, la regla del <table> (width/border-collapse) pisaría su
+          //    `min-width: 0` y la celda dejaría de poder encogerse -> la fila desborda.
+          '<div class="cn-sendap__tblhost" data-rol="tabla"></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="cn-sendap__leg">' +
+        '<span class="cn-sendap__lg"><i class="cn-sendap__chip cn-sendap__chip--real"></i>' +
+          'Real (mes cerrado)</span>' +
+        '<span class="cn-sendap__lg"><i class="cn-sendap__chip cn-sendap__chip--proy"></i>' +
+          'Proyectado</span>' +
+        '<span class="cn-sendap__lg"><i class="cn-sendap__chip cn-sendap__chip--p50"></i>' +
+          'Meta P50</span>' +
+        '<span class="cn-sendap__lg"><i class="cn-sendap__chip cn-sendap__chip--gap"></i>' +
+          'Brecha contra el compromiso</span>' +
+      '</div>' +
+      (avisos ? '<div class="cq-avisos">' + avisos + '</div>' : "") +
+      '</div>';
   }
 
-  // Pintor diferido del panel de senda en la pila (se llama desde __cnPanelMesPintar, con el
-  // bloque ya conectado). Sin el título del tablero: el texto de la respuesta ya lo dice.
+  // Meses que el BACKEND marcó como futuros. Sin la lista no se inventa una regla: se devuelve
+  // vacío y el zoom declara que no hay proyección — mejor que adivinar el corte.
+  function __cnSendaFuturos(d) {
+    var ids = (d && d.meses_futuros) || [];
+    if (!ids.length) return [];
+    return (d.serie || []).filter(function (m) {
+      return ids.indexOf(m.mes) !== -1 && m.total !== null && m.total !== undefined;
+    });
+  }
+
+  // Layout común de los dos gráficos del panel. Sin leyenda de Plotly: la leyenda es HTML y
+  // está compartida al pie (patrón de .gpm__legend, colapsable.css:1394).
+  function __cnSendaLayout(rango, unidad) {
+    var C = __CN_SENDA_COL;
+    return {
+      margin: { t: 16, r: 14, b: 26, l: 46 },
+      xaxis: { tickfont: { size: 10.5, color: C.tick }, showgrid: false, zeroline: false,
+               showline: true, linecolor: C.grid },
+      yaxis: { title: { text: String(unidad || "kboepd").toUpperCase(),
+                        font: { size: 9, color: C.tick } },
+               range: rango, gridcolor: C.grid, griddash: "dot", zeroline: false,
+               tickfont: { size: 10, color: C.tick } },
+      showlegend: false,
+      plot_bgcolor: "rgba(0,0,0,0)", paper_bgcolor: "rgba(0,0,0,0)",
+      hovermode: "x unified"
+    };
+  }
+
+  // Margen del eje: se calcula sobre los valores REALMENTE dibujados, nunca fijo. Con el eje
+  // recortado se aprecia una variación del 0,4% que desde cero quedaba plana -- y recortar aquí
+  // es legítimo porque NO hay segmentos apilados que distorsionar (el motivo por el que el
+  // tablero sí arranca en cero, comentario de :6393).
+  function __cnSendaRango(vals, aire) {
+    var lo = null, hi = null;
+    for (var i = 0; i < vals.length; i++) {
+      var v = vals[i];
+      if (v === null || v === undefined) { continue; }
+      if (lo === null || v < lo) { lo = v; }
+      if (hi === null || v > hi) { hi = v; }
+    }
+    if (lo === null) { return [0, 800]; }
+    var m = (hi - lo) * aire;
+    if (m < 4) { m = 4; }                 // series casi planas: un margen minimo o no se ve nada
+    return [Math.floor((lo - m) / 5) * 5, Math.ceil((hi + m) / 5) * 5];
+  }
+
+  // ---- Mitad 1: el año completo. Real solido, proyectado punteado, banda sobre lo proyectado.
+  function __cnSendaCtxInto(node, d) {
+    if (!node || !window.Plotly || !d || !d.serie || !d.serie.length) { return; }
+    try { window.Plotly.purge(node); } catch (e) { /* nodo nuevo */ }
+    var C = __CN_SENDA_COL;
+    var meses = [], p50 = [], real = [], proy = [], corte = -1, todos = [];
+    d.serie.forEach(function (m, i) {
+      meses.push(__CN_MES_ABR[m.mes] || m.mes_nombre);
+      p50.push(m.p50);
+      todos.push(m.total); todos.push(m.p50);
+      if (m.es_real) { real.push(m.total); proy.push(null); }
+      else {
+        real.push(null); proy.push(m.total);
+        if (corte === -1) { corte = i; }
+      }
+    });
+    // El tramo proyectado repite el ULTIMO real para que las dos lineas se toquen; sin esto
+    // queda un hueco visual entre lo medido y lo proyectado.
+    if (corte > 0) { proy[corte - 1] = real[corte - 1]; }
+
+    var shapes = [], anots = [];
+    // 🔑 DOS condiciones distintas, no una:
+    //    · La BANDA se dibuja siempre que haya algo proyectado (corte >= 0). Si TODO el año lo
+    //      es (corte === 0, alcanzable en enero o si la migración del P50 no está aplicada y
+    //      ningún mes trae REAL), sombrear el gráfico entero es la verdad, y callarlo dejaría
+    //      un gráfico donde no se distingue lo medido de lo proyectado.
+    //    · El SEPARADOR y el empalme sí exigen corte > 0: sin meses reales delante no hay nada
+    //      que separar, y `corte - 1` sería índice -1.
+    if (corte >= 0) {
+      // La banda ES la zona proyectada: arranca EXACTAMENTE en el separador. Empezarla mas
+      // tarde dejaba la linea punteada suelta a su izquierda, como dos marcas de lo mismo.
+      shapes.push({ type: "rect", xref: "x", yref: "paper",
+                    x0: corte - 0.5, x1: meses.length - 0.5, y0: 0, y1: 1,
+                    fillcolor: "rgba(199,127,27,0.09)", line: { width: 0 }, layer: "below" });
+      anots.push({ x: corte - 0.42, y: 1.01, xref: "x", yref: "paper", text: "PROYECTADO",
+                   showarrow: false, xanchor: "left", yanchor: "bottom",
+                   font: { size: 9, color: C.ecpProy } });
+    }
+    if (corte > 0) {
+      shapes.push({ type: "line", xref: "x", yref: "paper",
+                    x0: corte - 0.5, x1: corte - 0.5, y0: 0, y1: 1,
+                    line: { color: C.ecpProy, width: 1, dash: "dot" } });
+    }
+
+    var lay = __cnSendaLayout(__cnSendaRango(todos, 0.12), d.unidad);
+    lay.shapes = shapes;
+    lay.annotations = anots;
+
+    window.Plotly.newPlot(node, [
+      { x: meses, y: p50, name: "Meta P50", type: "scatter", mode: "lines",
+        line: { color: C.p50, width: 2 },
+        hovertemplate: "P50 %{y:.1f}<extra></extra>" },
+      { x: meses, y: real, name: "Real", type: "scatter", mode: "lines+markers",
+        line: { color: C.ecpReal, width: 2.5 }, marker: { size: 6, color: C.ecpReal },
+        connectgaps: false, hovertemplate: "Real %{y:.1f}<extra></extra>" },
+      { x: meses, y: proy, name: "Proyectado", type: "scatter", mode: "lines+markers",
+        line: { color: C.ecpProy, width: 2.5, dash: "dash" },
+        marker: { size: 6, color: C.ecpProy },
+        connectgaps: false, hovertemplate: "Proyectado %{y:.1f}<extra></extra>" }
+    ], lay, { displayModeBar: false, responsive: true });
+  }
+
+  // ---- Mitad 2: el zoom de la proyeccion, con el area entre total y P50 = la brecha.
+  function __cnSendaZoomInto(node, d, fut) {
+    if (!node || !window.Plotly) { return; }
+    try { window.Plotly.purge(node); } catch (e) { /* nodo nuevo */ }
+    if (!fut.length) {
+      node.innerHTML = '<div class="cn-sendap__na">Sin meses proyectados por delante.</div>';
+      return;
+    }
+    var C = __CN_SENDA_COL;
+    var meses = [], tot = [], p50 = [], todos = [], anots = [];
+    fut.forEach(function (m) {
+      meses.push(__CN_MES_ABR[m.mes] || m.mes_nombre);
+      tot.push(m.total); p50.push(m.p50);
+      todos.push(m.total); todos.push(m.p50);
+    });
+    // La brecha, en cifra, DENTRO del area: es la magnitud que el texto de la respuesta nombra.
+    var hayP50 = fut.every(function (m) { return m.p50 !== null && m.p50 !== undefined; });
+    if (hayP50) {
+      fut.forEach(function (m, i) {
+        var g = m.total - m.p50;
+        anots.push({ x: meses[i], y: (m.total + m.p50) / 2, xref: "x", yref: "y",
+                     text: (g > 0 ? "+" : "−") + __cnKbpe(Math.abs(g)), showarrow: false,
+                     font: { size: 10.5, color: C.ecpProy } });
+      });
+    }
+    var lay = __cnSendaLayout(__cnSendaRango(todos, 0.35), d.unidad);
+    lay.annotations = anots;
+
+    var trazas = [
+      { x: meses, y: p50, name: "Meta P50", type: "scatter", mode: "lines+markers+text",
+        line: { color: C.p50, width: 2 },
+        marker: { size: 7, color: "#FFFFFF", line: { color: C.p50, width: 2 } },
+        text: p50.map(function (v) { return v === null ? "" : __cnKbpe(v); }),
+        textposition: "top center", textfont: { size: 10, color: C.tick },
+        hovertemplate: "P50 %{y:.1f}<extra></extra>" },
+      { x: meses, y: tot, name: "Proyectado", type: "scatter", mode: "lines+markers+text",
+        line: { color: C.ecpProy, width: 2.5, dash: "dash" },
+        marker: { size: 8, color: C.ecpProy },
+        text: tot.map(function (v) { return v === null ? "" : __cnKbpe(v); }),
+        textposition: "bottom center", textfont: { size: 10, color: C.ecpProy },
+        hovertemplate: "Proyectado %{y:.1f}<extra></extra>" }
+    ];
+    // El relleno cuelga de la traza ANTERIOR (tonexty), asi que el P50 tiene que ir primero.
+    if (hayP50) { trazas[1].fill = "tonexty"; trazas[1].fillcolor = "rgba(199,127,27,0.14)"; }
+
+    window.Plotly.newPlot(node, trazas, lay, { displayModeBar: false, responsive: true });
+  }
+
+  // ---- Mitad 3: la tabla. Devuelve el desglose Ecopetrol/filiales, que es lo UNICO que se
+  // perdio al dejar las barras apiladas. No repite el grafico: añade lo que el grafico no pinta.
+  // 🔑 Ecopetrol y filiales van SIN color y con sangria: no estan dibujados, y un cuadrito de
+  //    color significaria "buscalo en el grafico". La sangria dice lo que si es verdad -- son
+  //    los componentes que suman al total.
+  function __cnSendaTablaHtml(fut) {
+    if (!fut.length) { return '<div class="cn-sendap__na">Sin cifras proyectadas.</div>'; }
+    var cab = "", fEcp = "", fFil = "", fTot = "", fP50 = "", fGap = "";
+    fut.forEach(function (m) {
+      var g = (m.p50 === null || m.p50 === undefined) ? null : m.total - m.p50;
+      // 🔑 MISMA fuente de etiqueta que los ejes de los dos gráficos (__CN_MES_ABR), no
+      //    `mes_nombre.slice(0,3)`: si el backend cambiara la capitalización, las cabeceras de
+      //    la tabla dejarían de coincidir con el eje X del panel de al lado.
+      cab  += "<th>" + esc(__CN_MES_ABR[m.mes] || m.mes_nombre || "") + "</th>";
+      fEcp += "<td>" + (m.ecopetrol == null ? "—" : __cnKbpe(m.ecopetrol)) + "</td>";
+      fFil += "<td>" + (m.filiales == null ? "—" : __cnKbpe(m.filiales)) + "</td>";
+      fTot += "<td>" + (m.total == null ? "—" : __cnKbpe(m.total)) + "</td>";
+      fP50 += "<td>" + (m.p50 == null ? "—" : __cnKbpe(m.p50)) + "</td>";
+      fGap += "<td>" + (g === null ? "—" : (g > 0 ? "+" : "−") + __cnKbpe(Math.abs(g))) + "</td>";
+    });
+    return '<div class="cn-sendap__tblscroll"><table class="cn-sendap__tbl">' +
+      "<thead><tr><th>Serie</th>" + cab + "</tr></thead><tbody>" +
+      '<tr class="comp"><td>Ecopetrol</td>' + fEcp + "</tr>" +
+      '<tr class="comp"><td>Filiales</td>' + fFil + "</tr>" +
+      '<tr class="suma"><td><i class="cn-sendap__sw cn-sendap__sw--proy"></i>Total</td>' +
+        fTot + "</tr>" +
+      '<tr><td><i class="cn-sendap__sw cn-sendap__sw--p50"></i>Meta P50</td>' + fP50 + "</tr>" +
+      '<tr class="gap"><td>Brecha</td>' + fGap + "</tr>" +
+      "</tbody></table></div>";
+  }
+
+  // Pintor diferido del panel (lo llama __cnPanelMesPintar con el bloque ya conectado: Plotly
+  // necesita un contenedor con ancho real).
   function __cnSendaMesInto(hostEl, d) {
-    hostEl.innerHTML = '<div class="cn-p50-senda-plot"></div>';
-    __cnSendaPlotInto(hostEl.querySelector(".cn-p50-senda-plot"), d);
+    if (!hostEl || !d) { return; }
+    if (!window.Plotly) {
+      hostEl.innerHTML = '<div class="cn-sendap__na">No se pudo cargar Plotly.</div>';
+      return;
+    }
+    var fut = __cnSendaFuturos(d);
+    __cnSendaCtxInto(hostEl.querySelector('[data-rol="ctx"]'), d);
+    __cnSendaZoomInto(hostEl.querySelector('[data-rol="zoom"]'), d, fut);
+    var t = hostEl.querySelector('[data-rol="tabla"]');
+    if (t) { t.innerHTML = __cnSendaTablaHtml(fut); }
   }
 
   // Épica 1 (atribución cuantitativa del gap, feedback gerencial 2026-07-24): el renglón ECP

@@ -2587,3 +2587,92 @@
   .cn-compprod__grid { grid-template-columns: 1fr; }
   .cn-compprod__grid > * { height: auto; }
 }
+
+/* ============================================================================
+   [2026-09-10 · SENDA-PANEL] Panel compuesto de la senda en la pila del chat.
+   Tres piezas: el año en líneas (contexto), el zoom de la proyección con la
+   brecha sombreada, y la tabla de cifras. Leyenda compartida al pie.
+
+   🔑 ENVOLTORIO PROPIO, no .cn-compprod__grid: aquel está capado a 375px
+      (:2560) y .cn-ins recorta lo que sobre SIN error (:1231). Este panel pide
+      ~520px. Mismo camino que .cn-difblk, que también monta el suyo.
+   🔑 EL AÑO VA A ANCHO COMPLETO y el zoom+tabla debajo, no tres columnas: la
+      pila del chat da ~915px en /mainchat y ~813px en la vista clásica a
+      1920px (y ~259px a 1366px — ver el comentario medido de :2266). Tres
+      columnas iguales pedirían 1224px. El año es quien necesita el ancho:
+      doce meses; el zoom son tres y la tabla cuatro columnas.
+   🔑 auto-fit + minmax como .cn-dif__cols (:1742): a un ancho corto la fila de
+      abajo cae sola a una columna, sin media query que mantener.
+   🔑 REGLA DE ORO (:1589): ningún scroller propio dentro de .cn-col. La tabla
+      lleva overflow-x y NADA de overflow-y.
+   ========================================================================= */
+.cn-sendap { display: flex; flex-direction: column; gap: 10px; padding: 2px 2px 0; }
+.cn-sendap__ctx, .cn-sendap__cell { min-width: 0; display: flex; flex-direction: column; }
+.cn-sendap__row {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px; align-items: stretch; }
+.cn-sendap__lbl {
+  font-size: 10px; letter-spacing: .08em; text-transform: uppercase;
+  color: #8b948e; font-weight: 700; padding: 0 2px 4px; }
+.cn-sendap__lbl em {
+  font-style: normal; font-weight: 400; text-transform: none; letter-spacing: 0;
+  font-size: 11px; color: #9aa39d; }
+/* Alturas fijas: Plotly necesita un contenedor con alto real, y el bloque de la
+   pila no lo hereda de ningún sitio. Suma: 2 padding + 18 rótulo + 236 plot + 10
+   gap + 18 rótulo + 236 plot + 10 gap + 26 leyenda ≈ 556px con la fila de abajo
+   en DOS columnas. Cuando cae a una (panel < 500px), la tabla se apila bajo el
+   zoom y el panel llega a ~800px — sigue sin recortarse porque .cn-stk crece
+   libre (verificado: sin max-height ni overflow).
+   ⚠️ NADA de transition ni animation sobre alturas aquí dentro: el bloque de la
+      pila mide con ResizeObserver y una altura animada le rompe la medición
+      (documentado en :1507-1514). */
+.cn-sendap__plot { width: 100%; height: 236px; min-width: 0; }
+.cn-sendap__tblhost { min-width: 0; }
+.cn-sendap__na { padding: 16px 8px; font-size: 12px; color: #8b948e; }
+
+/* tabla — clonada de .cn-dif__tbl (:1748), que ya resolvió este mismo problema */
+.cn-sendap__tblscroll { overflow-x: auto; }
+.cn-sendap__tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+.cn-sendap__tbl thead th {
+  text-align: right; font-size: 9.5px; letter-spacing: .04em; text-transform: uppercase;
+  color: #8b948e; font-weight: 700; padding: 0 6px 7px; border-bottom: 1px solid #e4e6df; }
+.cn-sendap__tbl thead th:first-child { text-align: left; }
+.cn-sendap__tbl tbody td {
+  padding: 6px; border-bottom: 1px solid #eef0ea; text-align: right;
+  font-variant-numeric: tabular-nums; color: #1c231f; }
+.cn-sendap__tbl tbody td:first-child { text-align: left; white-space: nowrap; }
+.cn-sendap__tbl tbody tr:last-child td { border-bottom: none; }
+/* componentes: sangrados y en gris — NO se dibujan en el panel, así que no llevan
+   muestra de color. La sangría dice lo que sí es cierto: suman al total. */
+.cn-sendap__tbl tbody tr.comp td { color: #8b948e; }
+.cn-sendap__tbl tbody tr.comp td:first-child { padding-left: 18px; }
+.cn-sendap__tbl tbody tr.suma td { border-top: 1px solid #c9d2cd; font-weight: 700; }
+.cn-sendap__tbl tbody tr.gap td { color: #C77F1B; }
+.cn-sendap__tbl tbody tr.gap td:first-child { color: #566; font-weight: 400; }
+.cn-sendap__sw {
+  display: inline-block; width: 8px; height: 8px; border-radius: 2px;
+  margin-right: 6px; flex: 0 0 auto; }
+.cn-sendap__sw--proy { background: #C77F1B; }
+.cn-sendap__sw--p50 { background: #fff; border: 2px solid #1B2A2E; width: 6px; height: 6px; }
+
+/* leyenda compartida — clonada de .gpm__legend (:1394). Es lo que hace que las
+   tres piezas se lean como UN panel y no como tres gráficos apilados. */
+.cn-sendap__leg {
+  display: flex; flex-wrap: wrap; gap: 6px 16px;
+  padding-top: 9px; border-top: 1px solid #EEF2EF; }
+.cn-sendap__lg { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #6E7C75; }
+.cn-sendap__chip { width: 16px; height: 3px; border-radius: 2px; display: inline-block;
+  flex: 0 0 auto; }
+.cn-sendap__chip--real { background: #00874A; }
+.cn-sendap__chip--proy {
+  background: repeating-linear-gradient(90deg, #C77F1B 0 5px, transparent 5px 8px); }
+.cn-sendap__chip--p50 { background: #1B2A2E; }
+.cn-sendap__chip--gap {
+  height: 10px; background: rgba(199,127,27,0.16); border: 1px solid #C77F1B; }
+
+/* Muy estrecho (pila clásica a 1366px ≈ 259px útiles): los gráficos se achatan
+   antes que desaparecer, y la tabla es lo último que se sacrifica porque las
+   cifras siguen siendo legibles donde una curva de 12 puntos ya no lo es. */
+@media (max-width: 1440px) {
+  .cn-sendap__plot { height: 210px; }
+}
