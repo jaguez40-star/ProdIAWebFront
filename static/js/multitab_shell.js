@@ -6352,19 +6352,31 @@
           });
         });
 
+        // [2026-09-10 · SENDA-SOLO-FUTURO] ¿TODAS las barras son proyección? Se deriva del dato,
+        // sin parámetro nuevo: primerProyIdx vale 0 cuando el primer mes ya es proyectado (el
+        // chat, que recibe solo los meses futuros) y 8 en el tablero, que empieza en enero real.
+        // Sirve para rotular la leyenda con la verdad — ver trazaEcp/trazaFil.
+        // 🔑 En este modo NO se dibuja la línea punteada "PROYECTADO" (:6418 exige
+        //    primerProyIdx > 0): correcto, un separador sin nada que separar es ruido.
+        var todoProy = (primerProyIdx === 0);
+
         // Ecopetrol ABAJO, Filiales ENCIMA. Con el eje recortado (ver yaxis) el apilado sigue
         // siendo fiel: lo que se recorta es el zócalo común de TODAS las barras, no una sola.
         // El bug original era otro -- se dibujaba la franja de Ecopetrol desde el piso del eje
         // en vez de desde cero, y por eso salía más corta que filiales.
         var trazaEcp = {
-          x: meses, y: ecp, name: "Real Ecopetrol", type: "bar",
+          // [2026-09-10 · SENDA-SOLO-FUTURO] El rótulo dice lo que la barra ES. Con solo meses
+          // futuros, llamar "Real" a una proyección repetiría el fallo que el backend ya documenta
+          // haber cometido (analisis/api.py:2947-2949: «el panel enseñaba el plan disfrazado de
+          // real»). En el tablero el modo es false y la leyenda queda exactamente como estaba.
+          x: meses, y: ecp, name: todoProy ? "Proyección Ecopetrol" : "Real Ecopetrol", type: "bar",
           marker: { color: colEcp, pattern: { shape: patEcp, fgcolor: C.ecpProy, size: 4 } },
           text: ecpTxt, textposition: "inside", insidetextanchor: "middle",
           textfont: { size: 10, color: ecpTxtCol },
           hovertemplate: "Ecopetrol %{y:.1f}<extra></extra>"
         };
         var trazaFil = {
-          x: meses, y: fil, name: "Real filiales", type: "bar",
+          x: meses, y: fil, name: todoProy ? "Proyección filiales" : "Real filiales", type: "bar",
           marker: { color: colFil, pattern: { shape: patFil, fgcolor: C.ecpProy, size: 4 } },
           text: filTxt, textposition: "inside", insidetextanchor: "middle",
           textfont: { size: 10, color: filTxtCol },
